@@ -1,4 +1,5 @@
 #!/Applications/Kicad/kicad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python
+# -*- coding: utf-8 -*-
 import os
 import sys
 from math import *
@@ -179,35 +180,38 @@ def layout_trans_symbol():
 
 	# draw edge.cuts
 	edge_cut_radius = circle_radius + 4
-	dome_arc = pi/6
-	spacer_arc = (2*pi - 3 * pi/6) / 3
-	arc_accum = -pi/12
+	spoke_arc = pi/3
+	spoke_length = 25
+	# spacer arcs are not uniform. the two spokes should point up at 45º and 135º, and the lower spoke points straight down at 270º (counter-clockwise coordinates)
+	# btw kicad arcs go clockwise
+	spoke_angles = [pi/2, 5*pi/4, 7*pi/4]
+	
+	spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arc + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
+	arc_accum = spoke_angles[0] + spoke_arc/2
 
-	for i in range(3):
-		draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arc, layer='Edge.Cuts', width=1, board=board)
-		arc_accum+=spacer_arc
+	for i in range(len(spacer_arcs)):
+		draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arcs[i], layer='Edge.Cuts', width=1, board=board)
+		arc_accum+=spacer_arcs[i]
 
-		# s/dome/spoke/g
-
-		dome_length = 25
-		spoke_base = circle_pt(arc_accum+dome_arc/2, edge_cut_radius)
-		spoke_tip = circle_pt(arc_accum+dome_arc/2, edge_cut_radius + dome_length)
+		
+		spoke_base = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius)
+		spoke_tip = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius + spoke_length)
 		spoke_offset = Point(spoke_tip.x - spoke_base.x, spoke_tip.y - spoke_base.y)
 		
-		dome_base_1 = circle_pt(arc_accum, edge_cut_radius)
-		dome_edge_1 = Point(dome_base_1.x + spoke_offset.x, dome_base_1.y + spoke_offset.y)
+		spoke_base_1 = circle_pt(arc_accum, edge_cut_radius)
+		spoke_edge_1 = Point(spoke_base_1.x + spoke_offset.x, spoke_base_1.y + spoke_offset.y)
 
-		dome_base_2 = circle_pt(arc_accum+dome_arc, edge_cut_radius)
-		dome_edge_2 = Point(dome_base_2.x + spoke_offset.x, dome_base_2.y + spoke_offset.y)
+		spoke_base_2 = circle_pt(arc_accum+spoke_arc, edge_cut_radius)
+		spoke_edge_2 = Point(spoke_base_2.x + spoke_offset.x, spoke_base_2.y + spoke_offset.y)
 
-		draw_segment(dome_base_1, dome_edge_1, layer='Edge.Cuts', width=1, board=board)
-		draw_segment(dome_base_2, dome_edge_2, layer='Edge.Cuts', width=1, board=board)
+		draw_segment(spoke_base_1, spoke_edge_1, layer='Edge.Cuts', width=1, board=board)
+		draw_segment(spoke_base_2, spoke_edge_2, layer='Edge.Cuts', width=1, board=board)
 
-		dome_center = Point((dome_edge_1.x + dome_edge_2.x) / 2, (dome_edge_1.y + dome_edge_2.y) / 2)
-		dome_radius = sqrt((dome_edge_1.x - dome_edge_2.x)**2 + (dome_edge_1.y - dome_edge_2.y)**2) / 2 
-		draw_arc_2(dome_center, dome_edge_1, pi, layer='Edge.Cuts', width=1, board=board)
+		spoke_center = Point((spoke_edge_1.x + spoke_edge_2.x) / 2, (spoke_edge_1.y + spoke_edge_2.y) / 2)
+		spoke_radius = sqrt((spoke_edge_1.x - spoke_edge_2.x)**2 + (spoke_edge_1.y - spoke_edge_2.y)**2) / 2 
+		draw_arc_2(spoke_center, spoke_edge_1, pi, layer='Edge.Cuts', width=1, board=board)
 
-		arc_accum += dome_arc
+		arc_accum += spoke_arc
 
 	# place pixels
 	modules = dict(zip((m.reference for m in board.modules), (m for m in board.modules)))
