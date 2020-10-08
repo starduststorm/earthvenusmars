@@ -1,0 +1,627 @@
+EESchema Schematic File Version 4
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 2 2
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6DC
+P 10100 1200
+AR Path="/5F82D6DC" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6DC" Ref="D16"  Part="1" 
+F 0 "D16" H 10100 1681 50  0000 C CNN
+F 1 "APA102-2020" H 10100 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 10150 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 10200 825 50  0001 L TNN
+	1    10100 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6E2
+P 9500 1200
+AR Path="/5F82D6E2" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6E2" Ref="D15"  Part="1" 
+F 0 "D15" H 9500 1681 50  0000 C CNN
+F 1 "APA102-2020" H 9500 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 9550 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 9600 825 50  0001 L TNN
+	1    9500 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6E8
+P 8900 1200
+AR Path="/5F82D6E8" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6E8" Ref="D14"  Part="1" 
+F 0 "D14" H 8900 1681 50  0000 C CNN
+F 1 "APA102-2020" H 8900 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 8950 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 9000 825 50  0001 L TNN
+	1    8900 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6EE
+P 8300 1200
+AR Path="/5F82D6EE" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6EE" Ref="D13"  Part="1" 
+F 0 "D13" H 8300 1681 50  0000 C CNN
+F 1 "APA102-2020" H 8300 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 8350 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 8400 825 50  0001 L TNN
+	1    8300 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6F4
+P 7700 1200
+AR Path="/5F82D6F4" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6F4" Ref="D12"  Part="1" 
+F 0 "D12" H 7700 1681 50  0000 C CNN
+F 1 "APA102-2020" H 7700 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 7750 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 7800 825 50  0001 L TNN
+	1    7700 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D6FA
+P 7100 1200
+AR Path="/5F82D6FA" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D6FA" Ref="D11"  Part="1" 
+F 0 "D11" H 7100 1681 50  0000 C CNN
+F 1 "APA102-2020" H 7100 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 7150 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 7200 825 50  0001 L TNN
+	1    7100 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D700
+P 6500 1200
+AR Path="/5F82D700" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D700" Ref="D10"  Part="1" 
+F 0 "D10" H 6500 1681 50  0000 C CNN
+F 1 "APA102-2020" H 6500 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 6550 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 6600 825 50  0001 L TNN
+	1    6500 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D706
+P 5900 1200
+AR Path="/5F82D706" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D706" Ref="D9"  Part="1" 
+F 0 "D9" H 5900 1681 50  0000 C CNN
+F 1 "APA102-2020" H 5900 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 5950 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 6000 825 50  0001 L TNN
+	1    5900 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D70C
+P 5300 1200
+AR Path="/5F82D70C" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D70C" Ref="D8"  Part="1" 
+F 0 "D8" H 5300 1681 50  0000 C CNN
+F 1 "APA102-2020" H 5300 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 5350 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 5400 825 50  0001 L TNN
+	1    5300 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D712
+P 4700 1200
+AR Path="/5F82D712" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D712" Ref="D7"  Part="1" 
+F 0 "D7" H 4700 1681 50  0000 C CNN
+F 1 "APA102-2020" H 4700 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 4750 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 4800 825 50  0001 L TNN
+	1    4700 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D718
+P 4100 1200
+AR Path="/5F82D718" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D718" Ref="D6"  Part="1" 
+F 0 "D6" H 4100 1681 50  0000 C CNN
+F 1 "APA102-2020" H 4100 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 4150 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 4200 825 50  0001 L TNN
+	1    4100 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D71E
+P 3500 1200
+AR Path="/5F82D71E" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D71E" Ref="D5"  Part="1" 
+F 0 "D5" H 3500 1681 50  0000 C CNN
+F 1 "APA102-2020" H 3500 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 3550 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 3600 825 50  0001 L TNN
+	1    3500 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D724
+P 2900 1200
+AR Path="/5F82D724" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D724" Ref="D4"  Part="1" 
+F 0 "D4" H 2900 1681 50  0000 C CNN
+F 1 "APA102-2020" H 2900 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 2950 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 3000 825 50  0001 L TNN
+	1    2900 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D72A
+P 2300 1200
+AR Path="/5F82D72A" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D72A" Ref="D3"  Part="1" 
+F 0 "D3" H 2300 1681 50  0000 C CNN
+F 1 "APA102-2020" H 2300 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 2350 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 2400 825 50  0001 L TNN
+	1    2300 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D730
+P 1700 1200
+AR Path="/5F82D730" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D730" Ref="D2"  Part="1" 
+F 0 "D2" H 1700 1681 50  0000 C CNN
+F 1 "APA102-2020" H 1700 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 1750 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 1800 825 50  0001 L TNN
+	1    1700 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F82D736
+P 1100 1200
+AR Path="/5F82D736" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F82D736" Ref="D1"  Part="1" 
+F 0 "D1" H 1100 1681 50  0000 C CNN
+F 1 "APA102-2020" H 1100 1590 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 1150 900 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 1200 825 50  0001 L TNN
+	1    1100 1200
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F8308B8
+P 10100 1800
+AR Path="/5F8308B8" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F8308B8" Ref="D17"  Part="1" 
+F 0 "D17" H 10100 1319 50  0000 C CNN
+F 1 "APA102-2020" H 10100 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 10150 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 10200 1425 50  0001 L TNN
+	1    10100 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F8310E7
+P 9500 1800
+AR Path="/5F8310E7" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F8310E7" Ref="D18"  Part="1" 
+F 0 "D18" H 9500 1319 50  0000 C CNN
+F 1 "APA102-2020" H 9500 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 9550 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 9600 1425 50  0001 L TNN
+	1    9500 1800
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	10400 1200 10400 1800
+Wire Wire Line
+	10400 1100 10450 1100
+Wire Wire Line
+	10450 1100 10450 1900
+Wire Wire Line
+	10450 1900 10400 1900
+Wire Wire Line
+	10100 900  9500 900 
+Wire Wire Line
+	9500 900  8900 900 
+Connection ~ 9500 900 
+Wire Wire Line
+	8900 900  8300 900 
+Connection ~ 8900 900 
+Wire Wire Line
+	8300 900  7700 900 
+Connection ~ 8300 900 
+Wire Wire Line
+	7700 900  7100 900 
+Connection ~ 7700 900 
+Wire Wire Line
+	7100 900  6500 900 
+Connection ~ 7100 900 
+Wire Wire Line
+	6500 900  5900 900 
+Connection ~ 6500 900 
+Wire Wire Line
+	5900 900  5300 900 
+Connection ~ 5900 900 
+Wire Wire Line
+	5300 900  4700 900 
+Connection ~ 5300 900 
+Wire Wire Line
+	4100 900  4700 900 
+Connection ~ 4700 900 
+Wire Wire Line
+	4100 900  3500 900 
+Connection ~ 4100 900 
+Wire Wire Line
+	2900 900  3500 900 
+Connection ~ 3500 900 
+Wire Wire Line
+	2900 900  2300 900 
+Connection ~ 2900 900 
+Wire Wire Line
+	2300 900  1700 900 
+Connection ~ 2300 900 
+Wire Wire Line
+	1100 900  1700 900 
+Connection ~ 1700 900 
+Wire Wire Line
+	1100 1500 1700 1500
+Connection ~ 1700 1500
+Wire Wire Line
+	1700 1500 2300 1500
+Connection ~ 2300 1500
+Wire Wire Line
+	2300 1500 2900 1500
+Wire Wire Line
+	2900 1500 3500 1500
+Connection ~ 2900 1500
+Wire Wire Line
+	3500 1500 4100 1500
+Connection ~ 3500 1500
+Wire Wire Line
+	4100 1500 4700 1500
+Connection ~ 4100 1500
+Connection ~ 4700 1500
+Connection ~ 5300 1500
+Connection ~ 6500 1500
+Wire Wire Line
+	7100 1500 7700 1500
+Connection ~ 7100 1500
+Wire Wire Line
+	7700 1500 8300 1500
+Connection ~ 7700 1500
+Wire Wire Line
+	8300 1500 8900 1500
+Connection ~ 8300 1500
+Wire Wire Line
+	9500 1500 8900 1500
+Connection ~ 9500 1500
+Connection ~ 8900 1500
+Wire Wire Line
+	9500 1500 10100 1500
+Connection ~ 10100 1500
+Text HLabel 800  1200 0    50   Input ~ 0
+SCK
+Text HLabel 800  1100 0    50   Input ~ 0
+SDO
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F845422
+P 8900 1800
+AR Path="/5F845422" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F845422" Ref="D19"  Part="1" 
+F 0 "D19" H 8900 1319 50  0000 C CNN
+F 1 "APA102-2020" H 8900 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 8950 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 9000 1425 50  0001 L TNN
+	1    8900 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F845C5A
+P 8300 1800
+AR Path="/5F845C5A" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F845C5A" Ref="D20"  Part="1" 
+F 0 "D20" H 8300 1319 50  0000 C CNN
+F 1 "APA102-2020" H 8300 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 8350 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 8400 1425 50  0001 L TNN
+	1    8300 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F8464B6
+P 7700 1800
+AR Path="/5F8464B6" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F8464B6" Ref="D21"  Part="1" 
+F 0 "D21" H 7700 1319 50  0000 C CNN
+F 1 "APA102-2020" H 7700 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 7750 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 7800 1425 50  0001 L TNN
+	1    7700 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F846967
+P 7100 1800
+AR Path="/5F846967" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F846967" Ref="D22"  Part="1" 
+F 0 "D22" H 7100 1319 50  0000 C CNN
+F 1 "APA102-2020" H 7100 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 7150 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 7200 1425 50  0001 L TNN
+	1    7100 1800
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	6500 1500 7100 1500
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F8474EB
+P 6500 1800
+AR Path="/5F8474EB" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F8474EB" Ref="D23"  Part="1" 
+F 0 "D23" H 6500 1319 50  0000 C CNN
+F 1 "APA102-2020" H 6500 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 6550 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 6600 1425 50  0001 L TNN
+	1    6500 1800
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5300 1500 4700 1500
+Wire Wire Line
+	5300 1500 5900 1500
+Connection ~ 5900 1500
+Wire Wire Line
+	5900 1500 6500 1500
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84B6D3
+P 5900 1800
+AR Path="/5F84B6D3" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84B6D3" Ref="D24"  Part="1" 
+F 0 "D24" H 5900 1319 50  0000 C CNN
+F 1 "APA102-2020" H 5900 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 5950 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 6000 1425 50  0001 L TNN
+	1    5900 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84BC5B
+P 5300 1800
+AR Path="/5F84BC5B" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84BC5B" Ref="D25"  Part="1" 
+F 0 "D25" H 5300 1319 50  0000 C CNN
+F 1 "APA102-2020" H 5300 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 5350 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 5400 1425 50  0001 L TNN
+	1    5300 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84C10C
+P 4700 1800
+AR Path="/5F84C10C" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84C10C" Ref="D26"  Part="1" 
+F 0 "D26" H 4700 1319 50  0000 C CNN
+F 1 "APA102-2020" H 4700 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 4750 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 4800 1425 50  0001 L TNN
+	1    4700 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84D1C4
+P 4100 1800
+AR Path="/5F84D1C4" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84D1C4" Ref="D27"  Part="1" 
+F 0 "D27" H 4100 1319 50  0000 C CNN
+F 1 "APA102-2020" H 4100 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 4150 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 4200 1425 50  0001 L TNN
+	1    4100 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84D8A8
+P 3500 1800
+AR Path="/5F84D8A8" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84D8A8" Ref="D28"  Part="1" 
+F 0 "D28" H 3500 1319 50  0000 C CNN
+F 1 "APA102-2020" H 3500 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 3550 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 3600 1425 50  0001 L TNN
+	1    3500 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84DEFD
+P 2900 1800
+AR Path="/5F84DEFD" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84DEFD" Ref="D29"  Part="1" 
+F 0 "D29" H 2900 1319 50  0000 C CNN
+F 1 "APA102-2020" H 2900 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 2950 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 3000 1425 50  0001 L TNN
+	1    2900 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84E600
+P 2300 1800
+AR Path="/5F84E600" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84E600" Ref="D30"  Part="1" 
+F 0 "D30" H 2300 1319 50  0000 C CNN
+F 1 "APA102-2020" H 2300 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 2350 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 2400 1425 50  0001 L TNN
+	1    2300 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84ED19
+P 1700 1800
+AR Path="/5F84ED19" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84ED19" Ref="D31"  Part="1" 
+F 0 "D31" H 1700 1319 50  0000 C CNN
+F 1 "APA102-2020" H 1700 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 1750 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 1800 1425 50  0001 L TNN
+	1    1700 1800
+	-1   0    0    1   
+$EndComp
+$Comp
+L LED:APA102-2020 D?
+U 1 1 5F84F401
+P 1100 1800
+AR Path="/5F84F401" Ref="D?"  Part="1" 
+AR Path="/5F81AC32/5F84F401" Ref="D32"  Part="1" 
+F 0 "D32" H 1100 1319 50  0000 C CNN
+F 1 "APA102-2020" H 1100 1410 50  0000 C CNN
+F 2 "LED_SMD:LED-APA102-2020_tightened_pads" H 1150 1500 50  0001 L TNN
+F 3 "http://www.led-color.com/upload/201604/APA102-2020%20SMD%20LED.pdf" H 1200 1425 50  0001 L TNN
+	1    1100 1800
+	-1   0    0    1   
+$EndComp
+Connection ~ 1100 1500
+Connection ~ 1100 900 
+$Comp
+L power:GND #PWR0120
+U 1 1 5F850858
+P 850 1500
+F 0 "#PWR0120" H 850 1250 50  0001 C CNN
+F 1 "GND" V 855 1372 50  0000 R CNN
+F 2 "" H 850 1500 50  0001 C CNN
+F 3 "" H 850 1500 50  0001 C CNN
+	1    850  1500
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	850  900  1100 900 
+Wire Wire Line
+	850  1500 1100 1500
+$Comp
+L power:+5V #PWR0121
+U 1 1 5F85351B
+P 850 900
+F 0 "#PWR0121" H 850 750 50  0001 C CNN
+F 1 "+5V" V 865 1028 50  0000 L CNN
+F 2 "" H 850 900 50  0001 C CNN
+F 3 "" H 850 900 50  0001 C CNN
+	1    850  900 
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR0122
+U 1 1 5F853B2E
+P 850 2100
+F 0 "#PWR0122" H 850 1950 50  0001 C CNN
+F 1 "+5V" V 865 2228 50  0000 L CNN
+F 2 "" H 850 2100 50  0001 C CNN
+F 3 "" H 850 2100 50  0001 C CNN
+	1    850  2100
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	850  2100 1100 2100
+Wire Wire Line
+	1100 2100 1700 2100
+Connection ~ 1100 2100
+Wire Wire Line
+	1700 2100 2300 2100
+Connection ~ 1700 2100
+Wire Wire Line
+	2300 2100 2900 2100
+Connection ~ 2300 2100
+Wire Wire Line
+	2900 2100 3500 2100
+Connection ~ 2900 2100
+Wire Wire Line
+	4100 2100 3500 2100
+Connection ~ 3500 2100
+Wire Wire Line
+	4100 2100 4700 2100
+Connection ~ 4100 2100
+Wire Wire Line
+	5300 2100 4700 2100
+Connection ~ 4700 2100
+Wire Wire Line
+	5300 2100 5900 2100
+Connection ~ 5300 2100
+Wire Wire Line
+	5900 2100 6500 2100
+Connection ~ 5900 2100
+Wire Wire Line
+	6500 2100 7100 2100
+Connection ~ 6500 2100
+Wire Wire Line
+	7100 2100 7700 2100
+Connection ~ 7100 2100
+Wire Wire Line
+	7700 2100 8300 2100
+Connection ~ 7700 2100
+Wire Wire Line
+	8300 2100 8900 2100
+Connection ~ 8300 2100
+Wire Wire Line
+	8900 2100 9500 2100
+Connection ~ 8900 2100
+Wire Wire Line
+	9500 2100 10100 2100
+Connection ~ 9500 2100
+Wire Wire Line
+	10100 2100 10500 2100
+Wire Wire Line
+	10500 2100 10500 900 
+Wire Wire Line
+	10500 900  10100 900 
+Connection ~ 10100 2100
+Connection ~ 10100 900 
+$EndSCHEMATC
