@@ -110,9 +110,7 @@ def add_copper_trace(start, end, net):
 	print("adding track from {} to {} on net {}".format(start, end, net.GetNetname()))
 
 prev_module = None
-def place(module, point, orientation = None):
-	global prev_module
-
+def clear_tracks_for_module(module): 
 	for pad in module._obj.Pads():
 		pad_position = pad.GetPosition()
 		tracks = board._obj.GetTracks()
@@ -127,8 +125,12 @@ def place(module, point, orientation = None):
 			   print("Deleting old track for module %s pad %s" % (module.reference, pad.GetPadName()))
 			   board._obj.Delete(t)
 
-	print("Placing module %s at point %f,%f angle %f" % (module.reference, point.x, point.y, orientation));
+def place(module, point, orientation = None):
+	global prev_module
+
+	print("Placing module %s at point %f,%f orientation %f" % (module.reference, point.x, point.y, orientation));
 	module.position = point
+	orientation *= 10 # kicad *shrug*
 	# print(dir(module)) 
 	if orientation is not None:
 		module._obj.SetOrientation(orientation)
@@ -167,7 +169,10 @@ def layout_trans_symbol():
 	centery = 90
 
 	circle_radius = 20#mm
-	circle_npixels = 32
+	circle_npixels = 34
+
+	spoke_angles = [pi/2, 5*pi/4, 7*pi/4]
+	spoke_length = 8
 
 	def circle_pt(theta, radius):
 		return Point(centerx+radius*cos(theta), centery+radius*sin(theta))
@@ -179,54 +184,110 @@ def layout_trans_symbol():
 			print("Deleting edge cut drawing")
 
 	# draw edge.cuts
-	edge_cut_radius = circle_radius + 4
-	spoke_arc = pi/3
-	spoke_length = 25
-	# spacer arcs are not uniform. the two spokes should point up at 45º and 135º, and the lower spoke points straight down at 270º (counter-clockwise coordinates)
-	# btw kicad arcs go clockwise
-	spoke_angles = [pi/2, 5*pi/4, 7*pi/4]
-	
-	spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arc + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
-	arc_accum = spoke_angles[0] + spoke_arc/2
-
-	for i in range(len(spacer_arcs)):
-		draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arcs[i], layer='Edge.Cuts', width=1, board=board)
-		arc_accum+=spacer_arcs[i]
-
+	def draw_edge_cuts():
+		edge_cut_radius = circle_radius + 4
+		edge_cut_line_thickness = 0.05
+		spoke_arc = pi/3
+		spoke_length = 20
+		# spacer arcs are not uniform. the two spokes should point up at 45º and 135º, and the lower spoke points straight down at 270º (counter-clockwise coordinates)
+		# btw kicad arcs go clockwise
 		
-		spoke_base = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius)
-		spoke_tip = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius + spoke_length)
-		spoke_offset = Point(spoke_tip.x - spoke_base.x, spoke_tip.y - spoke_base.y)
-		
-		spoke_base_1 = circle_pt(arc_accum, edge_cut_radius)
-		spoke_edge_1 = Point(spoke_base_1.x + spoke_offset.x, spoke_base_1.y + spoke_offset.y)
 
-		spoke_base_2 = circle_pt(arc_accum+spoke_arc, edge_cut_radius)
-		spoke_edge_2 = Point(spoke_base_2.x + spoke_offset.x, spoke_base_2.y + spoke_offset.y)
+		spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arc + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
+		arc_accum = spoke_angles[0] + spoke_arc/2
 
-		draw_segment(spoke_base_1, spoke_edge_1, layer='Edge.Cuts', width=1, board=board)
-		draw_segment(spoke_base_2, spoke_edge_2, layer='Edge.Cuts', width=1, board=board)
+		# FIXME: Edge cuts are not perfectly overlapping
+		for i in range(len(spacer_arcs)):
+			draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arcs[i], layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+			arc_accum+=spacer_arcs[i]
 
-		spoke_center = Point((spoke_edge_1.x + spoke_edge_2.x) / 2, (spoke_edge_1.y + spoke_edge_2.y) / 2)
-		spoke_radius = sqrt((spoke_edge_1.x - spoke_edge_2.x)**2 + (spoke_edge_1.y - spoke_edge_2.y)**2) / 2 
-		draw_arc_2(spoke_center, spoke_edge_1, pi, layer='Edge.Cuts', width=1, board=board)
+			spoke_base = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius)
+			spoke_tip = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius + spoke_length)
+			spoke_offset = Point(spoke_tip.x - spoke_base.x, spoke_tip.y - spoke_base.y)
+			
+			spoke_base_1 = circle_pt(arc_accum, edge_cut_radius)
+			spoke_edge_1 = Point(spoke_base_1.x + spoke_offset.x, spoke_base_1.y + spoke_offset.y)
 
-		arc_accum += spoke_arc
+			spoke_base_2 = circle_pt(arc_accum+spoke_arc, edge_cut_radius)
+			spoke_edge_2 = Point(spoke_base_2.x + spoke_offset.x, spoke_base_2.y + spoke_offset.y)
 
-	# place pixels
+			draw_segment(spoke_base_1, spoke_edge_1, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+			draw_segment(spoke_base_2, spoke_edge_2, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+
+			spoke_center = Point((spoke_edge_1.x + spoke_edge_2.x) / 2, (spoke_edge_1.y + spoke_edge_2.y) / 2)
+			spoke_radius = sqrt((spoke_edge_1.x - spoke_edge_2.x)**2 + (spoke_edge_1.y - spoke_edge_2.y)**2) / 2 
+			draw_arc_2(spoke_center, spoke_edge_1, pi, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+
+			arc_accum += spoke_arc
+
+	draw_edge_cuts()
+
+	# remove previous tracks
 	modules = dict(zip((m.reference for m in board.modules), (m for m in board.modules)))
 
-	for pix in range(1, circle_npixels+1):
-		theta = 2 * pi * pix / circle_npixels
+	for module in modules.values():
+		if module.reference.startswith('D'):
+			clear_tracks_for_module(module)
 
-		module = modules["D%i" % pix]
-		if not module: continue
+	# place pixels
+	def place_pixels():
+		pix = 1
+		module = modules["D%i"% pix]
 
-		x = centerx + cos(theta) * circle_radius
-		y = centery + sin(theta) * circle_radius
-		orientation = (-180*theta/pi + 90) * 10
+		def spoke(pix, module, theta, arrow, cross):
+			cross_location = 5/8.
+			print("DO SPOKE at theta %f, circle_radius = %f" % (theta, circle_radius))
+			
+			spoke_length = float(spoke_length)
+			for i in range(spoke_length):
+				pt = circle_pt(theta, circle_radius + 3.5*(i+1))
+				place(module, Point2D(pt.x, pt.y), (pi - theta)*180/pi)
+				pix+=1
+				module = modules["D%i"% pix]
 
-		place(module, Point2D(x, y), orientation)
+				# need to draw the cross & arrow after finishing the line of the spoke, since there's no room for traces to come out and back into that line of leds
+				if i == spoke_length - 1:
+					if cross:
+						pass
+					if arrow:
+						pass
+			return pix, module
+
+
+		spokes_to_draw = spoke_angles[:]
+
+		last_theta = None
+		circle_index = 1
+		while module is not None:
+			theta = pi/2 + 2 * pi * circle_index / circle_npixels
+			if theta > 2*pi:
+				theta -= 2*pi
+
+			for spoke_angle in spokes_to_draw:
+				if last_theta is not None and last_theta <= spoke_angle and theta >= spoke_angle:
+					# start spoke!
+					print("starting spoke at pix %i" % pix)
+					pix, module = spoke(pix, module, spoke_angle, True, True)
+					print("finished spoke, pix now %i" % pix)
+					spokes_to_draw.remove(spoke_angle)
+
+			if circle_index > circle_npixels:
+				break
+
+			x = centerx + cos(theta) * circle_radius
+			y = centery + sin(theta) * circle_radius
+			orientation = (-180*theta/pi + 90)
+			print("Theta now %f, last_theta %f, spoke_angles = %s" % (theta, (last_theta if last_theta is not None else 0.0), str(spoke_angles)))
+			place(module, Point2D(x, y), orientation)
+
+			circle_index += 1
+			pix += 1
+			module = modules["D%i"% pix]
+
+			last_theta = theta
+
+	place_pixels()
+
 
 
 def save():

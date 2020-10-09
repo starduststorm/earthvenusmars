@@ -436,121 +436,16 @@ Text GLabel 5350 2250 2    50   Input ~ 0
 PB02
 Text GLabel 3950 1350 0    50   Input ~ 0
 RESET
-Text GLabel 8850 2450 0    50   Input ~ 0
-PA23
-Text GLabel 8850 2750 0    50   Input ~ 0
-PA27
-Text GLabel 8850 2950 0    50   Input ~ 0
-PA28
-Text GLabel 8150 1450 2    50   Input ~ 0
-PA30
-Text GLabel 8150 1550 2    50   Input ~ 0
-PA31
-Text GLabel 8850 2650 0    50   Input ~ 0
-PB23
-Text GLabel 8850 2550 0    50   Input ~ 0
-PB22
-Text GLabel 8850 1250 0    50   Input ~ 0
-PB11
-Text GLabel 8850 1150 0    50   Input ~ 0
-PB10
-Text GLabel 8150 2150 2    50   Input ~ 0
-PB09
-Text GLabel 8150 2050 2    50   Input ~ 0
-PB08
-Text GLabel 8150 1750 2    50   Input ~ 0
-PB03
-Text GLabel 8150 1650 2    50   Input ~ 0
-PB02
-$Comp
-L power:VBUS #PWR0117
-U 1 1 5EC319EB
-P 8150 1150
-F 0 "#PWR0117" H 8150 1000 50  0001 C CNN
-F 1 "VBUS" V 8165 1278 50  0000 L CNN
-F 2 "" H 8150 1150 50  0001 C CNN
-F 3 "" H 8150 1150 50  0001 C CNN
-	1    8150 1150
-	0    1    1    0   
-$EndComp
-$Comp
-L power:+3.3V #PWR0118
-U 1 1 5EC31EF3
-P 8150 1250
-F 0 "#PWR0118" H 8150 1100 50  0001 C CNN
-F 1 "+3.3V" V 8165 1378 50  0000 L CNN
-F 2 "" H 8150 1250 50  0001 C CNN
-F 3 "" H 8150 1250 50  0001 C CNN
-	1    8150 1250
-	0    1    1    0   
-$EndComp
-$Comp
-L power:GND #PWR0119
-U 1 1 5EC32415
-P 8150 1350
-F 0 "#PWR0119" H 8150 1100 50  0001 C CNN
-F 1 "GND" V 8155 1222 50  0000 R CNN
-F 2 "" H 8150 1350 50  0001 C CNN
-F 3 "" H 8150 1350 50  0001 C CNN
-	1    8150 1350
-	0    -1   -1   0   
-$EndComp
-Text GLabel 8850 2850 0    50   Input ~ 0
-RESET
 Wire Wire Line
 	3450 1750 3950 1750
 Wire Wire Line
 	3950 1550 3950 1650
 Text GLabel 3950 1850 0    50   Input ~ 0
 PA02
-Text GLabel 8150 1850 2    50   Input ~ 0
-PA02
-Text GLabel 8850 2350 0    50   Input ~ 0
-PA22
-Text GLabel 8850 2250 0    50   Input ~ 0
-PA21
-Text GLabel 8850 2150 0    50   Input ~ 0
-PA20
-Text GLabel 8850 2050 0    50   Input ~ 0
-PA19
-Text GLabel 8850 1950 0    50   Input ~ 0
-PA18
-Text GLabel 8850 1850 0    50   Input ~ 0
-PA17
-Text GLabel 8850 1750 0    50   Input ~ 0
-PA16
-Text GLabel 8850 1650 0    50   Input ~ 0
-PA15
-Text GLabel 8850 1550 0    50   Input ~ 0
-PA14
-Text GLabel 8850 1450 0    50   Input ~ 0
-PA13
-Text GLabel 8850 1350 0    50   Input ~ 0
-PA12
-Text GLabel 8150 2950 2    50   Input ~ 0
-PA11
-Text GLabel 8150 2850 2    50   Input ~ 0
-PA10
-Text GLabel 8150 2750 2    50   Input ~ 0
-PA09
-Text GLabel 8150 2650 2    50   Input ~ 0
-PA08
-Text GLabel 8150 2550 2    50   Input ~ 0
-PA07
-Text GLabel 8150 2450 2    50   Input ~ 0
-PA06
-Text GLabel 8150 2350 2    50   Input ~ 0
-PA05
-Text GLabel 8150 2250 2    50   Input ~ 0
-PA04
-Text GLabel 8150 1950 2    50   Input ~ 0
-PA03
 Wire Notes Line
 	850  -200 850  4750
 Wire Notes Line
 	2800 -200 2800 4750
-Text Notes 7550 800  0    50   ~ 0
-Breakout pins
 Wire Notes Line
 	7200 -200 7200 4750
 Wire Notes Line
@@ -567,28 +462,6 @@ Text GLabel 3950 4050 0    50   Input ~ 0
 USB_D-
 Text GLabel 3950 4150 0    50   Input ~ 0
 USB_D+
-$Comp
-L Connector_Generic:Conn_01x19 J2
-U 1 1 5EC6EBC8
-P 9050 2050
-F 0 "J2" H 9000 3200 50  0000 L CNN
-F 1 "Conn_01x19" H 8800 3100 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x19_P2.54mm_Vertical" H 9050 2050 50  0001 C CNN
-F 3 "~" H 9050 2050 50  0001 C CNN
-	1    9050 2050
-	1    0    0    -1  
-$EndComp
-$Comp
-L Connector_Generic:Conn_01x19 J1
-U 1 1 5EC7617E
-P 7950 2050
-F 0 "J1" H 7900 3200 50  0000 L CNN
-F 1 "Conn_01x19" H 7700 3100 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x19_P2.54mm_Vertical" H 7950 2050 50  0001 C CNN
-F 3 "~" H 7950 2050 50  0001 C CNN
-	1    7950 2050
-	-1   0    0    -1  
-$EndComp
 Connection ~ 5500 1950
 $Comp
 L power:PWR_FLAG #FLG0101
