@@ -39,65 +39,93 @@ netnames = {}
 for netcode, net in netcodes.items():
 	netnames[net.GetNetname()] = net
 
-from collections import namedtuple
-Point = namedtuple('Point', ['x', 'y'])
+class Point(object):
+	@classmethod
+	def fromWxPoint(cls, wxPoint):
+		return Point(wxPoint.x / pcbnew.IU_PER_MM, wxPoint.y / pcbnew.IU_PER_MM)
+
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
+
+	def wxPoint(self):
+		return pcbnew.wxPoint(self.x * pcbnew.IU_PER_MM , self.y * pcbnew.IU_PER_MM)
+
+	def translate(self, vec):
+		self.x += vec.x
+		self.y += vec.y
+
+	def translated(self, vec):
+		return Point(self.x+vec.x, self.y+vec.y)
+
+	def __getitem__(self, i):
+		if i == 0:
+			return self.x
+		if i == 1:
+			return self.y
+		raise IndexError("index out of range")
+
+	def distance_to(self, other):
+		return sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
+
+	def __str__(self):
+		return "(%0.2f, %0.2f)" % (self.x, self.y)
 
 
-def wxPointFrom(tup):
-	return pcbnew.wxPoint(tup[0] * pcbnew.IU_PER_MM , tup[1] * pcbnew.IU_PER_MM)
-
-def draw_segment(start, end, layer='F.SilkS', width=0.15, board=None):
-        line = pcbnew.DRAWSEGMENT(board._obj)
-        board._obj.Add(line)
-        line.SetShape(pcbnew.S_SEGMENT)
-        line.SetStart(wxPointFrom(start))
-        line.SetEnd(wxPointFrom(end))
-        print("LINE from (%f, %f) to (%f, %f)" % (start.x, start.y, end.x, end.y))
-        line.SetLayer(layertable[layer])
-        line.SetWidth(int(width * pcbnew.IU_PER_MM))
+def draw_segment(start, end, layer='F.SilkS', width=0.15):
+    line = pcbnew.DRAWSEGMENT(board._obj)
+    board._obj.Add(line)
+    line.SetShape(pcbnew.S_SEGMENT)
+    line.SetStart(start.wxPoint())
+    line.SetEnd(end.wxPoint())
+    print("LINE from (%f, %f) to (%f, %f)" % (start.x, start.y, end.x, end.y))
+    line.SetLayer(layertable[layer])
+    line.SetWidth(int(width * pcbnew.IU_PER_MM))
+    return line
 
 
-def draw_circle(center, radius, layer='F.SilkS', width=0.15,
-                 board=None):
-        circle = pcbnew.DRAWSEGMENT(board._obj)
-        board._obj.Add(circle)
-        circle.SetShape(pcbnew.S_CIRCLE)
-        circle.SetCenter(wxPointFrom(center))
-        start_coord = wxPointFrom(
-            (center[0], center[1] + radius))
-        circle.SetArcStart(start_coord)
-        circle.SetLayer(layertable[layer])
-        circle.SetWidth(int(width * pcbnew.IU_PER_MM))
-        
+def draw_circle(center, radius, layer='F.SilkS', width=0.15):
+    circle = pcbnew.DRAWSEGMENT(board._obj)
+    board._obj.Add(circle)
+    circle.SetShape(pcbnew.S_CIRCLE)
+    circle.SetCenter(center.wxPoint())
+    center.translate(Point(0, radius))
+    circle.SetArcStart(center.wxPoint())
+    circle.SetLayer(layertable[layer])
+    circle.SetWidth(int(width * pcbnew.IU_PER_MM))
+    return circle
+    
 
 def draw_arc_1(center, radius, start_angle, stop_angle,
-                 layer='F.SilkS', width=0.15, board=None):
+                 layer='F.SilkS', width=0.15):
     
     print("Drawing arc with center at (%f,%f), radius: %f, angle %f -> %f" % (center.x, center.y, radius, start_angle, stop_angle))
     arcStartPoint = radius * cmath.exp(start_angle * 1j)
-    print("arcStartPoint %f, %f" % (arcStartPoint.real, arcStartPoint.imag));
-    arcStartPoint = wxPointFrom((center.x + arcStartPoint.real, center.y + arcStartPoint.imag))
+    arcStartPoint = center.translated(Point(arcStartPoint.real, arcStartPoint.imag))
+    print("arcStartPoint %s" % str(arcStartPoint));
     angle = stop_angle - start_angle
     arc = pcbnew.DRAWSEGMENT(board._obj)
     board._obj.Add(arc)
     arc.SetShape(pcbnew.S_ARC)
-    arc.SetCenter(wxPointFrom(center))
-    arc.SetArcStart(arcStartPoint)
+    arc.SetCenter(center.wxPoint())
+    arc.SetArcStart(arcStartPoint.wxPoint())
     arc.SetAngle(angle * 180/pi * 10)
     arc.SetLayer(layertable[layer])
     arc.SetWidth(int(width * pcbnew.IU_PER_MM))
+    return arc
 
 def draw_arc_2(center, arcStartPoint, totalAngle,
-                 layer='F.SilkS', width=0.15, board=None):
+                 layer='F.SilkS', width=0.15):
     print("Drawing arc with center: (%f, %f), arc point at (%f,%f), total angle %f" % (center.x, center.y, arcStartPoint.x, arcStartPoint.y, totalAngle))
     arc = pcbnew.DRAWSEGMENT(board._obj)
     board._obj.Add(arc)
     arc.SetShape(pcbnew.S_ARC)
-    arc.SetCenter(wxPointFrom(center))
-    arc.SetArcStart(wxPointFrom((arcStartPoint.x, arcStartPoint.y)))
+    arc.SetCenter(center.wxPoint())
+    arc.SetArcStart(arcStartPoint.wxPoint())
     arc.SetAngle(totalAngle * 180/pi * 10)
     arc.SetLayer(layertable[layer])
     arc.SetWidth(int(width * pcbnew.IU_PER_MM))
+    return arc
 
 def add_copper_trace(start, end, net):
 	track = pcbnew.TRACK(board._obj)
@@ -108,6 +136,7 @@ def add_copper_trace(start, end, net):
 	track.SetNet(net)
 	board._obj.Add(track)
 	print("adding track from {} to {} on net {}".format(start, end, net.GetNetname()))
+	return track
 
 prev_module = None
 def clear_tracks_for_module(module): 
@@ -157,10 +186,9 @@ def place(module, point, orientation = None):
 						print("Adding track from module {} pad {} to module {} pad {}".format(prev_module.reference, prev_pad.GetPadName(), module.reference, pad.GetPadName()))
 						add_copper_trace(start, end, pad.GetNet())
 
+				 # FIXME: Draw GND and +5V traces for circle
+
 	prev_module = module
-
-
-num_leds = 96	
 
 def layout_trans_symbol():
 	from kicad.util.point import Point2D
@@ -187,38 +215,49 @@ def layout_trans_symbol():
 	def draw_edge_cuts():
 		edge_cut_radius = circle_radius + 4
 		edge_cut_line_thickness = 0.05
-		spoke_arc = pi/3
+		spoke_arclen = pi/3
 		spoke_length = 20
 		# spacer arcs are not uniform. the two spokes should point up at 45º and 135º, and the lower spoke points straight down at 270º (counter-clockwise coordinates)
 		# btw kicad arcs go clockwise
 		
+		spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arclen + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
+		arc_accum = spoke_angles[0] + spoke_arclen/2
 
-		spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arc + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
-		arc_accum = spoke_angles[0] + spoke_arc/2
-
-		# FIXME: Edge cuts are not perfectly overlapping
+		arc_start = None
 		for i in range(len(spacer_arcs)):
-			draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arcs[i], layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+			circle_arc = draw_arc_1(Point(centerx, centery), edge_cut_radius, arc_accum, arc_accum + spacer_arcs[i], layer='Edge.Cuts', width=edge_cut_line_thickness)
+			if arc_start is not None:
+				circle_arc.SetArcStart(arc_start.wxPoint())
+
 			arc_accum+=spacer_arcs[i]
 
-			spoke_base = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius)
-			spoke_tip = circle_pt(arc_accum+spoke_arc/2, edge_cut_radius + spoke_length)
+			spoke_base = circle_pt(arc_accum+spoke_arclen/2, edge_cut_radius)
+			spoke_tip = circle_pt(arc_accum+spoke_arclen/2, edge_cut_radius + spoke_length)
 			spoke_offset = Point(spoke_tip.x - spoke_base.x, spoke_tip.y - spoke_base.y)
 			
-			spoke_base_1 = circle_pt(arc_accum, edge_cut_radius)
+			spoke_base_1 = Point.fromWxPoint(circle_arc.GetArcEnd())
+			assert(spoke_base_1.distance_to(circle_pt(arc_accum, edge_cut_radius)) < 0.01)
+
 			spoke_edge_1 = Point(spoke_base_1.x + spoke_offset.x, spoke_base_1.y + spoke_offset.y)
 
-			spoke_base_2 = circle_pt(arc_accum+spoke_arc, edge_cut_radius)
+			spoke_base_2 = circle_pt(arc_accum+spoke_arclen, edge_cut_radius)
 			spoke_edge_2 = Point(spoke_base_2.x + spoke_offset.x, spoke_base_2.y + spoke_offset.y)
-
-			draw_segment(spoke_base_1, spoke_edge_1, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
-			draw_segment(spoke_base_2, spoke_edge_2, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
 
 			spoke_center = Point((spoke_edge_1.x + spoke_edge_2.x) / 2, (spoke_edge_1.y + spoke_edge_2.y) / 2)
 			spoke_radius = sqrt((spoke_edge_1.x - spoke_edge_2.x)**2 + (spoke_edge_1.y - spoke_edge_2.y)**2) / 2 
-			draw_arc_2(spoke_center, spoke_edge_1, pi, layer='Edge.Cuts', width=edge_cut_line_thickness, board=board)
+			spoke_arc = draw_arc_2(spoke_center, spoke_edge_1, pi, layer='Edge.Cuts', width=edge_cut_line_thickness)
 
-			arc_accum += spoke_arc
+			spoke_arc.SetArcStart(spoke_edge_1.wxPoint())
+			spoke_arc_end = Point.fromWxPoint(spoke_arc.GetArcEnd())
+			assert(spoke_edge_2.distance_to(spoke_arc_end) < 0.01)
+			spoke_edge_2 = spoke_arc_end
+
+			spoke_side_1 = draw_segment(spoke_base_1, spoke_edge_1, layer='Edge.Cuts', width=edge_cut_line_thickness)
+			spoke_side_2 = draw_segment(spoke_base_2, spoke_edge_2, layer='Edge.Cuts', width=edge_cut_line_thickness)
+
+			arc_start = spoke_base_2
+
+			arc_accum += spoke_arclen
 
 	draw_edge_cuts()
 
@@ -235,10 +274,11 @@ def layout_trans_symbol():
 		module = modules["D%i"% pix]
 
 		def spoke(pix, module, theta, arrow, cross):
-			cross_location = 5/8.
+			
 			print("DO SPOKE at theta %f, circle_radius = %f" % (theta, circle_radius))
 			
-			spoke_length = float(spoke_length)
+			cross_location = 5/8. * float(spoke_length)
+
 			for i in range(spoke_length):
 				pt = circle_pt(theta, circle_radius + 3.5*(i+1))
 				place(module, Point2D(pt.x, pt.y), (pi - theta)*180/pi)
@@ -248,7 +288,8 @@ def layout_trans_symbol():
 				# need to draw the cross & arrow after finishing the line of the spoke, since there's no room for traces to come out and back into that line of leds
 				if i == spoke_length - 1:
 					if cross:
-						pass
+						pt = circle_pt(theta, circle_radius + 3.5*(cross_location+1))
+						# circle_pt(theta, 
 					if arrow:
 						pass
 			return pix, module
