@@ -44,6 +44,10 @@ class Point(object):
 	def fromWxPoint(cls, wxPoint):
 		return Point(wxPoint.x / pcbnew.IU_PER_MM, wxPoint.y / pcbnew.IU_PER_MM)
 
+	@classmethod
+	def fromComplex(cls, c):
+		return Point(c.real, c.imag)
+
 	def __init__(self, x, y):
 		self.x = x
 		self.y = y
@@ -101,7 +105,7 @@ def draw_arc_1(center, radius, start_angle, stop_angle,
     
     print("Drawing arc with center at (%f,%f), radius: %f, angle %f -> %f" % (center.x, center.y, radius, start_angle, stop_angle))
     arcStartPoint = radius * cmath.exp(start_angle * 1j)
-    arcStartPoint = center.translated(Point(arcStartPoint.real, arcStartPoint.imag))
+    arcStartPoint = center.translated(Point.fromComplex(arcStartPoint))
     print("arcStartPoint %s" % str(arcStartPoint));
     angle = stop_angle - start_angle
     arc = pcbnew.DRAWSEGMENT(board._obj)
@@ -154,11 +158,13 @@ def clear_tracks_for_module(module):
 			   print("Deleting old track for module %s pad %s" % (module.reference, pad.GetPadName()))
 			   board._obj.Delete(t)
 
-def place(module, point, orientation = None):
+def place(module, point, orientation):
 	global prev_module
+	from kicad.util.point import Point2D
 
 	print("Placing module %s at point %f,%f orientation %f" % (module.reference, point.x, point.y, orientation));
-	module.position = point
+	module.position = Point2D(point.x, point.y)
+	orientation *= 180/pi
 	orientation *= 10 # kicad *shrug*
 	# print(dir(module)) 
 	if orientation is not None:
@@ -190,17 +196,25 @@ def place(module, point, orientation = None):
 
 	prev_module = module
 
-def layout_trans_symbol():
-	from kicad.util.point import Point2D
+from collections import namedtuple
+Spoke = namedtuple('Spoke', ['angle', 'arrow', 'cross'])
 
+def layout_trans_symbol():
 	centerx = 90
 	centery = 90
 
 	circle_radius = 20#mm
 	circle_npixels = 34
 
-	spoke_angles = [pi/2, 5*pi/4, 7*pi/4]
+	cross_npixels = 4 # should be even
+	arrow_npixels = 6 # should be even
+
+	spokes = [Spoke(pi/2, False, True),
+	          Spoke(5*pi/4, True, True),
+	          Spoke(7*pi/4, True, False)]
 	spoke_length = 8
+
+	pixel_spacing = 3.5#mm
 
 	def circle_pt(theta, radius):
 		return Point(centerx+radius*cos(theta), centery+radius*sin(theta))
@@ -220,8 +234,8 @@ def layout_trans_symbol():
 		# spacer arcs are not uniform. the two spokes should point up at 45º and 135º, and the lower spoke points straight down at 270º (counter-clockwise coordinates)
 		# btw kicad arcs go clockwise
 		
-		spacer_arcs = [abs(spoke_angles[(i+1)%len(spoke_angles)] - spoke_angles[i] - spoke_arclen + (2 * pi if i+1>=len(spoke_angles) else 0)) for i in range(len(spoke_angles))]
-		arc_accum = spoke_angles[0] + spoke_arclen/2
+		spacer_arcs = [abs(spokes[(i+1)%len(spokes)].angle - spokes[i].angle - spoke_arclen + (2 * pi if i+1>=len(spokes) else 0)) for i in range(len(spokes))]
+		arc_accum = spokes[0].angle + spoke_arclen/2
 
 		arc_start = None
 		for i in range(len(spacer_arcs)):
@@ -273,29 +287,50 @@ def layout_trans_symbol():
 		pix = 1
 		module = modules["D%i"% pix]
 
-		def spoke(pix, module, theta, arrow, cross):
-			
+		def place_spoke(pix, module, theta, arrow, cross):
 			print("DO SPOKE at theta %f, circle_radius = %f" % (theta, circle_radius))
 			
-			cross_location = 5/8. * float(spoke_length)
-
+			pixel_orientation = pi - theta
 			for i in range(spoke_length):
-				pt = circle_pt(theta, circle_radius + 3.5*(i+1))
-				place(module, Point2D(pt.x, pt.y), (pi - theta)*180/pi)
+				pt = circle_pt(theta, circle_radius + pixel_spacing*(i+1))
+				place(module, Point(pt.x, pt.y), pixel_orientation)
 				pix+=1
 				module = modules["D%i"% pix]
 
 				# need to draw the cross & arrow after finishing the line of the spoke, since there's no room for traces to come out and back into that line of leds
 				if i == spoke_length - 1:
-					if cross:
-						pt = circle_pt(theta, circle_radius + 3.5*(cross_location+1))
-						# circle_pt(theta, 
+					# TODO factor arrow and cross together since they are so similar
+					# lol this todo is the trans agenda
 					if arrow:
-						pass
+						print("do arrow")
+						pt = circle_pt(theta, circle_radius + pixel_spacing*spoke_length)
+
+						for arrow_px in range(arrow_npixels):
+							direction = 1 if arrow_px < arrow_npixels>>1 else -1
+							tilt = pi/2 + direction * pi/4
+							side_idx = 1+arrow_px%(arrow_npixels>>1)
+							offset = direction * (.75 + side_idx * pixel_spacing) * cmath.exp((theta + tilt) * 1j) 
+							adjust = .75 * cmath.exp((theta + direction * pi/4) * 1j)
+							place(module, pt.translated(Point.fromComplex(offset + adjust)), pixel_orientation + tilt)
+							pix+=1
+							module = modules["D%i"% pix]
+
+					if cross:
+						print("do cross")
+						cross_location = (3/8. if arrow else 5/8.) * float(spoke_length)
+						pt = circle_pt(theta, circle_radius + pixel_spacing*cross_location)
+						
+						for cross_px in range(cross_npixels):
+							direction = -1 if cross_px < cross_npixels>>1 else 1
+							side_idx = 1+cross_px%(cross_npixels>>1)
+							offset = direction * side_idx * pixel_spacing * cmath.exp((theta + pi/2) * 1j)
+							place(module, pt.translated(Point.fromComplex(offset)), pixel_orientation)
+							pix+=1
+							module = modules["D%i"% pix]
 			return pix, module
 
 
-		spokes_to_draw = spoke_angles[:]
+		spokes_to_draw = [s for s in spokes]
 
 		last_theta = None
 		circle_index = 1
@@ -304,22 +339,22 @@ def layout_trans_symbol():
 			if theta > 2*pi:
 				theta -= 2*pi
 
-			for spoke_angle in spokes_to_draw:
-				if last_theta is not None and last_theta <= spoke_angle and theta >= spoke_angle:
+			for spoke in spokes_to_draw:
+				if last_theta is not None and last_theta <= spoke.angle and theta >= spoke.angle:
 					# start spoke!
 					print("starting spoke at pix %i" % pix)
-					pix, module = spoke(pix, module, spoke_angle, True, True)
+					pix, module = place_spoke(pix, module, spoke.angle, spoke.arrow, spoke.cross)
 					print("finished spoke, pix now %i" % pix)
-					spokes_to_draw.remove(spoke_angle)
+					spokes_to_draw.remove(spoke)
 
 			if circle_index > circle_npixels:
 				break
 
 			x = centerx + cos(theta) * circle_radius
 			y = centery + sin(theta) * circle_radius
-			orientation = (-180*theta/pi + 90)
-			print("Theta now %f, last_theta %f, spoke_angles = %s" % (theta, (last_theta if last_theta is not None else 0.0), str(spoke_angles)))
-			place(module, Point2D(x, y), orientation)
+			orientation = (pi/2 - theta)
+			print("Theta now %f, last_theta %f, spoke_angles = %s" % (theta, (last_theta if last_theta is not None else 0.0), str(spokes)))
+			place(module, Point(x, y), orientation)
 
 			circle_index += 1
 			pix += 1
