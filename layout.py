@@ -14,6 +14,7 @@ parser.add_argument('--delete-short-traces', action='store_true', help='Delete t
 parser.add_argument('--dry-run', action='store_true', help='Don\'t save results')
 parser.add_argument('-v', dest='verbose', action='count', help="Verbose")
 parser.add_argument('--skip-traces', action='store_true', help='Don\'t add traces')
+parser.add_argument('--hide-pixel-labels', action='store_true', help="For all modules like D*, set reference text to hidden")
 args = parser.parse_args()
 pcb_path = os.path.abspath(args.path)
 
@@ -399,6 +400,15 @@ elif args.delete_short_traces:
 		if length < 100: # millionths of an inch
 			print("Deleting trace of short length {}in/1000000".format(length))
 			board._obj.Delete(t)
+elif args.hide_pixel_labels:
+	hid = 0
+	for m in board._obj.m_Modules:
+		if m.GetReference().startswith('D'):
+			if m.Reference().IsVisible():
+				m.Reference().SetVisible(False)
+				hid+=1
+	print("Hid %i reference labels" % hid)
+
 else:
 	layout_trans_symbol()
 
