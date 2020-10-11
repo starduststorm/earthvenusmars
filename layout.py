@@ -306,7 +306,8 @@ def layout_trans_symbol():
 						pt = circle_pt(theta, circle_radius + pixel_spacing*spoke_length)
 
 						for arrow_px in range(arrow_npixels):
-							direction = 1 if arrow_px < arrow_npixels>>1 else -1
+							direction = -1 if arrow_px < arrow_npixels>>1 else 1
+							direction *= -1 if cross else 1
 							tilt = pi/2 + direction * pi/4
 							side_idx = 1+arrow_px%(arrow_npixels>>1)
 							offset = direction * (.75 + side_idx * pixel_spacing) * cmath.exp((theta + tilt) * 1j) 
