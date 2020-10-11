@@ -312,7 +312,7 @@ def layout_trans_symbol():
 							side_idx = 1+arrow_px%(arrow_npixels>>1)
 							offset = direction * (.75 + side_idx * pixel_spacing) * cmath.exp((theta + tilt) * 1j) 
 							adjust = .75 * cmath.exp((theta + direction * pi/4) * 1j)
-							place(module, pt.translated(Point.fromComplex(offset + adjust)), pixel_orientation + tilt)
+							place(module, pt.translated(Point.fromComplex(offset + adjust)), pixel_orientation + direction*pi/4)
 							pix+=1
 							module = modules["D%i"% pix]
 
@@ -323,9 +323,10 @@ def layout_trans_symbol():
 						
 						for cross_px in range(cross_npixels):
 							direction = -1 if cross_px < cross_npixels>>1 else 1
+							orientation = pixel_orientation - direction * pi/2
 							side_idx = 1+cross_px%(cross_npixels>>1)
 							offset = direction * side_idx * pixel_spacing * cmath.exp((theta + pi/2) * 1j)
-							place(module, pt.translated(Point.fromComplex(offset)), pixel_orientation)
+							place(module, pt.translated(Point.fromComplex(offset)), orientation)
 							pix+=1
 							module = modules["D%i"% pix]
 			return pix, module
