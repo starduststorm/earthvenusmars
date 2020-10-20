@@ -27,24 +27,13 @@ $EndComp
 $Comp
 L power:GND #PWR0102
 U 1 1 5EB2B290
-P 1350 2200
-F 0 "#PWR0102" H 1350 1950 50  0001 C CNN
-F 1 "GND" V 1355 2072 50  0000 R CNN
-F 2 "" H 1350 2200 50  0001 C CNN
-F 3 "" H 1350 2200 50  0001 C CNN
-	1    1350 2200
-	0    1    1    0   
-$EndComp
-$Comp
-L power:VBUS #PWR0103
-U 1 1 5EB2B320
-P 1950 2500
-F 0 "#PWR0103" H 1950 2350 50  0001 C CNN
-F 1 "VBUS" V 1965 2627 50  0000 L CNN
-F 2 "" H 1950 2500 50  0001 C CNN
-F 3 "" H 1950 2500 50  0001 C CNN
-	1    1950 2500
-	0    1    1    0   
+P 3350 4250
+F 0 "#PWR0102" H 3350 4000 50  0001 C CNN
+F 1 "GND" V 3355 4122 50  0000 R CNN
+F 2 "" H 3350 4250 50  0001 C CNN
+F 3 "" H 3350 4250 50  0001 C CNN
+	1    3350 4250
+	0    -1   -1   0   
 $EndComp
 $Comp
 L Regulator_Linear:MIC5504-3.3YM5 U2
@@ -149,7 +138,7 @@ Wire Wire Line
 Connection ~ 5800 950 
 Connection ~ 5800 1150
 Wire Wire Line
-	5350 1750 5500 1750
+	5350 1750 5400 1750
 Wire Wire Line
 	5500 1750 5500 1950
 $Comp
@@ -351,128 +340,26 @@ $EndComp
 Wire Wire Line
 	1450 1400 1450 1200
 Connection ~ 1450 1200
-Wire Notes Line
-	2800 2950 850  2950
 Text Notes 900  800  0    50   ~ 0
-USB & USB Power Regulator
-NoConn ~ 1550 2500
-NoConn ~ 1350 2100
-$Comp
-L Connector:USB_B_Micro J3
-U 1 1 5EB2B286
-P 1750 2200
-F 0 "J3" V 1853 2530 50  0000 L CNN
-F 1 "USB_B_Micro" V 1762 2530 50  0000 L CNN
-F 2 "Connector_USB:USB_Micro-B_Molex-105017-0001" H 1900 2150 50  0001 C CNN
-F 3 "~" H 1900 2150 50  0001 C CNN
-	1    1750 2200
-	0    1    1    0   
-$EndComp
-Text GLabel 3950 1950 0    50   Input ~ 0
-PA03
-Text GLabel 3950 2050 0    50   Input ~ 0
-PA04
-Text GLabel 3950 2150 0    50   Input ~ 0
-PA05
-Text GLabel 3950 2250 0    50   Input ~ 0
-PA06
-Text GLabel 3950 2350 0    50   Input ~ 0
-PA07
-Text GLabel 3950 2450 0    50   Input ~ 0
-PA08
-Text GLabel 3950 2550 0    50   Input ~ 0
-PA09
-Text GLabel 3950 2650 0    50   Input ~ 0
-PA10
-Text GLabel 3950 2750 0    50   Input ~ 0
-PA11
-Text GLabel 3950 2850 0    50   Input ~ 0
-PA12
-Text GLabel 3950 2950 0    50   Input ~ 0
-PA13
-Text GLabel 3950 3050 0    50   Input ~ 0
-PA14
-Text GLabel 3950 3150 0    50   Input ~ 0
-PA15
-Text GLabel 3950 3250 0    50   Input ~ 0
-PA16
-Text GLabel 3950 3350 0    50   Input ~ 0
-PA17_MISO
-Text GLabel 3950 3450 0    50   Input ~ 0
-PA18
-Text GLabel 3950 3550 0    50   Input ~ 0
-PA19_SCK
-Text GLabel 3950 3650 0    50   Input ~ 0
-PA20_MOSI
-Text GLabel 3950 3750 0    50   Input ~ 0
-PA21
-Text GLabel 3950 3850 0    50   Input ~ 0
-PA22
-Text GLabel 3950 3950 0    50   Input ~ 0
-PA23
-Text GLabel 3950 4250 0    50   Input ~ 0
-PA27
-Text GLabel 3950 4350 0    50   Input ~ 0
-PA28
-Text GLabel 3950 4450 0    50   Input ~ 0
-PA30
-Text GLabel 3950 4550 0    50   Input ~ 0
-PA31
-Text GLabel 5350 2950 2    50   Input ~ 0
-PB23
-Text GLabel 5350 2850 2    50   Input ~ 0
-PB22
-Text GLabel 5350 2750 2    50   Input ~ 0
-PB11
-Text GLabel 5350 2650 2    50   Input ~ 0
-PB10
-Text GLabel 5350 2550 2    50   Input ~ 0
-PB09
-Text GLabel 5350 2450 2    50   Input ~ 0
-PB08
-Text GLabel 5350 2350 2    50   Input ~ 0
-PB03
-Text GLabel 5350 2250 2    50   Input ~ 0
-PB02
+USB Power Regulator
 Text GLabel 3950 1350 0    50   Input ~ 0
 RESET
 Wire Wire Line
 	3450 1750 3950 1750
 Wire Wire Line
 	3950 1550 3950 1650
-Text GLabel 3950 1850 0    50   Input ~ 0
-PA02
-Wire Notes Line
-	850  -200 850  4750
-Wire Notes Line
-	2800 -200 2800 4750
-Wire Notes Line
-	7200 -200 7200 4750
-Wire Notes Line
-	850  4750 7200 4750
-Wire Notes Line
-	850  650  7200 650 
 Text Notes 2850 800  0    50   ~ 0
 ATSAMD21G
-Text GLabel 1750 2500 3    50   Input ~ 0
-USB_D+
-Text GLabel 1650 2500 3    50   Input ~ 0
-USB_D-
-Text GLabel 3950 4050 0    50   Input ~ 0
-USB_D-
-Text GLabel 3950 4150 0    50   Input ~ 0
-USB_D+
-Connection ~ 5500 1950
 $Comp
 L power:PWR_FLAG #FLG0101
 U 1 1 5EC795FC
-P 5500 1950
-F 0 "#FLG0101" H 5500 2025 50  0001 C CNN
-F 1 "PWR_FLAG" H 5450 2100 50  0000 C CNN
-F 2 "" H 5500 1950 50  0001 C CNN
-F 3 "~" H 5500 1950 50  0001 C CNN
-	1    5500 1950
-	0    -1   -1   0   
+P 5400 1750
+F 0 "#FLG0101" H 5400 1825 50  0001 C CNN
+F 1 "PWR_FLAG" V 5400 2000 50  0000 C CNN
+F 2 "" H 5400 1750 50  0001 C CNN
+F 3 "~" H 5400 1750 50  0001 C CNN
+	1    5400 1750
+	-1   0    0    1   
 $EndComp
 $Comp
 L power:PWR_FLAG #FLG0102
@@ -524,19 +411,6 @@ F 3 "" H 6000 1850 50  0001 C CNN
 $EndComp
 Connection ~ 5700 1650
 $Comp
-L ATSAMD21G18A-AU:ATSAMD21G18A-AU U1
-U 1 1 5EB21719
-P 4650 2950
-F 0 "U1" H 4650 4817 50  0000 C CNN
-F 1 "ATSAMD21G18A-AU" H 4650 4726 50  0000 C CNN
-F 2 "ATSAMD21G18A-AU:QFP50P900X900X120-48N" H 4650 2950 50  0001 L BNN
-F 3 "ATMEL" H 4650 2950 50  0001 L BNN
-	1    4650 2950
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	5350 1550 5500 1550
-$Comp
 L power:+3.3V #PWR0106
 U 1 1 5EB7D0AC
 P 5950 1550
@@ -547,9 +421,6 @@ F 3 "" H 5950 1550 50  0001 C CNN
 	1    5950 1550
 	0    1    1    0   
 $EndComp
-Connection ~ 5500 1550
-Wire Wire Line
-	5500 1550 5950 1550
 $Comp
 L power:GND #PWR0105
 U 1 1 5EB7BFC2
@@ -561,17 +432,15 @@ F 3 "" H 5950 1350 50  0001 C CNN
 	1    5950 1350
 	0    -1   -1   0   
 $EndComp
-Wire Wire Line
-	5500 1350 5950 1350
 $Comp
 L Device:C_Small C5
 U 1 1 5EB7A3B0
-P 5500 1450
-F 0 "C5" H 5408 1496 50  0000 R CNN
-F 1 "100nF" H 5408 1405 50  0000 R CNN
-F 2 "Capacitor_SMD:C_0402_1005Metric" H 5500 1450 50  0001 C CNN
-F 3 "~" H 5500 1450 50  0001 C CNN
-	1    5500 1450
+P 5700 1450
+F 0 "C5" H 5608 1496 50  0000 R CNN
+F 1 "100nF" H 5608 1405 50  0000 R CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 5700 1450 50  0001 C CNN
+F 3 "~" H 5700 1450 50  0001 C CNN
+	1    5700 1450
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
@@ -581,21 +450,124 @@ Wire Wire Line
 Connection ~ 5350 1150
 Wire Wire Line
 	5350 1450 5350 1550
-Connection ~ 5350 1550
 $Sheet
-S 1350 5050 1400 750 
+S 3100 2350 400  800 
 U 5F81AC32
-F0 "Sheet5F81AC31" 50
+F0 "APA102c LED Array" 50
 F1 "leds.sch" 50
-F2 "LED_SCK" I L 1350 5200 50 
-F3 "LED_DATA" I L 1350 5300 50 
+F2 "LED_SCK" I B 3350 3150 50 
+F3 "LED_DATA" I B 3250 3150 50 
+F5 "+5V" I B 3450 3150 50 
 $EndSheet
-Text GLabel 1250 5300 0    50   Input ~ 0
-PA20_MOSI
-Text GLabel 1250 5200 0    50   Input ~ 0
-PA19_SCK
+$Comp
+L power:VBUS #PWR0103
+U 1 1 5EB2B320
+P 3350 3950
+F 0 "#PWR0103" H 3350 3800 50  0001 C CNN
+F 1 "VBUS" V 3365 4077 50  0000 L CNN
+F 2 "" H 3350 3950 50  0001 C CNN
+F 3 "" H 3350 3950 50  0001 C CNN
+	1    3350 3950
+	0    1    1    0   
+$EndComp
+Text Label 6150 1150 0    50   ~ 0
+VDDANA
 Wire Wire Line
-	1350 5200 1250 5200
+	5700 1350 5950 1350
 Wire Wire Line
-	1250 5300 1350 5300
+	5700 1550 5950 1550
+Wire Wire Line
+	5350 1550 5700 1550
+Connection ~ 5700 1550
+Text Label 5350 1750 3    50   ~ 0
+VDDCORE
+Connection ~ 5400 1750
+Wire Wire Line
+	5400 1750 5500 1750
+$Comp
+L power:VBUS #PWR?
+U 1 1 5FA777BA
+P 3450 3150
+F 0 "#PWR?" H 3450 3000 50  0001 C CNN
+F 1 "VBUS" V 3450 3350 50  0000 C CNN
+F 2 "" H 3450 3150 50  0001 C CNN
+F 3 "" H 3450 3150 50  0001 C CNN
+	1    3450 3150
+	-1   0    0    1   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x04 J4
+U 1 1 5F9E60C8
+P 3150 4150
+F 0 "J4" V 3114 3862 50  0000 R CNN
+F 1 "Conn_01x04" V 3250 4300 50  0000 R CNN
+F 2 "Connector_PinHeader_1.27mm:PinHeader_1x04_P1.27mm_Vertical" H 3150 4150 50  0001 C CNN
+F 3 "~" H 3150 4150 50  0001 C CNN
+	1    3150 4150
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	3350 4050 3950 4050
+Wire Wire Line
+	3950 4150 3350 4150
+Text Label 3800 4150 3    50   ~ 0
+USB_D+
+Text Label 3800 4050 1    50   ~ 0
+USB_D-
+NoConn ~ 3950 3250
+NoConn ~ 3950 3150
+NoConn ~ 3950 3050
+NoConn ~ 3950 2950
+NoConn ~ 3950 2850
+NoConn ~ 3950 2750
+NoConn ~ 3950 2650
+NoConn ~ 3950 2550
+NoConn ~ 3950 2450
+NoConn ~ 3950 2350
+NoConn ~ 3950 2250
+NoConn ~ 3950 2150
+NoConn ~ 3950 2050
+NoConn ~ 3950 1950
+NoConn ~ 3950 1850
+NoConn ~ 5350 2250
+NoConn ~ 5350 2350
+NoConn ~ 5350 2450
+NoConn ~ 5350 2550
+NoConn ~ 5350 2650
+NoConn ~ 5350 2750
+NoConn ~ 5350 2850
+NoConn ~ 5350 2950
+NoConn ~ 3950 3450
+NoConn ~ 3950 3750
+NoConn ~ 3950 3950
+NoConn ~ 3950 3850
+NoConn ~ 3950 4250
+NoConn ~ 3950 4350
+NoConn ~ 3950 4450
+NoConn ~ 3950 4550
+Connection ~ 5350 1550
+$Comp
+L ATSAMD21G18A-AU:ATSAMD21G18A-AU U1
+U 1 1 5EB21719
+P 4650 2950
+F 0 "U1" H 4650 4817 50  0000 C CNN
+F 1 "ATSAMD21G18A-AU" H 4650 4726 50  0000 C CNN
+F 2 "ATSAMD21G18A-AU:QFP50P900X900X120-48N" H 4650 2950 50  0001 L BNN
+F 3 "ATMEL" H 4650 2950 50  0001 L BNN
+	1    4650 2950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3950 3350 3700 3350
+NoConn ~ 3700 3350
+Text Label 3800 3350 1    50   ~ 0
+PA17_MISO
+Wire Wire Line
+	3350 3150 3350 3550
+Wire Wire Line
+	3250 3650 3250 3150
+Wire Wire Line
+	3250 3650 3950 3650
+Wire Wire Line
+	3350 3550 3950 3550
 $EndSCHEMATC
