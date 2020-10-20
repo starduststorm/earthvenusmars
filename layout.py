@@ -63,6 +63,11 @@ class Point(object):
 	def translated(self, vec):
 		return Point(self.x+vec.x, self.y+vec.y)
 
+	def polar_translated(self, distance, angle):
+		vec = distance * cmath.exp(angle * 1j)
+		return self.translated(Point.fromComplex(vec))
+
+
 	def __getitem__(self, i):
 		if i == 0:
 			return self.x
@@ -143,21 +148,54 @@ def add_copper_trace(start, end, net):
 	print("adding track from {} to {} on net {}".format(start, end, net.GetNetname()))
 	return track
 
+def add_via(position, net):
+	via = pcbnew.VIA(board._obj)
+	via.SetPosition(position)
+	via.SetLayerPair(layertable["F.Cu"], layertable["B.Cu"])
+	via.SetDrill(int(0.254 * pcbnew.IU_PER_MM))
+	via.SetWidth(int(0.4064 * pcbnew.IU_PER_MM))
+	via.SetNet(net)
+	print("Adding via on net %s at %s" % (net.GetNetname(), str(position)))
+	board._obj.Add(via)
+
+
 prev_module = None
 def clear_tracks_for_module(module): 
 	for pad in module._obj.Pads():
-		pad_position = pad.GetPosition()
+		pad_position = Point.fromWxPoint(pad.GetPosition())
 		tracks = board._obj.GetTracks()
-		for t in tracks:
-			track_start = t.GetStart()
-			track_end = t.GetEnd()
-			thresh = 100 # millionths of an inch?
-			d1 = sqrt((track_start.x - pad_position.x)**2 + (track_start.y - pad_position.y)**2)
-			d2 = sqrt((track_end.x - pad_position.x)**2 + (track_end.y - pad_position.y)**2)
+		for track in tracks:
+			track_start = Point.fromWxPoint(track.GetStart())
+			track_end = Point.fromWxPoint(track.GetEnd())
+			track_net = track.GetNet()
+			thresh = .0001
+			d1 = pad_position.distance_to(track_start)
+			d2 = pad_position.distance_to(track_end)
 
 			if d1 < thresh or d2 < thresh:
-			   print("Deleting old track for module %s pad %s" % (module.reference, pad.GetPadName()))
-			   board._obj.Delete(t)
+
+				print("Deleting old track for module %s pad %s net %s" % (module.reference, pad.GetPadName(), track_net.GetNetname()))
+				board._obj.Delete(track)
+
+				vias = []
+				vias.append(board._obj.GetViaByPosition(track_start.wxPoint()))
+				vias.append(board._obj.GetViaByPosition(track_end.wxPoint()))
+
+
+				# FIXME: Deleting a via crashes inside kicad API
+				# No workaround known.
+				# Proceeding from here with manual layout
+
+				# print("vias matching track start: %s" % str())
+				# print("vias matching track end: %s" % str(board._obj.GetViaByPosition(track_end.wxPoint())))
+				for via in vias:
+					if via:
+				# for via in board.vias:
+				# 	if track_start.distance_to(via.position) < thresh or track_end.distance_to(via.position) < thresh:
+						print("Deleting old via connected to track on net %s" % (track_net.GetNetname(), ))
+						board._obj.Delete(via)
+
+				
 
 def place(module, point, orientation):
 	global prev_module
@@ -165,11 +203,25 @@ def place(module, point, orientation):
 
 	print("Placing module %s at point %f,%f orientation %f" % (module.reference, point.x, point.y, orientation));
 	module.position = Point2D(point.x, point.y)
-	orientation *= 180/pi
-	orientation *= 10 # kicad *shrug*
-	# print(dir(module)) 
-	if orientation is not None:
-		module._obj.SetOrientation(orientation)
+	kicad_orientation = orientation
+	kicad_orientation *= 180/pi
+	kicad_orientation *= 10 # kicad *shrug*
+
+	module._obj.SetOrientation(kicad_orientation)
+
+	for pad in module._obj.Pads():
+		# FIXME: Remove the center pads? esp if soldering by hand?
+		# fortunately the corner GND pad always seems to come first in the list
+		
+		if pad.GetPadName() == '6': # GND
+			# draw trace outward from ground
+			end = Point.fromWxPoint(pad.GetPosition()).polar_translated(0.8, -pi/2-orientation)
+			add_copper_trace(pad.GetPosition(), end.wxPoint(), pad.GetNet())
+
+			# add a via
+			add_via(end.wxPoint(), pad.GetNet())
+
+			break
 
 	# Add tracks from the previous  module, connecting pad 5 to pad 2 and pad 4 to pad 3
 	if not args.skip_traces and prev_module is not None:
@@ -188,8 +240,8 @@ def place(module, point, orientation):
 				# then connect the two pads
 				for pad in module._obj.Pads():
 					if pad.GetPadName() == pad_map[prev_pad.GetPadName()]:
-						start = pcbnew.wxPoint(prev_pad.GetPosition().x, prev_pad.GetPosition().y)
-						end = pcbnew.wxPoint(pad.GetPosition().x, pad.GetPosition().y)
+						start = prev_pad.GetPosition()
+						end = pad.GetPosition()
 						print("Adding track from module {} pad {} to module {} pad {}".format(prev_module.reference, prev_pad.GetPadName(), module.reference, pad.GetPadName()))
 						add_copper_trace(start, end, pad.GetNet())
 
@@ -302,6 +354,13 @@ def layout_trans_symbol():
 				if i == spoke_length - 1:
 					# TODO factor arrow and cross together since they are so similar
 					# lol this todo is the trans agenda
+
+					# FIXME: actual leds are biased towards the clockwise part of the led footprints and thus the spokes
+					# I wired it this way ostensibly for software convenience but that does not matter
+					# so change it so both the arrow and cross leds are mirroed instead of rotated
+					
+					# AND so that the right legs of the arrow and cross are shifted right/clockwise for a bit to center on the spoke led
+					# 
 					if arrow:
 						print("do arrow")
 						pt = circle_pt(theta, circle_radius + pixel_spacing*spoke_length)
@@ -313,7 +372,7 @@ def layout_trans_symbol():
 							side_idx = 1+arrow_px%(arrow_npixels>>1)
 							offset = direction * (.75 + side_idx * pixel_spacing) * cmath.exp((theta + tilt) * 1j) 
 							adjust = .75 * cmath.exp((theta + direction * pi/4) * 1j)
-							place(module, pt.translated(Point.fromComplex(offset + adjust)), pixel_orientation + direction*pi/4)
+							place(module, pt.translated(Point.fromComplex(offset + adjust)), pixel_orientation - direction*3*pi/4)
 							pix+=1
 							module = modules["D%i"% pix]
 

@@ -1,5 +1,5 @@
 EESchema Schematic File Version 4
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -397,13 +397,13 @@ PA15
 Text GLabel 3950 3250 0    50   Input ~ 0
 PA16
 Text GLabel 3950 3350 0    50   Input ~ 0
-PA17
+PA17_MISO
 Text GLabel 3950 3450 0    50   Input ~ 0
 PA18
 Text GLabel 3950 3550 0    50   Input ~ 0
-PA19
+PA19_SCK
 Text GLabel 3950 3650 0    50   Input ~ 0
-PA20
+PA20_MOSI
 Text GLabel 3950 3750 0    50   Input ~ 0
 PA21
 Text GLabel 3950 3850 0    50   Input ~ 0
@@ -583,9 +583,19 @@ Wire Wire Line
 	5350 1450 5350 1550
 Connection ~ 5350 1550
 $Sheet
-S 1000 6200 1400 750 
+S 1350 5050 1400 750 
 U 5F81AC32
 F0 "Sheet5F81AC31" 50
 F1 "leds.sch" 50
+F2 "LED_SCK" I L 1350 5200 50 
+F3 "LED_DATA" I L 1350 5300 50 
 $EndSheet
+Text GLabel 1250 5300 0    50   Input ~ 0
+PA20_MOSI
+Text GLabel 1250 5200 0    50   Input ~ 0
+PA19_SCK
+Wire Wire Line
+	1350 5200 1250 5200
+Wire Wire Line
+	1250 5300 1350 5300
 $EndSCHEMATC
