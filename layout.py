@@ -188,12 +188,12 @@ def clear_tracks_for_module(module):
 
 				# print("vias matching track start: %s" % str())
 				# print("vias matching track end: %s" % str(board._obj.GetViaByPosition(track_end.wxPoint())))
-				for via in vias:
-					if via:
+				# for via in vias:
+				#	if via:
 				# for via in board.vias:
 				# 	if track_start.distance_to(via.position) < thresh or track_end.distance_to(via.position) < thresh:
-						print("Deleting old via connected to track on net %s" % (track_net.GetNetname(), ))
-						board._obj.Delete(via)
+				#		print("Deleting old via connected to track on net %s" % (track_net.GetNetname(), ))
+				#		board._obj.Delete(via)
 
 				
 
@@ -219,7 +219,7 @@ def place(module, point, orientation):
 			add_copper_trace(pad.GetPosition(), end.wxPoint(), pad.GetNet())
 
 			# add a via
-			add_via(end.wxPoint(), pad.GetNet())
+			# add_via(end.wxPoint(), pad.GetNet())
 
 			break
 
@@ -402,7 +402,7 @@ def layout_trans_symbol():
 				theta -= 2*pi
 
 			for spoke in spokes_to_draw:
-				if last_theta is not None and last_theta <= spoke.angle and theta >= spoke.angle:
+				if last_theta is not None and last_theta <= spoke.angle and theta > spoke.angle:
 					# start spoke!
 					print("starting spoke at pix %i" % pix)
 					pix, module = place_spoke(pix, module, spoke.angle, spoke.arrow, spoke.cross)
