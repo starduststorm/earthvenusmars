@@ -12,10 +12,21 @@
 
  */
 
-#define LEDS_MISO 13 /* unused */
-#define LEDS_SCK  12 
-#define LEDS_MOSI 6
-SPIClass mySPI (&sercom3, LEDS_MISO, LEDS_SCK, LEDS_MOSI, SPI_PAD_2_SCK_3, SERCOM_RX_PAD_1);
+#define LEDS_MISO 13u /* unused */
+#define LEDS_SCK  12u 
+#define LEDS_MOSI 6u
+SPIClass ledsSPI (&sercom3, LEDS_MISO, LEDS_SCK, LEDS_MOSI, SPI_PAD_2_SCK_3, SERCOM_RX_PAD_1);
+
+#include <I2S.h>
+
+// Just duplicating what Arduino Zero is doing in case I ever stop using Arduino Zero bootloader
+// TODO: test this with a different set of pins
+#define MIC_CLK_GEN 3
+#define MIC_SD  9u
+#define MIC_SCK 1u
+#define MIC_FS  0u
+I2SClass micI2S (0, MIC_CLK_GEN, MIC_SD, MIC_SCK, MIC_FS);
+
 
 #include <FastLED.h>
 
@@ -35,7 +46,6 @@ void setup() {
   Serial.println("begin");
   delay(200);
 
-//  FastLED.addLeds<APA102, DATA_PIN, CLOCK_PIN, BGR>(leds, NUM_LEDS);
   FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
   FastLED.setBrightness(70);
 }
