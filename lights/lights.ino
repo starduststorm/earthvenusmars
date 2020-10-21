@@ -48,15 +48,28 @@ void setup() {
 
   FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
   FastLED.setBrightness(70);
+
+  pinMode(13 /*PA08*/, INPUT_PULLUP); // Use for top-left spoke
+  pinMode(25 /*PA16*/, INPUT_PULLUP); // Use for bottom spoke
+  pinMode(47 /*PB02*/, INPUT_PULLUP); // Use for top-right spoke
 }
 
 int lead = 0;
 void loop() {
-  Serial.print("Lead: ");
-  Serial.println(lead);
-  
   leds.fill_rainbow(lead++);
   lead %= 0xFF;
   FastLED.show();
-  delay(16); 
+  delay(16);
+
+  int b1 = digitalRead(13);
+  int b2 = digitalRead(25);
+  int b3 = digitalRead(47);
+
+  Serial.print("buttons: ");
+  Serial.print(b1);
+  Serial.print(", ");
+  Serial.print(b3);
+  Serial.print(", ");
+  Serial.print(b2);
+  Serial.println();
 }
