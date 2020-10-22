@@ -252,7 +252,7 @@ def place(module, point, orientation):
 from collections import namedtuple
 Spoke = namedtuple('Spoke', ['angle', 'arrow', 'cross'])
 
-def layout_trans_symbol():
+def layout_earthvenusmars():
 	centerx = 90
 	centery = 90
 
@@ -469,7 +469,7 @@ elif args.hide_pixel_labels:
 	print("Hid %i reference labels" % hid)
 
 else:
-	layout_trans_symbol()
+	layout_earthvenusmars()
 
 if not args.dry_run:
 	save()
