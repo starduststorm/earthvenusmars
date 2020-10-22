@@ -50,7 +50,7 @@ void setup() {
   FastLED.setBrightness(70);
 
   pinMode(13 /*PA08*/, INPUT_PULLUP); // Use for top-left spoke
-  pinMode(25 /*PA16*/, INPUT_PULLUP); // Use for bottom spoke
+  pinMode(30 /*PA21*/, INPUT_PULLUP); // Use for bottom spoke
   pinMode(47 /*PB02*/, INPUT_PULLUP); // Use for top-right spoke
 }
 
@@ -62,7 +62,7 @@ void loop() {
   delay(16);
 
   int b1 = digitalRead(13);
-  int b2 = digitalRead(25);
+  int b2 = digitalRead(30);
   int b3 = digitalRead(47);
 
   Serial.print("buttons: ");

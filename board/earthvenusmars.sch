@@ -508,7 +508,7 @@ NoConn ~ 5350 2750
 NoConn ~ 5350 2850
 NoConn ~ 5350 2950
 NoConn ~ 3950 3450
-NoConn ~ 3950 3750
+NoConn ~ 3950 3250
 NoConn ~ 3950 4250
 NoConn ~ 3950 4350
 NoConn ~ 3950 4450
@@ -816,7 +816,7 @@ F 3 "" H 6550 3400 50  0001 C CNN
 $EndComp
 Text GLabel 3950 2450 0    50   Input ~ 0
 BUTTON_1
-Text GLabel 3950 3250 0    50   Input ~ 0
+Text GLabel 3950 3750 0    50   Input ~ 0
 BUTTON_2
 Text GLabel 5350 2250 2    50   Input ~ 0
 BUTTON_3
