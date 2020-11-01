@@ -5,3 +5,5 @@
 *.kicad_pcb-bak
 *.sch-bak
 *.layoutbak
+.pio
+.vscode

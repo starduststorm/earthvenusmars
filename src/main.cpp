@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 // since we're using the native port of the "arduino zero", not the programming port
 #define Serial SerialUSB
 
@@ -30,28 +32,45 @@ I2SClass micI2S (0, MIC_CLK_GEN, MIC_SD, MIC_SCK, MIC_FS);
 
 #include <FastLED.h>
 
+#include "util.h"
+
 #define SERIAL_LOGGING 1
 #define NUM_LEDS (48)
 #define UNCONNECTED_PIN 14
 
 CRGBArray<NUM_LEDS> leds;
 
+// #define BUTTON_PIN_1 13 /* 13 PA08? */ // Use for top-left spoke
+// #define BUTTON_PIN_2 30 /* 30 PA21? */ // Use for bottom spoke
+#define BUTTON_PIN_3 4  /* 4 PA03? */ // Use for top-right spoke
+
+
+// trying to use PB02 as INPUT_PULLUP bricks my device and I have to reflash firmware to recover
+// why?
+// FIXME: and how do I need to wire the reset pin or other pins to more easily trigger a reset in case of on-launch software crash?
+
+
 void setup() {
+  Serial.begin(57600);
+  Serial.println("begin");
+  Serial.flush();
+  delay(2000);
 
   pinPeripheral(LEDS_MISO, PIO_SERCOM_ALT);
   pinPeripheral(LEDS_SCK,  PIO_SERCOM_ALT);
   pinPeripheral(LEDS_MOSI, PIO_SERCOM_ALT);
 
-  Serial.begin(57600);
-  Serial.println("begin");
-  delay(200);
-
   FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
   FastLED.setBrightness(70);
+  
+  // pinMode(BUTTON_PIN_1, INPUT_PULLUP);
+  // pinMode(BUTTON_PIN_2, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_3, INPUT_PULLUP); 
 
-  pinMode(13 /*PA08*/, INPUT_PULLUP); // Use for top-left spoke
-  pinMode(30 /*PA21*/, INPUT_PULLUP); // Use for bottom spoke
-  pinMode(47 /*PB02*/, INPUT_PULLUP); // Use for top-right spoke
+  // DO NOT USE:  pinMode(47 /*PB02*/, INPUT_PULLUP);
+
+
+
 }
 
 int lead = 0;
@@ -61,15 +80,11 @@ void loop() {
   FastLED.show();
   delay(16);
 
-  int b1 = digitalRead(13);
-  int b2 = digitalRead(30);
-  int b3 = digitalRead(47);
-
-  Serial.print("buttons: ");
-  Serial.print(b1);
-  Serial.print(", ");
-  Serial.print(b3);
-  Serial.print(", ");
-  Serial.print(b2);
-  Serial.println();
+  // int b1 = digitalRead(BUTTON_PIN_1);
+  // int b2 = digitalRead(BUTTON_PIN_2);
+  int b3 = digitalRead(BUTTON_PIN_3);
+//
+#define UP_DOWN(button) ((button) ? "up" : "down")
+  // logf("Buttons: button1: %s, button2: %s, button3: %s", UP_DOWN(b1), UP_DOWN(b2), UP_DOWN(b3));
+  logf("Buttons3: %s", UP_DOWN(b3));
 }
