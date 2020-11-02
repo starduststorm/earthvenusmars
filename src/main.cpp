@@ -1,5 +1,13 @@
 #include <Arduino.h>
 
+/* 
+
+HARDWARE NOTES:
+
+// FIXME: how do I need to wire the reset pin or other pins to more easily trigger a reset in case of on-launch software crash?
+
+*/
+
 // since we're using the native port of the "arduino zero", not the programming port
 #define Serial SerialUSB
 
@@ -11,7 +19,6 @@
  * PA17  D13   SERCOM1.1 SERCOM3.1 // MISO
  * PA19  D12   SERCOM1.3 SERCOM3.3 // SCK
  * PA20  D6    SERCOM5.2 SERCOM3.2 // MOSI
-
  */
 
 #define LEDS_MISO 13u /* unused */
@@ -40,15 +47,10 @@ I2SClass micI2S (0, MIC_CLK_GEN, MIC_SD, MIC_SCK, MIC_FS);
 
 CRGBArray<NUM_LEDS> leds;
 
-// #define BUTTON_PIN_1 13 /* 13 PA08? */ // Use for top-left spoke
-// #define BUTTON_PIN_2 30 /* 30 PA21? */ // Use for bottom spoke
-#define BUTTON_PIN_3 4  /* 4 PA03? */ // Use for top-right spoke
-
-
-// trying to use PB02 as INPUT_PULLUP bricks my device and I have to reflash firmware to recover
-// why?
-// FIXME: and how do I need to wire the reset pin or other pins to more easily trigger a reset in case of on-launch software crash?
-
+// pin numbers from arduino zero variant.cpp
+#define BUTTON_PIN_1 4   // PA08  Use for top-left spoke
+#define BUTTON_PIN_2 39  // PA21  Use for bottom spoke
+#define BUTTON_PIN_3 19  // PB02  Use for top-right spoke
 
 void setup() {
   Serial.begin(57600);
@@ -63,14 +65,9 @@ void setup() {
   FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
   FastLED.setBrightness(70);
   
-  // pinMode(BUTTON_PIN_1, INPUT_PULLUP);
-  // pinMode(BUTTON_PIN_2, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_1, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_2, INPUT_PULLUP);
   pinMode(BUTTON_PIN_3, INPUT_PULLUP); 
-
-  // DO NOT USE:  pinMode(47 /*PB02*/, INPUT_PULLUP);
-
-
-
 }
 
 int lead = 0;
@@ -80,11 +77,10 @@ void loop() {
   FastLED.show();
   delay(16);
 
-  // int b1 = digitalRead(BUTTON_PIN_1);
-  // int b2 = digitalRead(BUTTON_PIN_2);
+  int b1 = digitalRead(BUTTON_PIN_1);
+  int b2 = digitalRead(BUTTON_PIN_2);
   int b3 = digitalRead(BUTTON_PIN_3);
 //
 #define UP_DOWN(button) ((button) ? "up" : "down")
-  // logf("Buttons: button1: %s, button2: %s, button3: %s", UP_DOWN(b1), UP_DOWN(b2), UP_DOWN(b3));
-  logf("Buttons3: %s", UP_DOWN(b3));
+  logf("Buttons: button1: %s, button2: %s, button3: %s", UP_DOWN(b1), UP_DOWN(b2), UP_DOWN(b3));
 }
