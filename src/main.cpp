@@ -262,7 +262,7 @@ void loop() {
   int b2 = digitalRead(BUTTON_PIN_2);
   int b3 = digitalRead(BUTTON_PIN_3);
   
-  long m = (millis() % 5000);
+  unsigned long m = (millis() % 5000);
   analogWrite(A2, (m < 50 ? 0xFF : 0));
   
 //
