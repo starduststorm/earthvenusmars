@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name attachments)(type KiCad)(uri ${KIPRJMOD}/attachments.pretty)(options "")(descr ""))
+)
