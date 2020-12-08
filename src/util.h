@@ -12,6 +12,9 @@
 #define assert(expr, reason) if (!(expr)) { logf("ASSERTION FAILED: %s", reason); }
 #endif
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 static int vasprintf(char** strp, const char* fmt, va_list ap) {
   va_list ap2;
   va_copy(ap2, ap);
@@ -55,17 +58,20 @@ inline float fmod_wrap(float x, int m) {
 
 class FrameCounter {
   private:
-    long lastPrint = 0;
+    unsigned long lastPrint = 0;
     long frames = 0;
     long lastClamp = 0;
   public:
     long printInterval = 2000;
     void tick() {
       unsigned long mil = millis();
-      long elapsed = mil - lastPrint;
+      long elapsed = MAX(1, mil - lastPrint);
       if (elapsed > printInterval) {
         if (lastPrint != 0) {
-          logf("Framerate: %f", frames / (float)elapsed * 1000);
+          // arduino-samd-core can't sprintf floats??
+          // not sure why it's not working for me, I should have Arduino SAMD core v1.8.9
+          // https://github.com/arduino/ArduinoCore-samd/issues/407
+          logf("Framerate: %i", (int)(frames / (float)elapsed * 1000));
         }
         frames = 0;
         lastPrint = mil;

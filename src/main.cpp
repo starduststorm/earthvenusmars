@@ -50,7 +50,7 @@ static const uint16_t brightness_sleep_thresh = 0.03 * 4096; // 12-bit ADC
 #include "util.h"
 
 #define DEBUG 1
-#define WAIT_FOR_SERIAL 0
+#define WAIT_FOR_SERIAL 1
 #define NUM_LEDS (78)
 // #define UNCONNECTED_PIN 14
 
@@ -220,21 +220,20 @@ void setup() {
 #if WAIT_FOR_SERIAL
   long setupStart = millis();
   while (!Serial) {
-    if (millis() - setupStart > 5000) {
+    if (millis() - setupStart > 10000) {
       serialTimeout = true;
       break;
     }
   }
-  logf("begin - waited %0.2fs for Serial", (millis() - setupStart) / 1000.);
-   Serial.flush();
+  logf("begin - waited %ims for Serial", millis() - setupStart);
 #elif DEBUG
   delay(2000);
+  Serial.println("Done waiting at boot.");
 #endif
   
   // randomSeed(lsb_noise(UNCONNECTED_PIN_1, 8 * sizeof(uint32_t)));
   // random16_add_entropy(lsb_noise(UNCONNECTED_PIN_2, 8 * sizeof(uint16_t)));
   
-  Serial.println("Done waiting at boot.");
   setup_adc();
 
   // use the alternate sercoms each of these SPI ports (SERCOM3)
@@ -257,7 +256,7 @@ void setup() {
   // FIXME: integrate ADC dial into controls.h?
   // AnalogDial *brightnessDial = controls.addAnalogDial(THUMBDIAL1_PIN);
   // brightnessDial->onChange(&thumbdial1Change);
-  
+
   controls.update();
 
   setupDoneTime = millis();
@@ -273,9 +272,7 @@ void serialTimeoutIndicator() {
   delay(20);
 }
 
-int lead = 0;
 void loop() {
-  
   // FIXME: 
   unsigned long m = (millis() % 5000);
   analogWrite(A2, (m < 50 ? 0xFF : 0));
@@ -309,6 +306,5 @@ void loop() {
   FastLED.show();
 
   fc.tick();
-  fc.clampToFramerate(90);
   controls.update();
 }
