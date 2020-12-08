@@ -1,11 +1,7 @@
 #include <Arduino.h>
-/* 
-
-HARDWARE NOTES:
-
-// FIXME: how do I need to wire the reset pin or other pins to more easily trigger a reset in case of on-launch software crash?
-
-*/
+// Arduino on samd21 defines min and max differently than the STL so we need to undefine them
+#undef min
+#undef max
 
 // since we're using the native port of the "arduino zero", not the programming port
 #define Serial SerialUSB
@@ -35,17 +31,6 @@ SPIClass ledsSPI (&sercom3, LEDS_MISO, LEDS_SCK, LEDS_MOSI, SPI_PAD_2_SCK_3, SER
 #define MIC_FS  0u
 I2SClass micI2S (0, MIC_CLK_GEN, MIC_SD, MIC_SCK, MIC_FS);
 
-
-#include <FastLED.h>
-
-#include "util.h"
-
-#define SERIAL_LOGGING 1
-#define NUM_LEDS (48)
-#define UNCONNECTED_PIN 14
-
-CRGBArray<NUM_LEDS> leds;
-
 // pin numbers from arduino zero variant.cpp
 #define BUTTON_PIN_1 4   // PA08  Use for top-left spoke
 #define BUTTON_PIN_2 39  // PA21  Use for bottom spoke
@@ -55,6 +40,25 @@ static const uint8_t brightnessDialPort = PORTA;
 static const uint8_t brightnessDialPin = 9;
 static const uint16_t brightness_wake_thresh = 0.05 * 4096; // 12-bit ADC
 static const uint16_t brightness_sleep_thresh = 0.03 * 4096; // 12-bit ADC
+
+/* --------------------------------- */
+
+#include <FastLED.h>
+
+#include "PatternManager.h"
+#include "controls.h"
+#include "util.h"
+
+#define DEBUG 1
+#define WAIT_FOR_SERIAL 0
+#define NUM_LEDS (78)
+// #define UNCONNECTED_PIN 14
+
+CRGBArray<NUM_LEDS> leds;
+
+FrameCounter fc;
+HardwareControls controls;
+PatternManager patternManager;
 
 void setup_adc() {
   logf("setup adc"); Serial.flush();
@@ -204,15 +208,32 @@ void ADC_Handler() {
   ADC->INTENSET.bit.WINMON = 1; // enable window interrupts
 }
 
+static bool serialTimeout = false;
+static unsigned long setupDoneTime;
+
 void setup() {
   Serial.begin(57600);
-  Serial.println("begin");
-  Serial.flush();
-  
+
   pinMode(A2, OUTPUT);
   analogWrite(A2, 0xFF);
 
-  delay(5000);
+#if WAIT_FOR_SERIAL
+  long setupStart = millis();
+  while (!Serial) {
+    if (millis() - setupStart > 5000) {
+      serialTimeout = true;
+      break;
+    }
+  }
+  logf("begin - waited %0.2fs for Serial", (millis() - setupStart) / 1000.);
+   Serial.flush();
+#elif DEBUG
+  delay(2000);
+#endif
+  
+  // randomSeed(lsb_noise(UNCONNECTED_PIN_1, 8 * sizeof(uint32_t)));
+  // random16_add_entropy(lsb_noise(UNCONNECTED_PIN_2, 8 * sizeof(uint16_t)));
+  
   Serial.println("Done waiting at boot.");
   setup_adc();
 
@@ -225,16 +246,46 @@ void setup() {
   SERCOM3->SPI.CTRLA.bit.RUNSTDBY = 0;
 
   FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
-  FastLED.setBrightness(70);
+  FastLED.setBrightness(0);
+
+  fc.tick();
+
+  SPSTButton *button1 = controls.addButton(BUTTON_PIN_1);
+  SPSTButton *button2 = controls.addButton(BUTTON_PIN_2);
+  SPSTButton *button3 = controls.addButton(BUTTON_PIN_3);
+
+  // FIXME: integrate ADC dial into controls.h?
+  // AnalogDial *brightnessDial = controls.addAnalogDial(THUMBDIAL1_PIN);
+  // brightnessDial->onChange(&thumbdial1Change);
   
-  // pinMode(BUTTON_PIN_1, INPUT_PULLUP);
-  // pinMode(BUTTON_PIN_2, INPUT_PULLUP);
-  // pinMode(BUTTON_PIN_3, INPUT_PULLUP);
-  
+  controls.update();
+
+  setupDoneTime = millis();
+}
+
+void serialTimeoutIndicator() {
+  FastLED.setBrightness(50);
+  leds.fill_solid(CRGB::Black);
+  if ((millis() - setupDoneTime) % 250 < 100) {
+    leds.fill_solid(CRGB::Red);
+  }
+  FastLED.show();
+  delay(20);
 }
 
 int lead = 0;
 void loop() {
+  
+  // FIXME: 
+  unsigned long m = (millis() % 5000);
+  analogWrite(A2, (m < 50 ? 0xFF : 0));
+  //
+
+  if (serialTimeout && millis() - setupDoneTime < 1000) {
+    serialTimeoutIndicator();
+    return;
+  }
+
   if (sleeping) {
     wakeBlink();
     USBDevice.attach();
@@ -253,20 +304,11 @@ void loop() {
     }
   }
 
-  leds.fill_rainbow(lead++);
-  lead %= 0xFF;
+  patternManager.loop();
+
   FastLED.show();
-  delay(16);
 
-  int b1 = digitalRead(BUTTON_PIN_1);
-  int b2 = digitalRead(BUTTON_PIN_2);
-  int b3 = digitalRead(BUTTON_PIN_3);
-  
-  unsigned long m = (millis() % 5000);
-  analogWrite(A2, (m < 50 ? 0xFF : 0));
-  
-//
-// #define UP_DOWN(button) ((button) ? "up" : "down")
-  // logf("Buttons: button1: %s, button2: %s, button3: %s", UP_DOWN(b1), UP_DOWN(b2), UP_DOWN(b3));
-
+  fc.tick();
+  fc.clampToFramerate(90);
+  controls.update();
 }
