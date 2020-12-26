@@ -5,6 +5,7 @@
 
 #include "util.h"
 #include "palettes.h"
+#include "ledgraph.h"
 
 class Pattern {
 private:  
@@ -21,8 +22,8 @@ public:
     setup();
   }
 
-  void loop() {
-    update();
+  void loop(CRGBArray<NUM_LEDS> &leds) {
+    update(leds);
     lastUpdateTime = millis();
   }
 
@@ -42,7 +43,7 @@ public:
     startTime = -1;
   }
 
-  virtual void update() { }
+  virtual void update(CRGBArray<NUM_LEDS> &leds) { }
   
   virtual const char *description() = 0;
 
@@ -60,13 +61,109 @@ public:
   }
 };
 
-
 /* ------------------------------------------------------------------------------------------------------ */
 
-class TestPattern : public Pattern {
+typedef enum { idle, birthing, growing, shrinking, } BitStatus;
+
+struct FlowingBit {
+private:
+  BitStatus status;
 public:
+  uint8_t progress;
+  uint8_t hue;
+  unsigned long statusStart;
+  void setStatus(BitStatus status) {
+    this->status = status;
+    statusStart = millis();
+    progress = (status == shrinking ? 0xFF : (status == growing ? 0 : progress));
+  }
+  BitStatus getStatus() {
+    return this->status;
+  }
+
+  const char *statusString() {
+    switch (getStatus()) {
+      case idle: return "idle"; break;
+      case birthing: return "birthing"; break;
+      case growing: return "growing"; break;
+      case shrinking: return "shrinking"; break;
+    }
+  }
+};
+
+class DownstreamPattern : public Pattern {
+  int direction;
+  FlowingBit flowing[NUM_LEDS];
+public:
+
+  void setup() {
+    memset(flowing, 0, NUM_LEDS * sizeof(FlowingBit));
+
+    direction = random8() & 1 ? 1 : -1;
+
+    for (int i = 0; i < 2; ++i) {
+      uint8_t hue = random8();
+      //ARRAY_SAMPLE(circleleds);
+      int start = (i == 0 ? 0 : ARRAY_SIZE(circleleds) / 2);
+      flowing[circleleds[start]].setStatus(shrinking);
+      flowing[circleleds[start]].hue = hue;
+
+      int next = mod_wrap(start + direction, ARRAY_SIZE(circleleds));
+      flowing[circleleds[next]].setStatus(growing);
+      flowing[circleleds[next]].hue = hue;
+    }
+  }
+
+  void update(CRGBArray<NUM_LEDS> &leds) {
+    unsigned long mils = millis();
+    
+    for (int i = 0; i < NUM_LEDS; ++i) {
+      FlowingBit *bit = &flowing[i];
+      vector<int> adj = ledgraph.adjacent_to(i);
+      
+      const int growTime = beatsin8(10, 30, 60);//ms
+      const int shrinkTime = beatsin16(12, 300, 500);//ms
+      switch (bit->getStatus()) {
+        case growing:
+          bit->progress = min((long unsigned int)0xFF, (long unsigned)(0xFF * (mils - bit->statusStart) / (float)growTime));
+          if (bit->progress == 0xFF) {
+            bit->setStatus(idle);
+          }
+          break;
+        case shrinking:
+          bit->progress = 0xFF - min((long unsigned int)0xFF, (long unsigned)(0xFF * (mils - bit->statusStart) / (float)shrinkTime));
+          if (bit->progress == 0) {
+            bit->setStatus(idle);
+          }
+          break;
+        case birthing: break;
+        case idle:
+          if (bit->progress == 0xFF) {
+            for (int nearby : adj) {
+              FlowingBit *nearbyBit = &flowing[nearby];
+              if (nearbyBit->getStatus() == idle && nearbyBit->progress == 0) {
+                nearbyBit->setStatus(birthing);
+                nearbyBit->hue = mod_wrap(bit->hue + 5 * direction, 0xFF);
+              }
+            }
+            bit->setStatus(shrinking);
+          }
+          break;
+      }
+    }
+
+    for (int i = 0; i < NUM_LEDS; ++i) {
+      FlowingBit *bit = &flowing[i];
+      if (bit->getStatus() == birthing) {
+        bit->setStatus(growing);
+      }
+      CRGB color = CHSV(bit->hue, 0xFF, 0xFF);
+      leds[i] = color.nscale8(dim8_raw(bit->progress));
+    }
+  }
+
   const char *description() {
-    return "test pattern";
+    return "downstream";
   }
 };
 

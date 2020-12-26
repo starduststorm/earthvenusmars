@@ -48,10 +48,10 @@ static const uint16_t brightness_sleep_thresh = 0.03 * 4096; // 12-bit ADC
 #include "PatternManager.h"
 #include "controls.h"
 #include "util.h"
+#include "ledgraph.h"
 
 #define DEBUG 1
 #define WAIT_FOR_SERIAL 1
-#define NUM_LEDS (78)
 // #define UNCONNECTED_PIN 14
 
 CRGBArray<NUM_LEDS> leds;
@@ -259,6 +259,9 @@ void setup() {
 
   controls.update();
 
+  initLEDGraph();
+  assert(ledgraph.adjList.size() == NUM_LEDS, "adjlist size should match num_leds");
+
   setupDoneTime = millis();
 }
 
@@ -294,17 +297,19 @@ void loop() {
     handleADC = 0;
 
     int pot = adcRead;
-    FastLED.setBrightness(0xFF * pot/4096.);
-    logf("adcRead: %i", pot);
+    // FastLED.setBrightness(0xFF * pot/4096.);
+    FastLED.setBrightness(40);
+    // logf("adcRead: %i", pot);
     if (pot < brightness_sleep_thresh) {
       listen_for_adc_interrupt();
     }
   }
 
-  patternManager.loop();
-
+  patternManager.loop(leds);
+  
   FastLED.show();
 
   fc.tick();
+  fc.clampToFramerate(120);
   controls.update();
 }

@@ -24,7 +24,7 @@ class PatternManager {
 
 public:
   PatternManager() {
-    patternConstructors.push_back(&(construct<TestPattern>));
+    patternConstructors.push_back(&(construct<DownstreamPattern>));
   }
 
   void nextPattern() {
@@ -62,9 +62,9 @@ public:
     }
   }
 
-  void loop() {
+  void loop(CRGBArray<NUM_LEDS> &leds) {
     if (activePattern) {
-      activePattern->loop();
+      activePattern->loop(leds);
     }
 
     // time out idle patterns

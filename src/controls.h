@@ -28,7 +28,7 @@ public:
 /* ------------------ s*/
 
 class AnalogDial : public HardwareControl {
-  void (*changeHandler)(int);
+  void (*changeHandler)(int) = NULL;
   int lastValue = -1;
   unsigned long lastChange;
 
@@ -69,10 +69,10 @@ class SPSTButton : public HardwareControl {
   long singlePressTime = -1;
   bool waitForButtonUp = false;
   
-  void (*singlePressHandler)(void);
-  void (*doublePressHandler)(void);
-  void (*longPressHandler)(void);
-  void (*doubleLongPressHandler)(void);
+  void (*singlePressHandler)(void) = NULL;
+  void (*doublePressHandler)(void) = NULL;
+  void (*longPressHandler)(void) = NULL;
+  void (*doubleLongPressHandler)(void) = NULL;
 
   void update() {
     bool buttonPressed = digitalRead(pin) == LOW;
