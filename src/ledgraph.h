@@ -37,11 +37,12 @@ public:
 
 Graph ledgraph;
 
-int circleleds[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65};
-// These only include a nearby arc, not the full circle
-int venusleds[] = {0, 1, 2, 3, 65, 64, 63, 62, 61, 66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75};
-int marsleds[] = {38, 37, 36, 35, 34, 53, 54, 55, 56, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50};
-int earthleds[] = {30, 11, 10, 9, 8, 31, 32, 33, 34, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26};
+ vector<int> circleleds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65}; // 34
+ vector<int> venusleds = {66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75}; // 12
+ vector<int> marsleds = {39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50}; // 14
+ vector<int> earthleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26}; // 18
+ vector<int> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
+ vector<int> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
 
 void initLEDGraph() {
     vector<Edge> edges = {
@@ -67,11 +68,10 @@ void initLEDGraph() {
 
     ledgraph = Graph(edges, NUM_LEDS);
 
-    logf("adding circle edges");
     // circle is pixels D1-D12, D31-D39, D54-D66
     // e.g. leds[] 0-11, 30-38, 53-65
-    for (unsigned i = 0; i < ARRAY_SIZE(circleleds); ++i) {
-        ledgraph.addEdge(circleleds[i], circleleds[(i+1) % ARRAY_SIZE(circleleds)]);
+    for (unsigned i = 0; i < circleleds.size(); ++i) {
+        ledgraph.addEdge(circleleds[i], circleleds[(i+1) % circleleds.size()]);
     }
 
     // spokes are D13-D20, D40-D47, D67-D74

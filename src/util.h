@@ -5,7 +5,7 @@
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
-#define ARRAY_SAMPLE(a) (ARRAY_SIZE(a) < 255 ? a[random8(sizeof(a[0]))] : a[random16(sizeof(a[0]))])
+#define ARRAY_SAMPLE(a) (ARRAY_SIZE(a) < 255 ? a[random8(ARRAY_SIZE(a))] : a[random16(ARRAY_SIZE(a))])
 
 #if DEBUG
 #define assert(expr, reason) if (!(expr)) { logf("ASSERTION FAILED: %s", reason); while (1) delay(100); }

@@ -43,6 +43,7 @@ static const uint16_t brightness_sleep_thresh = 0.03 * 4096; // 12-bit ADC
 
 /* --------------------------------- */
 
+#define FASTLED_USE_PROGMEM 1
 #include <FastLED.h>
 
 #include "PatternManager.h"
@@ -275,6 +276,12 @@ void serialTimeoutIndicator() {
   delay(20);
 }
 
+void testPalette(CRGBPalette256 &palette) {
+  for (unsigned i = 0; i < circleleds.size(); ++i) {
+    leds[circleleds[i]] = ColorFromPalette(palette, 0xFF * i / circleleds.size());
+  }
+}
+
 void loop() {
   // FIXME: 
   unsigned long m = (millis() % 5000);
@@ -298,7 +305,7 @@ void loop() {
 
     int pot = adcRead;
     // FastLED.setBrightness(0xFF * pot/4096.);
-    FastLED.setBrightness(40);
+    FastLED.setBrightness(60);
     // logf("adcRead: %i", pot);
     if (pot < brightness_sleep_thresh) {
       listen_for_adc_interrupt();
@@ -306,6 +313,18 @@ void loop() {
   }
 
   patternManager.loop(leds);
+
+    // unsigned long mils = millis();
+    // int mod = mils % 30000;
+    // CRGBPalette256 palette;
+    // if (mod < 10000) {
+    //   palette = Bi_Flag_gp;
+    // } else if (mod < 20000) {
+    //   palette = Lesbian_Flag_gp;
+    // } else {
+    //   palette = Pride_Flag_gp;
+    // }
+    // testPalette(palette);
   
   FastLED.show();
 

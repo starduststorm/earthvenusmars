@@ -9,7 +9,7 @@
 const bool kTestPatternTransitions = false;
 const long kIdlePatternTimeout = -1;//1000 * (kTestPatternTransitions ? 20 : 60 * 2);
 
-Pattern *testIdlePattern = NULL;
+Pattern *testIdlePattern = new CouplingPattern();
 
 class PatternManager {
   int patternIndex = -1;
@@ -25,6 +25,7 @@ class PatternManager {
 public:
   PatternManager() {
     patternConstructors.push_back(&(construct<DownstreamPattern>));
+    patternConstructors.push_back(&(construct<CouplingPattern>));
   }
 
   void nextPattern() {
