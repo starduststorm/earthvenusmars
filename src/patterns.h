@@ -151,6 +151,7 @@ public:
   }
 };
 
+// FIXME: does not wake from sleep properly
 class DownstreamPattern : public Pattern {
   int direction;
   FlowingBit flowing[NUM_LEDS];
