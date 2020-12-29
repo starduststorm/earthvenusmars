@@ -82,7 +82,7 @@ class FrameCounter {
     void clampToFramerate(int fps) {
       int delayms = 1000 / fps - (millis() - lastClamp);
       if (delayms > 0) {
-        delay(delayms);
+        FastLED.delay(delayms);
       }
       lastClamp = millis();
     }

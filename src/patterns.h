@@ -170,7 +170,7 @@ public:
 
       int next = mod_wrap(start + direction, circleleds.size());
       flowing[circleleds[next]].setStatus(growing);
-      flowing[circleleds[next]].hue = hue;
+      flowing[circleleds[next]].hue = hue + 0x7F;
     }
   }
 
@@ -218,6 +218,7 @@ public:
         bit->setStatus(growing);
       }
       CRGB color = CHSV(bit->hue, 0xFF, 0xFF);
+      // CRGB color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, bit->hue);
       leds[i] = color.nscale8(dim8_raw(bit->progress));
     }
   }
