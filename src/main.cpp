@@ -139,11 +139,6 @@ void testPalette(CRGBPalette256 &palette) {
 }
 
 void loop() {
-  // FIXME: 
-  unsigned long m = (millis() % 5000);
-  analogWrite(A2, (m < 50 ? 0xFF : 0));
-  //
-
   if (serialTimeout && millis() - setupDoneTime < 1000) {
     serialTimeoutIndicator();
     return;

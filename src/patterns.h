@@ -2,6 +2,8 @@
 #define PATTERN_H
 
 #include <FastLED.h>
+#include <vector>
+#include <deque>
 
 #include "util.h"
 #include "palettes.h"
@@ -63,164 +65,236 @@ public:
 
 /* ------------------------------------------------------------------------------------------------------ */
 
-typedef enum { idle, birthing, growing, shrinking, } BitStatus;
 
-struct FlowingBit {
-private:
-  BitStatus status;
-public:
-  uint8_t progress;
-  uint8_t hue;
-  unsigned long statusStart;
-  void setStatus(BitStatus status) {
-    this->status = status;
-    statusStart = millis();
-    progress = (status == shrinking ? 0xFF : (status == growing ? 0 : progress));
-  }
-  BitStatus getStatus() {
-    return this->status;
-  }
-
-  const char *statusString() {
-    switch (getStatus()) {
-      case idle: return "idle"; break;
-      case birthing: return "birthing"; break;
-      case growing: return "growing"; break;
-      case shrinking: return "shrinking"; break;
-    }
-  }
-};
-
-
-// a lil patternlet that can be instantiated to run basic bits
-// can this be enhanced to cover flowing bits as well?
-// can bit direction be 'towards' a spoke or the center? 
+// a lil patternlet that can be instantiated to run bits
+// TODO: requires universal fade-down. run in a display buffer to avoid that?
 class BitsFiller {
+public:
+  typedef EdgeType BitDirection;
+  typedef EdgeTypes BitDirections;
+  typedef enum { random, priority, split } FlowRule;
+  typedef enum { end, bounce } LeafRule;
+  typedef enum { maintainPopulation, manualSpawn } SpawnRule;
+private:
+  
   struct Bit {
     int px;
-    int direction;
-    int life;
+    BitDirections directions;
+    unsigned long birthmilli;
+    unsigned long lifespan;
     CRGB color;
-    Bit(int px, int direction, int lifespan, CRGB color) : px(px), direction(direction), life(lifespan), color(color) {};
-  };
-public:
-  enum BitDirection {
-    forward,
-    backward,
-    bidirectional,
-    towards, // towards what, extra argument?
-  };
-
-  vector<int> *pixels;
-  vector<Bit> bits;
-  CRGBPalette256 palette;
-  int lifespan;
-  BitsFiller(int numBits, int speed /*(units?)*/, int lifespan, BitDirection direction, CRGBPalette256 palette, vector<int> *pixels)
-    : pixels(pixels), palette(palette), lifespan(lifespan) {
-    bits.reserve(numBits);
-    for (int b = 0; b < numBits; ++b) {
-      addBit();
+    Bit(int px, BitDirections directions, unsigned long lifespan, CRGB color) : px(px), directions(directions), lifespan(lifespan), color(color) {
+      reset();
+      // logf("bit constructor for this = %p, px = %i, directions = %i, lifespan = %i", this, px, directions, lifespan);
+    }
+    Bit(const Bit &other) {
+      reset_to(other);
+    }
+    void reset() {
+      birthmilli = millis();
+    }
+    void reset_to(const Bit &other) {
+      // logf("RESET BIT TO OTHER %p px = %i, directions = %i, lifespan = %i", &other, other.px, other.directions, other.lifespan);
+      px = other.px;
+      directions = other.directions;
+      lifespan = other.lifespan;
+      color = other.color;
+      birthmilli = other.birthmilli;
+    }
+    unsigned long age() {
+      return millis() - birthmilli;
     }
   };
-  void update(CRGBArray<NUM_LEDS> &leds) {
-    // FIXME: implement speed & direction logic
-    EVERY_N_MILLIS(16) {
-      for (int b = bits.size() - 1; b >= 0; --b) {
-        Bit &bit = bits[b];
-         bit.px = mod_wrap(bit.px + bit.direction, pixels->size());
-         // FIXME: life should be time, not ticks
-         bit.life -= 1;
-         if (bit.life == 0) {
-           bits.erase(bits.begin() + b);
-           addBit();
-         }
+
+  vector<Bit> bits;
+  deque<Bit> deadBits;
+  unsigned long lastMove = 0; // FIXME: implement fadeup?
+
+  int spawnLocation() {
+    if (spawnPixels) {
+      return spawnPixels->at(random8()%spawnPixels->size());
+    }
+    return random16()%NUM_LEDS;
+  }
+
+  Bit makeBit(Bit *fromBit=NULL) {
+    BitDirections bitDirections = directions;
+    if (bitDirections & EdgeType::clockwise && bitDirections & EdgeType::counterclockwise) {
+      if (random8()%2) {
+        bitDirections -= EdgeType::clockwise;
+      } else {
+        bitDirections -= EdgeType::counterclockwise;
       }
     }
+
+    if (bitDirections & EdgeType::inbound && bitDirections & EdgeType::outbound) {
+      if (random8()%2) {
+        bitDirections -= EdgeType::inbound;
+      } else {
+        bitDirections -= EdgeType::outbound;
+      }
+    }
+
+    if (deadBits.empty()) {
+      if (fromBit) {
+        return Bit(*fromBit);
+      } else {
+        return Bit(spawnLocation(), bitDirections, lifespan, ColorFromPalette(palette, random8()));
+      }
+    } else {
+      assert(0, "fixme: dead bits");
+      Bit bit = deadBits.front();
+      deadBits.pop_front();
+      if (fromBit) {
+        bit.reset_to(*fromBit);
+      } else {
+        bit.px = spawnLocation();
+        bit.directions = bitDirections;
+        bit.lifespan = lifespan;
+        bit.birthmilli = millis();
+        bit.color = ColorFromPalette(palette, random8());
+      }
+      return bit;
+    }
+  }
+
+  void killBit(int bitIndex) {
+    // deadBits.push_back(*it);
+    bits.erase(bits.begin() + bitIndex);
+  }
+
+  void splitBit(Bit &bit, Edge edge) {
+    Bit split = makeBit(&bit);
+    split.px = edge.to;
+    bits.push_back(split);
+  }
+
+  bool flowBit(int bitIndex) {
+    Bit &bit = bits[bitIndex];
+    vector<Edge> adj = ledgraph.adjacencies(bit.px, bit.directions);
+    if (adj.size() == 0) {
+      // leaf behavior
+      switch (leafRule) {
+        case end:
+          killBit(bitIndex);
+          return false;
+          break;
+        case bounce: 
+          // FIXME: will I ever use this
+          logf("bounce unimplemented");
+          delay(100);
+          break;
+      }
+    } else if (adj.size() == 1) {
+      Edge follow = adj.front();
+      bit.px = follow.to;
+    } else {
+      // flow behavior
+      switch (flowRule) {
+        case random: 
+          bit.px = adj[random8()%adj.size()].to;
+          break;
+        case priority:
+          // for (BitDirection direction : it->directions) {
+          //   for (Edge edge : adj) {
+          //     if (edge.type == direction) {
+          //       it->px = edge.to;
+          //       return;
+          //     }
+          //   }
+          // }
+          // FIXME: implement
+          break;
+        case split: {
+          bool first = true;
+          int i = 0;
+          for (Edge edge : adj) {
+            if (first) {
+              bit.px = edge.to;
+              first = false;
+            } else {
+              splitBit(bit, edge);
+            }
+          }
+          break;
+        }
+      }
+    }
+    return true;
+  }
+
+public:
+  unsigned numBits;
+  unsigned speed; // in pixels/second
+  unsigned long lifespan = 0; // in milliseconds, forever if 0
+  BitDirections directions; // may contain contradictory directions e.g. inbound and outbound and will choose randomly when spawning a new bit
+  FlowRule flowRule = random;
+  LeafRule leafRule = end;
+  SpawnRule spawnRule = maintainPopulation;
+  
+  CRGBPalette256 palette;
+  
+  vector<int> *spawnPixels;
+
+  BitsFiller(unsigned numBits, unsigned speed, unsigned long lifespan, BitDirections directions, CRGBPalette256 palette)
+    : numBits(numBits), speed(speed), lifespan(lifespan), directions(directions), palette(palette) {
+    bits.reserve(numBits);
+  };
+
+  void update(CRGBArray<NUM_LEDS> &leds) {
+    // FIXME: global fadedown
+    EVERY_N_MILLIS(16) {
+      leds.fadeToBlackBy(40);
+    }
+
+    unsigned long mils = millis();
+    if (mils - lastMove > 1000/speed) {
+      for (int i = bits.size() - 1; i >= 0; --i) {
+        Bit bit = bits[i];
+        bool bitAlive = flowBit(i);
+        if (bitAlive && bit.lifespan != 0 && bit.age() > bit.lifespan) {
+          killBit(i);
+        }
+      }
+      lastMove = mils;
+    }
     for (Bit &bit : bits) {
-      leds[pixels->at(bit.px)] = bit.color;
+      leds[bit.px] = bit.color;
+    }
+
+    if (spawnRule == maintainPopulation) {
+      for (unsigned b = bits.size(); b < numBits; ++b) {
+        addBit();
+      }
     }
   };
 
-  void addBit(int index=-1) {
-    if (index < 0) {
-      index = random16(pixels->size());
-    }
-    int direction = random8()&1 ? 1 : -1;
-    Bit newbit(index, direction, lifespan, ColorFromPalette(palette, random8()));
+  void addBit() {
+    Bit newbit = makeBit();
     bits.push_back(newbit);
   }
 };
 
-// FIXME: does not wake from sleep properly
+
 class DownstreamPattern : public Pattern {
-  int direction;
-  FlowingBit flowing[NUM_LEDS];
+  BitsFiller *bitsFiller;
 public:
-
+  DownstreamPattern() {
+    EdgeTypes direction = random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise;
+    direction |= EdgeType::outbound;
+    bitsFiller = new BitsFiller(2, 24, 0, direction, (CRGBPalette256)Trans_Flag_gp);
+    bitsFiller->flowRule = BitsFiller::split;
+    bitsFiller->spawnPixels = &circleleds;
+    
+  }
+  ~DownstreamPattern() {
+    delete bitsFiller;
+  }
   void setup() {
-    memset(flowing, 0, NUM_LEDS * sizeof(FlowingBit));
-
-    direction = random8() & 1 ? 1 : -1;
-
-    for (int i = 0; i < 2; ++i) {
-      uint8_t hue = random8();
-      int start = (i == 0 ? 0 : circleleds.size() / 2);
-      flowing[circleleds[start]].setStatus(shrinking);
-      flowing[circleleds[start]].hue = hue;
-
-      int next = mod_wrap(start + direction, circleleds.size());
-      flowing[circleleds[next]].setStatus(growing);
-      flowing[circleleds[next]].hue = hue + 0x7F;
-    }
   }
 
   void update(CRGBArray<NUM_LEDS> &leds) {
-    unsigned long mils = millis();
-    
-    for (int i = 0; i < NUM_LEDS; ++i) {
-      FlowingBit *bit = &flowing[i];
-      vector<int> adj = ledgraph.adjacent_to(i);
-      
-      const int growTime = beatsin8(10, 30, 60);//ms
-      const int shrinkTime = beatsin16(12, 300, 500);//ms
-      switch (bit->getStatus()) {
-        case growing:
-          bit->progress = min((long unsigned int)0xFF, (long unsigned)(0xFF * (mils - bit->statusStart) / (float)growTime));
-          if (bit->progress == 0xFF) {
-            bit->setStatus(idle);
-          }
-          break;
-        case shrinking:
-          bit->progress = 0xFF - min((long unsigned int)0xFF, (long unsigned)(0xFF * (mils - bit->statusStart) / (float)shrinkTime));
-          if (bit->progress == 0) {
-            bit->setStatus(idle);
-          }
-          break;
-        case birthing: break;
-        case idle:
-          if (bit->progress == 0xFF) {
-            for (int nearby : adj) {
-              FlowingBit *nearbyBit = &flowing[nearby];
-              if (nearbyBit->getStatus() == idle && nearbyBit->progress == 0) {
-                nearbyBit->setStatus(birthing);
-                nearbyBit->hue = mod_wrap(bit->hue + 5 * direction, 0xFF);
-              }
-            }
-            bit->setStatus(shrinking);
-          }
-          break;
-      }
-    }
-
-    for (int i = 0; i < NUM_LEDS; ++i) {
-      FlowingBit *bit = &flowing[i];
-      if (bit->getStatus() == birthing) {
-        bit->setStatus(growing);
-      }
-      CRGB color = CHSV(bit->hue, 0xFF, 0xFF);
-      // CRGB color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, bit->hue);
-      leds[i] = color.nscale8(dim8_raw(bit->progress));
-    }
+    bitsFiller->update(leds);    
   }
 
   const char *description() {
@@ -232,7 +306,8 @@ class CouplingPattern : public Pattern {
   BitsFiller *bits;
 public:
   CouplingPattern() {
-    bits = new BitsFiller(16, 1, 60, BitsFiller::bidirectional, Trans_Flag_gp, &circleleds);
+    bits = new BitsFiller(16, 50, 4000, Edge::clockwise | Edge::counterclockwise, (CRGBPalette256)Trans_Flag_gp);
+    bits->spawnPixels = &circleleds;
   }
   ~CouplingPattern() {
     delete bits;
