@@ -318,10 +318,11 @@ public:
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->fadeUpDistance = 3;
     bitsFiller->colorCycleDuration = 0;
-    for (int i = 0; i < 3; ++i) {
+    int bitCount = 3;
+    for (int i = 0; i < bitCount; ++i) {
       BitsFiller::Bit &bit = bitsFiller->addBit();
-      bit.px = circleleds[i * circleleds.size() / 3];
-      bit.colorIndex = i * 0xFF / 5; // one of each color in 5-color flag
+      bit.px = circleleds[i * circleleds.size() / bitCount];
+      bit.colorIndex = i * 0xFF / 5; // one of each color in Trans_Flag_gp
     }
   }
   ~DownstreamPattern() {
