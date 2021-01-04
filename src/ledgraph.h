@@ -36,6 +36,7 @@ struct Edge {
 
 typedef Edge::EdgeType EdgeType;
 typedef uint8_t EdgeTypes;
+unsigned EdgeTypeCount = 4;
 
 class Graph {
 public:
