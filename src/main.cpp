@@ -60,7 +60,6 @@ CRGBArray<NUM_LEDS> leds;
 FrameCounter fc;
 HardwareControls controls;
 PatternManager patternManager;
-PowerManager powerManager;
 
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
@@ -71,10 +70,7 @@ void nextPattern() {
 
 void setup() {
   Serial.begin(57600);
-
-  pinMode(A2, OUTPUT);
-  analogWrite(A2, 0xFF);
-
+  
 #if WAIT_FOR_SERIAL
   long setupStart = millis();
   while (!Serial) {

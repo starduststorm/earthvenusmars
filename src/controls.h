@@ -28,35 +28,43 @@ public:
 /* ------------------ s*/
 
 class AnalogDial : public HardwareControl {
-  void (*changeHandler)(int) = NULL;
-  int lastValue = -1;
+  void (*changeHandler)(uint32_t) = NULL;
+  uint32_t lastValue = UINT32_MAX;
   unsigned long lastChange;
 
   void update() {
-    int thumbdial1 = analogRead(pin);
+    uint32_t value;
+    if (readValueFunc) {
+      value = (*readValueFunc)();
+    } else {
+      value = analogRead(pin);
+    }
     // potentiometer reads are noisy, jitter may be around ±30 or so. 
     // Wait for significant change to notify the handler, but then still allow smooth updates as the pot is turned
-    bool significantChange = abs(lastValue - thumbdial1) > updateThreshold;
+    bool significantChange = abs(lastValue - value) > updateThreshold;
     bool recentSignificantChange = (millis() - lastChange < smoothUpdateDuration);
-    bool endpointsChange = lastValue != thumbdial1 && (thumbdial1 == 0 || thumbdial1 == 1023);
+    bool endpointsChange = lastValue != value && (value == 0 || value == maxValue);
     
     if (significantChange || recentSignificantChange || endpointsChange) {
       if (significantChange || endpointsChange) {
         lastChange = millis();
-        lastValue = thumbdial1;
+        lastValue = value;
       }
-      handleHandler(changeHandler, thumbdial1);
+      handleHandler(changeHandler, value);
     }
   }
 
 public:
-  int updateThreshold = 40; // Value threshold to suppress jitter in the thumbdial
+  unsigned updateThreshold = 40; // Value threshold to suppress jitter in the thumbdial
   unsigned smoothUpdateDuration = 500; // Duration (ms) to call handler on every change after threshold is met
+
+  uint32_t (*readValueFunc)(void) = NULL;
+  uint32_t maxValue = 1023;
 
   AnalogDial(int pin) : HardwareControl(pin) {
   }
 
-  void onChange(void (*handler)(int)) {
+  void onChange(void (*handler)(uint32_t)) {
     changeHandler = handler;
   }
 };

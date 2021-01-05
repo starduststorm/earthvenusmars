@@ -21,7 +21,9 @@ void ADC_Handler() {
   // start listening to all adc events again
   ADC->INTFLAG.bit.WINMON = 0x1;
   while (ADC->STATUS.bit.SYNCBUSY);
-  ADC->WINLT.bit.WINLT = 0; 
+
+  // Switch to value<WINUT so we again get interrupts at value=0. See Note on WINMODE.
+  ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE2;
   while (ADC->STATUS.bit.SYNCBUSY);
 
   ADC->INTENSET.bit.WINMON = 1; // enable window interrupts
@@ -29,8 +31,15 @@ void ADC_Handler() {
   sleepPending = 0;
 }
 
+uint32_t getADCRead() {
+  return adcRead;
+}
+
+void brightnessDialChange(uint32_t value);
+
 class PowerManager {
 private:
+  HardwareControls controls;
   bool sleeping = 0;
   
   void listen_for_adc_interrupt() {
@@ -153,12 +162,21 @@ public:
     ADC->CTRLB.bit.DIFFMODE = 0x0; // ADC single-ended mode
     while (ADC->STATUS.bit.SYNCBUSY);
 
-    ADC->WINLT.bit.WINLT = 0;
+    ADC->WINLT.bit.WINLT = wakeThreshold; // set WINLT to wake threshold so suppress adc updates while sleeping, once we enable the window mode later
     while (ADC->STATUS.bit.SYNCBUSY);
-    
-    ADC->WINCTRL.bit.WINMODE = 0x1; // interrupt when RESULT > WINLT
+
+    ADC->WINUT.bit.WINUT = 4095;
     while (ADC->STATUS.bit.SYNCBUSY);
-    
+
+    // Note on WINMODE:
+    // here we set the WINMODE to MODE2 to send interrupts for values below threshold WINUT. 
+    // this is because we need to use MODE1 and WINLT to ignore interrupts during sleep, but WINLT's minimum value is 0
+    // and will only send interrupts when the ADC value is strictly > 0. but when we flip the dial quickly to its lowest position,
+    // the ADC converions sometimes skip from >sleepthresh directly to 0, so no interrupt is posted within the sleep thresh and the device stays awake.
+    // Disabling WINMODE prevents window interrupts from being posted at all, so instead we'll use MODE2 as a dummy mode and flip to MODE1 prior to sleep.
+    ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE2;
+    while (ADC->STATUS.bit.SYNCBUSY);
+
     ADC->CTRLB.bit.FREERUN = 0x1;
     while (ADC->STATUS.bit.SYNCBUSY); 
 
@@ -180,6 +198,13 @@ public:
 
     NVIC_EnableIRQ(ADC_IRQn);
     logf("adc setup done"); Serial.flush();
+
+    // use the AnalogDial from Controls to tap into its value stabilizer
+    AnalogDial *dial = controls.addAnalogDial(0);
+    dial->readValueFunc = &getADCRead;
+    dial->maxValue = 4096; // 12-bit
+    dial->updateThreshold = 60;
+    dial->onChange(&brightnessDialChange);
   }
 
   void loop(CRGBArray<NUM_LEDS> &leds) {
@@ -189,31 +214,35 @@ public:
       USBDevice.attach();
       logf("Just woke up");
       sleeping = 0;
-    }
-
-    if (handleADC) {
-      handleADC = 0;
-
-      int pot = adcRead;
-      logf("adcRead: %i", pot);
-      if (pot < sleepThreshold) {
-        FastLED.setBrightness(10);
-        sleepPending = 1;
-        // Set wake threshold before sleep animation
-        ADC->WINLT.bit.WINLT = wakeThreshold;
-        while (ADC->STATUS.bit.SYNCBUSY);
-
-        sleepBlink(leds);
-        if (sleepPending) { // if sleep hasn't been cancelled
-          FastLED.setBrightness(0);
-          FastLED.show();
-          listen_for_adc_interrupt();
-        }
-      } else {
-        FastLED.setBrightness(0xFF * (pot - sleepThreshold)/(4096. - sleepThreshold));
+    } else if (sleepPending) {
+      FastLED.setBrightness(10);
+      sleepBlink(leds);
+      if (sleepPending) { // if sleep hasn't been cancelled
+        FastLED.setBrightness(0);
+        FastLED.show();
+        listen_for_adc_interrupt();
       }
+    } else if (handleADC) {
+      handleADC = 0;
+      controls.update();
+    }
+  }
+
+  void brightnessUpdate(uint32_t value) {
+    if (value < sleepThreshold) {
+      sleepPending = 1;
+      ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE1; // interrupt when RESULT > WINLT. See Note on WINMODE.
+      while (ADC->STATUS.bit.SYNCBUSY);
+    } else {
+      FastLED.setBrightness(0xFF * (value - sleepThreshold)/(4096. - sleepThreshold));
     }
   }
 };
+
+PowerManager powerManager;
+
+void brightnessDialChange(uint32_t value) {
+  powerManager.brightnessUpdate(value);
+}
 
 #endif
