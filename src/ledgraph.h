@@ -76,14 +76,20 @@ public:
 
 Graph ledgraph;
 
-vector<int> circleleds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65}; // 34
-vector<int> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
+const vector<int> circleleds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65}; // 34
+const vector<int> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
 
-vector<int> venusleds = {66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75}; // 12
-vector<int> marsleds = {39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50}; // 14
-vector<int> earthleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26}; // 18
-vector<int> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
-vector<int> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
+const vector<int> venusleds = {66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75}; // 12
+const vector<int> marsleds = {39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50}; // 14
+
+const vector<int> earthleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26}; // 18
+const vector<int> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
+const vector<int> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
+
+// indexes into circleleds vector opposite each spoke for use in pathing
+const int circleIndexOppositeEarth = 29;
+const int circleIndexOppositeVenus = 16;
+const int circleIndexOppositeMars = 3;
 
 void initLEDGraph() {
     vector<Edge> edges = {

@@ -26,18 +26,23 @@ public:
   PatternManager() {
     patternConstructors.push_back(&(construct<DownstreamPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
+    patternConstructors.push_back(&(construct<ChargePattern>));
   }
 
   void nextPattern() {
-    if (activePattern) {
-      activePattern->stop();
-      delete activePattern;
-      activePattern = NULL;
-    }
+    stopPattern();
 
     patternIndex = (patternIndex + 1) % patternConstructors.size();
     if (!startPatternAtIndex(patternIndex)) {
       nextPattern();
+    }
+  }
+
+  void stopPattern() {
+    if (activePattern) {
+      activePattern->stop();
+      delete activePattern;
+      activePattern = NULL;
     }
   }
 

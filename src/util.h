@@ -27,6 +27,12 @@ static int vasprintf(char** strp, const char* fmt, va_list ap) {
 
 static void _logf(bool newline, const char *format, va_list argptr)
 {
+  if (strlen(format) == 0) {
+    if (newline) {
+      Serial.println();
+    }
+    return;
+  }
   char *buf;
   vasprintf(&buf, format, argptr);
   if (newline) {
@@ -122,6 +128,14 @@ int lsb_noise(int pin, int numbits) {
     noise = (noise << 1) | (val & 1);
   }
   return noise;
+}
+
+void printColor(CRGB color) {
+  loglf("CRGB(0x%x, 0x%x, 0x%x)", color.r, color.g, color.b);
+}
+
+void printColor(CHSV color) {
+  loglf("CHSV(0x%x, 0x%x, 0x%x)", color.h, color.s, color.v);
 }
 
 #endif

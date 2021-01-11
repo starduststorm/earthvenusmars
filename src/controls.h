@@ -81,6 +81,7 @@ class SPSTButton : public HardwareControl {
   void (*doublePressHandler)(void) = NULL;
   void (*longPressHandler)(void) = NULL;
   void (*doubleLongPressHandler)(void) = NULL;
+  void (*buttonUpHandler)(void) = NULL; // called on button-up only after longPress or doubleLongPress
 
   void update() {
     bool buttonPressed = digitalRead(pin) == LOW;
@@ -89,6 +90,7 @@ class SPSTButton : public HardwareControl {
     if (waitForButtonUp) {
       if (!buttonPressed) {
         waitForButtonUp = false;
+        handleHandler(buttonUpHandler);
       }
     } else {
       if (!buttonPressed && singlePressTime != -1) {
@@ -148,6 +150,10 @@ public:
 
   void onDoubleLongPress(void (*handler)(void)) {
     doubleLongPressHandler = handler;
+  }
+
+  void onButtonUp(void (*handler)(void)) {
+    buttonUpHandler = handler;
   }
 };
 

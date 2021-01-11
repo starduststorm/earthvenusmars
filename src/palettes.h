@@ -524,7 +524,7 @@ DEFINE_GRADIENT_PALETTE( Trans_Flag_gp ) {
 
 CRGB transFlagPink = CRGB(0xF1, 0x55, 0x70);
 CRGB transFlagBlue = CRGB(0x2A, 0x9F, 0xFA);
-CRGB transFlagWhite = CRGB(0xAF, 0xAF, 0xAF);
+CRGB transFlagWhite = CRGB(0xBA, 0xBA, 0xBA);
 CRGB transFlagColors[] = {transFlagBlue, transFlagPink, transFlagWhite};
 
 // Flag colors pulled from google searches and refined to render better on APA102-2020 LEDs manually

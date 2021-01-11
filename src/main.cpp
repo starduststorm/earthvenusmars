@@ -53,7 +53,8 @@ static const uint8_t brightnessDialPin = 9;
 #include "ledgraph.h"
 
 #define WAIT_FOR_SERIAL 1
-// #define UNCONNECTED_PIN 14
+#define UNCONNECTED_PIN_1 A1
+#define UNCONNECTED_PIN_2 A3
 
 CRGBArray<NUM_LEDS> leds;
 
@@ -85,8 +86,8 @@ void setup() {
   Serial.println("Done waiting at boot.");
 #endif
   
-  // randomSeed(lsb_noise(UNCONNECTED_PIN_1, 8 * sizeof(uint32_t)));
-  // random16_add_entropy(lsb_noise(UNCONNECTED_PIN_2, 8 * sizeof(uint16_t)));
+  randomSeed(lsb_noise(UNCONNECTED_PIN_1, 8 * sizeof(uint32_t)));
+  random16_add_entropy(lsb_noise(UNCONNECTED_PIN_2, 8 * sizeof(uint16_t)));
   
   powerManager.setup_adc(brightnessDialPort, brightnessDialPin);
 
