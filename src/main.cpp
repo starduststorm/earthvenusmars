@@ -46,21 +46,23 @@ static const uint8_t brightnessDialPin = 9;
 #define FASTLED_USE_PROGMEM 1
 #include <FastLED.h>
 
+#include "util.h"
+#include "drawing.h"
 #include "PatternManager.h"
 #include "controls.h"
 #include "power.h"
-#include "util.h"
 #include "ledgraph.h"
 
 #define WAIT_FOR_SERIAL 1
 #define UNCONNECTED_PIN_1 A1
 #define UNCONNECTED_PIN_2 A3
 
-CRGBArray<NUM_LEDS> leds;
+EVMPixelBuffer pixelBuffer;
 
 FrameCounter fc;
 HardwareControls controls;
 PatternManager patternManager;
+PowerManager powerManager;
 
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
@@ -99,7 +101,7 @@ void setup() {
   // Make sure we're not running the SPI while in standby
   SERCOM3->SPI.CTRLA.bit.RUNSTDBY = 0;
 
-  FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(leds, NUM_LEDS);
+  FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(pixelBuffer.leds, pixelBuffer.leds.size());
   FastLED.setBrightness(0);
 
   fc.tick();
@@ -121,9 +123,9 @@ void setup() {
 
 void serialTimeoutIndicator() {
   FastLED.setBrightness(50);
-  leds.fill_solid(CRGB::Black);
+  pixelBuffer.leds.fill_solid(CRGB::Black);
   if ((millis() - setupDoneTime) % 250 < 100) {
-    leds.fill_solid(CRGB::Red);
+    pixelBuffer.leds.fill_solid(CRGB::Red);
   }
   FastLED.show();
   delay(20);
@@ -131,7 +133,7 @@ void serialTimeoutIndicator() {
 
 void testPalette(CRGBPalette256 &palette) {
   for (unsigned i = 0; i < circleleds.size(); ++i) {
-    leds[circleleds[i]] = ColorFromPalette(palette, 0xFF * i / circleleds.size());
+    pixelBuffer.leds[circleleds[i]] = ColorFromPalette(palette, 0xFF * i / circleleds.size());
   }
 }
 
@@ -141,9 +143,9 @@ void loop() {
     return;
   }
 
-  powerManager.loop(leds);
+  powerManager.loop(pixelBuffer);
 
-  patternManager.loop(leds);
+  patternManager.loop(pixelBuffer);
 
     // unsigned long mils = millis();
     // int mod = mils % 30000;

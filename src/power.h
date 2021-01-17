@@ -204,19 +204,23 @@ public:
     dial->readValueFunc = &getADCRead;
     dial->maxValue = 4096; // 12-bit
     dial->updateThreshold = 60;
-    dial->onChange(&brightnessDialChange);
+    
+    dial->onChange([this](uint32_t value) {
+      this->brightnessUpdate(value);
+    });
   }
 
-  void loop(CRGBArray<NUM_LEDS> &leds) {
+  template<typename BufferType>
+  void loop(BufferType &pixelBuffer) {
     if (sleeping) {
       FastLED.setBrightness(10);
-      wakeBlink(leds);
+      wakeBlink(pixelBuffer.leds);
       USBDevice.attach();
       logf("Just woke up");
       sleeping = 0;
     } else if (sleepPending) {
       FastLED.setBrightness(10);
-      sleepBlink(leds);
+      sleepBlink(pixelBuffer.leds);
       if (sleepPending) { // if sleep hasn't been cancelled
         FastLED.setBrightness(0);
         FastLED.show();
@@ -238,11 +242,5 @@ public:
     }
   }
 };
-
-PowerManager powerManager;
-
-void brightnessDialChange(uint32_t value) {
-  powerManager.brightnessUpdate(value);
-}
 
 #endif

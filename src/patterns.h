@@ -9,6 +9,7 @@
 #include "util.h"
 #include "palettes.h"
 #include "ledgraph.h"
+#include "drawing.h"
 
 class Pattern {
 private:  

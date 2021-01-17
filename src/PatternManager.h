@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "patterns.h"
+#include "ledgraph.h"
 
 /* ---- Test Options ---- */
 const bool kTestPatternTransitions = false;
@@ -68,9 +69,10 @@ public:
     }
   }
 
-  void loop(CRGBArray<NUM_LEDS> &leds) {
+  template<typename BufferType>
+  void loop(BufferType &pixelBuffer) {
     if (activePattern) {
-      activePattern->loop(leds);
+      activePattern->loop(pixelBuffer.leds);
     }
 
     // time out idle patterns

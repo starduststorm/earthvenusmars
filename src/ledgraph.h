@@ -7,6 +7,8 @@
 #include <set>
 #include <util.h>
 
+#include "drawing.h"
+
 using namespace std;
 
 struct Edge {
@@ -133,5 +135,7 @@ void initLEDGraph() {
         ledgraph.addEdge(Edge(i, i+1, Edge::outbound));
     }
 }
+
+typedef CustomPixelBuffer<NUM_LEDS, 1, CRGB, CRGBArray<NUM_LEDS> > EVMPixelBuffer;
 
 #endif

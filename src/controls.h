@@ -2,6 +2,7 @@
 #define CONTROLS_H
 
 #include <vector>
+#include <functional>
 
 class HardwareControl {
   friend class HardwareControls;
@@ -20,6 +21,10 @@ protected:
       (*handler)(arg);
     }
   }
+  template<typename T>
+  void handleHandler(std::function<void(T)> handler, T arg) {
+    handler(arg);
+  }
 public:
   HardwareControl(int pin) : pin(pin) {};
   virtual ~HardwareControl() {};
@@ -28,7 +33,9 @@ public:
 /* ------------------ s*/
 
 class AnalogDial : public HardwareControl {
-  void (*changeHandler)(uint32_t) = NULL;
+  void (*changeHandlerPtr)(uint32_t) = NULL;
+  std::function<void(uint32_t)> changeHandlerFunc;
+
   uint32_t lastValue = UINT32_MAX;
   unsigned long lastChange;
 
@@ -50,7 +57,8 @@ class AnalogDial : public HardwareControl {
         lastChange = millis();
         lastValue = value;
       }
-      handleHandler(changeHandler, value);
+      handleHandler(changeHandlerPtr, value);
+      handleHandler(changeHandlerFunc, value);
     }
   }
 
@@ -65,7 +73,10 @@ public:
   }
 
   void onChange(void (*handler)(uint32_t)) {
-    changeHandler = handler;
+    changeHandlerPtr = handler;
+  }
+  void onChange(std::function<void(uint32_t)> handler) {
+    changeHandlerFunc = handler;
   }
 };
 
