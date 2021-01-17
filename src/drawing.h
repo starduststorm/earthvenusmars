@@ -28,19 +28,19 @@ class CustomDrawingContext {
 private:
   std::stack<DrawStyle> styleStack;
 
-  void set_px(CustomDrawingContext<PixelType, PixelSetType> &otherContext, PixelType src, int index, BlendMode blendMode) {
+  void set_px(CustomDrawingContext<PixelType, PixelSetType> &dstCtx, PixelType src, int index, BlendMode blendMode) {
     switch (blendMode) {
       case blendSourceOver:
-        otherContext.leds[index] = src;
+        dstCtx.leds[index] = src;
         break;
       case blendBrighten: {
-        PixelType dst = leds[index];
-        otherContext.leds[index] = PixelType(max(src.r, dst.r), max(src.g, dst.g), max(src.b, dst.b));
+        PixelType dst = dstCtx.leds[index];
+        dstCtx.leds[index] = PixelType(std::max(src.r, dst.r), std::max(src.g, dst.g), std::max(src.b, dst.b));
         break;
       }
       case blendDarken: {
-        PixelType dst = leds[index];
-        otherContext.leds[index] = PixelType(min(src.r, dst.r), min(src.g, dst.g), min(src.b, dst.b));
+        PixelType dst = dstCtx.leds[index];
+        dstCtx.leds[index] = PixelType(std::min(src.r, dst.r), std::min(src.g, dst.g), std::min(src.b, dst.b));
       }
     }
   }
@@ -118,7 +118,9 @@ template<unsigned WIDTH, unsigned HEIGHT, class PixelType, class PixelSetType>
 struct CustomPixelBuffer {
   CRGBArray<WIDTH*HEIGHT> leds;
   CustomDrawingContext<PixelType, PixelSetType> ctx;
-  CustomPixelBuffer() : ctx(leds, WIDTH, HEIGHT) { }
+  CustomPixelBuffer() : ctx(leds, WIDTH, HEIGHT) { 
+    leds.fill_solid(CRGB::Black);
+  }
 };
 
 #endif

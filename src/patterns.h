@@ -26,8 +26,8 @@ public:
     setup();
   }
 
-  void loop(CRGBArray<NUM_LEDS> &leds) {
-    update(leds);
+  void loop(EVMDrawingContext &ctx) {
+    update(ctx);
     lastUpdateTime = millis();
   }
 
@@ -47,7 +47,7 @@ public:
     startTime = -1;
   }
 
-  virtual void update(CRGBArray<NUM_LEDS> &leds) { }
+  virtual void update(EVMDrawingContext &ctx) { }
   
   virtual const char *description() = 0;
 
@@ -121,6 +121,9 @@ public:
 private:
 
   vector<Bit> bits;
+  EVMPixelBuffer buffer;
+
+  unsigned long lastTick = 0;
   unsigned long lastMove = 0;
   unsigned long lastColorChange = 0;
   unsigned long lastBitSpawn = 0;
@@ -284,7 +287,7 @@ public:
     bits.reserve(numBits);
   };
 
-  void fadeUpForBit(Bit &bit, int px, int distanceAway, int distanceRemaining, unsigned long lastMove, CRGBArray<NUM_LEDS> &leds) {
+  void fadeUpForBit(Bit &bit, int px, int distanceAway, int distanceRemaining, unsigned long lastMove) {
     vector<int> next = nextIndexes(px, bit.directions);
 
     unsigned long mils = millis();
@@ -293,24 +296,22 @@ public:
       unsigned long fadeTimeSoFar = mils - lastMove + distanceRemaining * 1000/speed;
       uint8_t progress = 0xFF * fadeTimeSoFar / fadeUpDuration;
 
-      CRGB existing = leds[n];
+      CRGB existing = buffer.leds[n];
       CRGB blended = blend(existing, bit.color, dim8_raw(progress));
-      leds[n] = blended;
+      buffer.leds[n] = blended;
       
       if (distanceRemaining > 0) {
-        fadeUpForBit(bit, n, distanceAway+1, distanceRemaining-1, lastMove, leds);
+        fadeUpForBit(bit, n, distanceAway+1, distanceRemaining-1, lastMove);
       }
     }
   }
 
-  int fadeDown = 60;
-  void update(CRGBArray<NUM_LEDS> &leds) {
-    // FIXME: global fadedown
-    EVERY_N_MILLIS(16) {
-      leds.fadeToBlackBy(fadeDown);
-    }
-
+  int fadeDown = 4; // fadeToBlackBy units per millisecond
+  void update(EVMDrawingContext &ctx) {
     unsigned long mils = millis();
+
+    buffer.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
+    
     if (mils - lastMove > 1000/speed) {
       for (int i = bits.size() - 1; i >= 0; --i) {
         bool bitAlive = flowBit(i);
@@ -325,7 +326,7 @@ public:
     }
 
     for (Bit &bit : bits) {
-      leds[bit.px] = bit.color;
+      buffer.leds[bit.px] = bit.color;
     }
     
     if (fadeUpDistance > 0) {
@@ -334,7 +335,7 @@ public:
         int bitFadeUpDistance = min((unsigned long)fadeUpDistance, speed * bit.age() / 1000);
         if (bitFadeUpDistance > 0) {
           // TODO: can fade-up take into account color advancement?
-          fadeUpForBit(bit, bit.px, 1, bitFadeUpDistance - 1, lastMove, leds);
+          fadeUpForBit(bit, bit.px, 1, bitFadeUpDistance - 1, lastMove);
         }
       }
     }
@@ -348,6 +349,8 @@ public:
         lastBitSpawn = mils;
       }
     }
+    buffer.ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
+    lastTick = mils;
   };
 
   Bit &addBit() {
@@ -385,8 +388,9 @@ public:
   void setup() {
   }
 
-  void update(CRGBArray<NUM_LEDS> &leds) {
-    bitsFiller->update(leds);    
+  void update(EVMDrawingContext &ctx) {
+    ctx.leds.fill_solid(CRGB::Black);
+    bitsFiller->update(ctx);
   }
 
   const char *description() {
@@ -411,12 +415,12 @@ public:
   }
   void setup() { }
 
-  void update(CRGBArray<NUM_LEDS> &leds) {
+  void update(EVMDrawingContext &ctx) {
     const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
     const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
 
     EVERY_N_MILLIS(1000) {
-      leds.fill_solid(CRGB::Black);
+      ctx.leds.fill_solid(CRGB::Black);
 
       // pick two
       const vector<int> *spokes[2] = {0};
@@ -435,22 +439,22 @@ public:
         if (true || random8(2) == 0) {
           CRGB color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8());
           for (int i : *spoke) {
-            leds[i] = color;
+            ctx.leds[i] = color;
           }
         } else {
           CRGBPalette256 palette = Trans_Flag_gp;//ARRAY_SAMPLE(flag_palettes);
           for (unsigned i = 0; i < spoke->size(); ++i) {
-            leds[spoke->at(i)] = ColorFromPalette(palette, 0xFF * i / spoke->size());
+            ctx.leds[spoke->at(i)] = ColorFromPalette(palette, 0xFF * i / spoke->size());
           }
         }
       }
     };
     EVERY_N_MILLIS(8) {
       for (int i : circleleds) {
-        leds[i].fadeToBlackBy(0xFF);
+        ctx.leds[i].fadeToBlackBy(0xFF);
       }
     }
-    bits->update(leds);
+    bits->update(ctx);
   }
 
   const char *description() {
@@ -470,7 +474,7 @@ public:
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->splitDirections = {EdgeType::outbound};
     bitsFiller->fadeUpDistance = 0;
-    bitsFiller->fadeDown = 0x7F;
+    bitsFiller->fadeDown = 8;
     bitsFiller->maxBitsPerSecond = 20;
   }
 
@@ -524,8 +528,9 @@ public:
     bitsFiller->allowedPixels = &allowedPixels;
   }
 
-  void update(CRGBArray<NUM_LEDS> &leds) {
-    bitsFiller->update(leds);    
+  void update(EVMDrawingContext &ctx) {
+    ctx.leds.fill_solid(CRGB::Black);
+    bitsFiller->update(ctx);    
   }
 
   const char *description() {

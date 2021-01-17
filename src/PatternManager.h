@@ -72,7 +72,7 @@ public:
   template<typename BufferType>
   void loop(BufferType &pixelBuffer) {
     if (activePattern) {
-      activePattern->loop(pixelBuffer.leds);
+      activePattern->loop(pixelBuffer.ctx);
     }
 
     // time out idle patterns

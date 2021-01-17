@@ -137,5 +137,6 @@ void initLEDGraph() {
 }
 
 typedef CustomPixelBuffer<NUM_LEDS, 1, CRGB, CRGBArray<NUM_LEDS> > EVMPixelBuffer;
+typedef CustomDrawingContext<CRGB, CRGBArray<NUM_LEDS> > EVMDrawingContext;
 
 #endif
