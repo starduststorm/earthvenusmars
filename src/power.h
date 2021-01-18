@@ -219,6 +219,7 @@ public:
       logf("Just woke up");
       sleeping = 0;
     } else if (sleepPending) {
+      pixelBuffer.leds.fill_solid(CRGB::Black);
       FastLED.setBrightness(10);
       sleepBlink(pixelBuffer.leds);
       if (sleepPending) { // if sleep hasn't been cancelled
