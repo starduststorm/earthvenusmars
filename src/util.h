@@ -138,4 +138,21 @@ void printColor(CHSV color) {
   loglf("CHSV(0x%x, 0x%x, 0x%x)", color.h, color.s, color.v);
 }
 
+#ifdef __arm__
+extern "C" char* sbrk(int incr);
+#else
+extern char *__brkval;
+#endif
+
+int freeRAM() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif
+}
+
 #endif

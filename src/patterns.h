@@ -217,7 +217,7 @@ private:
               }
             }
           }
-        } else {
+        } else if (nextEdges.size() > 0) {
           next.push_back(nextEdges.at(random8()%nextEdges.size()).to);
         }
         break;
@@ -285,6 +285,7 @@ public:
   BitsFiller(unsigned numBits, unsigned speed, unsigned long lifespan, vector<BitDirections> bitDirections)
     : numBits(numBits), speed(speed), lifespan(lifespan), bitDirections(bitDirections) {
     bits.reserve(numBits);
+    buffer.leds.fill_solid(CRGB::Black);
   };
 
   void fadeUpForBit(Bit &bit, int px, int distanceAway, int distanceRemaining, unsigned long lastMove) {
@@ -401,29 +402,37 @@ public:
 /* ------------------------------------------------------------------------------- */
 
 class CouplingPattern : public Pattern {
-  BitsFiller *bits;
+  enum { coupling, looking } state = looking;
+  BitsFiller *spokesFillers[2];
+  set<int> allowedPixels[2];
+  unsigned long lastStateChange = 0;
 public:
   CouplingPattern() {
-    bits = new BitsFiller(16, 50, 4000, {Edge::clockwise | Edge::counterclockwise});
-    bits->spawnPixels = &circleleds;
-    bits->handleNewBit = [](BitsFiller::Bit &bit) {
-      bit.color = ColorFromPalette((CRGBPalette32)Trans_Flag_gp, random8());
-    };
+    for (int i = 0; i < 2; ++i) {
+      spokesFillers[i] = new BitsFiller(8, 50, 0, {Edge::outbound, Edge::clockwise | Edge::counterclockwise});
+      spokesFillers[i]->spawnPixels = &circleleds;
+      spokesFillers[i]->allowedPixels = &allowedPixels[i];
+      spokesFillers[i]->spawnRule = BitsFiller::maintainPopulation;
+      spokesFillers[i]->maxBitsPerSecond = 10;
+      spokesFillers[i]->fadeDown = 3;
+      spokesFillers[i]->flowRule = BitsFiller::split;
+      spokesFillers[i]->splitDirections = {EdgeType::outbound};
+    }
   }
   ~CouplingPattern() {
-    delete bits;
+    delete spokesFillers[0];
+    delete spokesFillers[1];
   }
-  void setup() { }
 
   void update(EVMDrawingContext &ctx) {
-    const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
-    const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
+    ctx.leds.fill_solid(CRGB::Black);
 
-    EVERY_N_MILLIS(1000) {
-      ctx.leds.fill_solid(CRGB::Black);
-
-      // pick two
+    unsigned long mils = millis();
+    if (state == looking && mils - lastStateChange > 500) {
+      const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
+      const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
       const vector<int> *spokes[2] = {0};
+      // omg matchmaking time
       do {
         if (random8(2) == 0) {
           spokes[0] = ARRAY_SAMPLE(earthspokelists);
@@ -433,28 +442,40 @@ public:
         spokes[1] = ARRAY_SAMPLE(planetspokelists);
       } while (spokes[0] == spokes[1]);
 
-      for (int s = 0; s < 2; ++s) {
-        const vector<int> *spoke = spokes[s];
+      for (int i = 0; i < 2; ++i) {
+        allowedPixels[i].clear();
+        allowedPixels[i].insert(spokes[i]->begin(), spokes[i]->end());
+        allowedPixels[i].insert(circleleds.begin(), circleleds.end());
+
         // pick a color/palette for each
-        if (true || random8(2) == 0) {
-          CRGB color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8());
-          for (int i : *spoke) {
-            ctx.leds[i] = color;
-          }
+        // FIXME: how can we expose palette selection?
+        if (random8(2) == 0) {
+          spokesFillers[i]->handleNewBit = [](BitsFiller::Bit &bit) {
+            bit.color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8());
+          };
         } else {
           CRGBPalette256 palette = Trans_Flag_gp;//ARRAY_SAMPLE(flag_palettes);
-          for (unsigned i = 0; i < spoke->size(); ++i) {
-            ctx.leds[spoke->at(i)] = ColorFromPalette(palette, 0xFF * i / spoke->size());
-          }
+          CRGB solidColor = ColorFromPalette(palette, random8());
+          spokesFillers[i]->handleNewBit = [solidColor](BitsFiller::Bit &bit) {
+            bit.color = solidColor;
+          };
         }
       }
-    };
-    EVERY_N_MILLIS(8) {
-      for (int i : circleleds) {
-        ctx.leds[i].fadeToBlackBy(0xFF);
-      }
+      // start splitting bits down the chosen spokes
+      spokesFillers[0]->splitDirections = {EdgeType::outbound};
+      spokesFillers[1]->splitDirections = {EdgeType::outbound};
+      state = coupling;
+      lastStateChange = mils;
+
+    } else if (state == coupling && mils - lastStateChange > 1200) {
+      // breakup fml, stop following the spokes
+      spokesFillers[0]->splitDirections = {};
+      spokesFillers[1]->splitDirections = {};
+      state = looking;
+      lastStateChange = mils;
     }
-    bits->update(ctx);
+    spokesFillers[0]->update(ctx);
+    spokesFillers[1]->update(ctx);
   }
 
   const char *description() {
