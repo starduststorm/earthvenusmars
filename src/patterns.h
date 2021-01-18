@@ -559,4 +559,43 @@ public:
   }
 };
 
+/* ------------------------------------------------------------------------------- */
+
+class IntersexFlagPattern : public Pattern {
+  BitsFiller outerBits;
+  BitsFiller innerBits;
+  std::set<int> spokePixels;
+public:
+  IntersexFlagPattern() : outerBits(20, 40, 4000, {EdgeType::inbound}), innerBits(8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
+    spokePixels.insert(earthleds.begin(), earthleds.end());
+    spokePixels.insert(venusleds.begin(), venusleds.end());
+    spokePixels.insert(marsleds.begin(), marsleds.end());
+
+    outerBits.allowedPixels = &spokePixels; // keeps pixels from following the last inbound edge onto the circle
+    outerBits.spawnPixels = &leafleds;
+    outerBits.fadeUpDistance = 2;
+    outerBits.maxBitsPerSecond = 30;
+    outerBits.handleNewBit = [](BitsFiller::Bit &bit) {
+      bit.color = CRGB::Yellow;
+    };
+
+    innerBits.spawnPixels = &circleleds;
+    innerBits.fadeUpDistance = 2;
+    innerBits.maxBitsPerSecond = 8;
+    innerBits.handleNewBit = [](BitsFiller::Bit &bit) {
+      bit.color = CRGB(0x6E, 0x07, 0xD7);
+    };
+  }
+
+  void update(EVMDrawingContext &ctx) {
+    ctx.leds.fill_solid(CRGB::Black);
+    outerBits.update(ctx);
+    innerBits.update(ctx);
+  }
+
+  const char *description() {
+    return "intersex";
+  }
+};
+
 #endif

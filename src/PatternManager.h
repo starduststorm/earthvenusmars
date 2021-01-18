@@ -27,6 +27,7 @@ public:
   PatternManager() {
     patternConstructors.push_back(&(construct<DownstreamPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
+    patternConstructors.push_back(&(construct<IntersexFlagPattern>));
     patternConstructors.push_back(&(construct<ChargePattern>));
   }
 
