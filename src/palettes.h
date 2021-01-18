@@ -566,8 +566,6 @@ DEFINE_GRADIENT_PALETTE( Pride_Flag_gp ) {
   255, 0x75, 0x07, 0xB7,
 };
 
-CRGBPalette256 flag_palettes[] = {Trans_Flag_gp, Bi_Flag_gp, Lesbian_Flag_gp, Pride_Flag_gp};
-
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
 // a number, rather than having to activate each explicitly

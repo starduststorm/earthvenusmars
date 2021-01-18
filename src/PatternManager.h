@@ -28,15 +28,20 @@ public:
     patternConstructors.push_back(&(construct<DownstreamPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
     patternConstructors.push_back(&(construct<IntersexFlagPattern>));
-    patternConstructors.push_back(&(construct<ChargePattern>));
   }
 
   void nextPattern() {
-    stopPattern();
-
-    patternIndex = (patternIndex + 1) % patternConstructors.size();
+    patternIndex = addmod8(patternIndex, 1, patternConstructors.size());
     if (!startPatternAtIndex(patternIndex)) {
       nextPattern();
+    }
+  }
+
+  void previousPattern() {
+    int ctorCount = patternConstructors.size();
+    patternIndex = addmod8(patternIndex, ctorCount-1, ctorCount);
+    if (!startPatternAtIndex(patternIndex)) {
+      previousPattern();
     }
   }
 
@@ -48,6 +53,13 @@ public:
     }
   }
 
+  void poke() {
+    if (activePattern) {
+      logf("Poke pattern %s", activePattern->description());
+      activePattern->poke();
+    }
+  }
+private:
   bool startPatternAtIndex(int index) {
     auto ctor = patternConstructors[index];
     Pattern *nextPattern = ctor();
@@ -59,8 +71,9 @@ public:
       return false;
     }
   }
-
+public:
   bool startPattern(Pattern *pattern) {
+    stopPattern();
     if (pattern->wantsToRun()) {
       pattern->start();
       activePattern = pattern;

@@ -1,6 +1,12 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#ifdef __arm__
+extern "C" char* sbrk(int incr);
+#else
+extern char *__brkval;
+#endif
+
 #include <Arduino.h>
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
 
@@ -9,6 +15,8 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
+
+int freeRAM();
 
 static int vasprintf(char** strp, const char* fmt, va_list ap) {
   va_list ap2;
@@ -104,7 +112,7 @@ class FrameCounter {
           // arduino-samd-core can't sprintf floats??
           // not sure why it's not working for me, I should have Arduino SAMD core v1.8.9
           // https://github.com/arduino/ArduinoCore-samd/issues/407
-          logf("Framerate: %i", (int)(frames / (float)elapsed * 1000));
+          logf("Framerate: %i, free mem: %i", (int)(frames / (float)elapsed * 1000), freeRAM());
         }
         frames = 0;
         lastPrint = mil;
@@ -137,12 +145,6 @@ void printColor(CRGB color) {
 void printColor(CHSV color) {
   loglf("CHSV(0x%x, 0x%x, 0x%x)", color.h, color.s, color.v);
 }
-
-#ifdef __arm__
-extern "C" char* sbrk(int incr);
-#else
-extern char *__brkval;
-#endif
 
 int freeRAM() {
   char top;

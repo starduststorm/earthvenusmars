@@ -9,22 +9,6 @@ class HardwareControl {
 protected:
   virtual void update() = 0;
   int pin;
-  void handleHandler(void (*handler)(void)) {
-    if (handler) {
-      (*handler)();
-    }
-  }
-
-  template<typename T>
-  void handleHandler(void (*handler)(T), T arg) {
-    if (handler) {
-      (*handler)(arg);
-    }
-  }
-  template<typename T>
-  void handleHandler(std::function<void(T)> handler, T arg) {
-    handler(arg);
-  }
 public:
   HardwareControl(int pin) : pin(pin) {};
   virtual ~HardwareControl() {};
@@ -32,9 +16,10 @@ public:
 
 /* ------------------ s*/
 
+typedef std::function<void(uint32_t)> DialHandler;
+
 class AnalogDial : public HardwareControl {
-  void (*changeHandlerPtr)(uint32_t) = NULL;
-  std::function<void(uint32_t)> changeHandlerFunc;
+  DialHandler changeHandler = [](uint32_t){};
 
   uint32_t lastValue = UINT32_MAX;
   unsigned long lastChange;
@@ -57,8 +42,7 @@ class AnalogDial : public HardwareControl {
         lastChange = millis();
         lastValue = value;
       }
-      handleHandler(changeHandlerPtr, value);
-      handleHandler(changeHandlerFunc, value);
+      changeHandler(value);
     }
   }
 
@@ -72,15 +56,14 @@ public:
   AnalogDial(int pin) : HardwareControl(pin) {
   }
 
-  void onChange(void (*handler)(uint32_t)) {
-    changeHandlerPtr = handler;
-  }
-  void onChange(std::function<void(uint32_t)> handler) {
-    changeHandlerFunc = handler;
+  void onChange(DialHandler handler) {
+    changeHandler = handler;
   }
 };
 
 /* ----------------------- */
+
+typedef std::function<void(void)> ButtonHandler;
 
 class SPSTButton : public HardwareControl {
   long buttonDownTime = -1;
@@ -88,11 +71,13 @@ class SPSTButton : public HardwareControl {
   long singlePressTime = -1;
   bool waitForButtonUp = false;
   
-  void (*singlePressHandler)(void) = NULL;
-  void (*doublePressHandler)(void) = NULL;
-  void (*longPressHandler)(void) = NULL;
-  void (*doubleLongPressHandler)(void) = NULL;
-  void (*buttonUpHandler)(void) = NULL; // called on button-up only after longPress or doubleLongPress
+  bool hasDoublePressHandler = false;
+  
+  std::function<void(void)> singlePressHandler = []{};
+  std::function<void(void)> doublePressHandler = []{};
+  std::function<void(void)> longPressHandler = []{};
+  std::function<void(void)> doubleLongPressHandler = []{};
+  std::function<void(void)> buttonUpHandler = []{}; // called on button-up only after longPress or doubleLongPress
 
   void update() {
     bool buttonPressed = digitalRead(pin) == LOW;
@@ -101,20 +86,20 @@ class SPSTButton : public HardwareControl {
     if (waitForButtonUp) {
       if (!buttonPressed) {
         waitForButtonUp = false;
-        handleHandler(buttonUpHandler);
+        buttonUpHandler();
       }
     } else {
       if (!buttonPressed && singlePressTime != -1) {
-        if (readTime - singlePressTime > doublePressInterval) {
+        if (!hasDoublePressHandler || readTime - singlePressTime > doublePressInterval) {
           // double-press timeout
-          handleHandler(singlePressHandler);
+          singlePressHandler();
           singlePressTime = -1;
         }
       }
       if (!buttonPressed && buttonDownTime != -1) {
         if (singlePressTime != -1) {
           // button-up from second press
-          handleHandler(doublePressHandler);
+          doublePressHandler();
           singlePressTime = -1;
         } else {
           singlePressTime = readTime;
@@ -123,10 +108,10 @@ class SPSTButton : public HardwareControl {
         buttonDownTime = readTime;
       } else if (buttonPressed && readTime - buttonDownTime > longPressInterval) {
         if (singlePressTime != -1) {
-          handleHandler(doubleLongPressHandler);
+          doubleLongPressHandler();
           singlePressTime = -1;
         } else {
-          handleHandler(longPressHandler);
+          longPressHandler();
         }
         waitForButtonUp = true;
       }
@@ -147,23 +132,25 @@ public:
     pinMode(pin, INPUT_PULLUP);
   }
 
-  void onSinglePress(void (*handler)(void)) {
+  void onSinglePress(ButtonHandler handler) {
     singlePressHandler = handler;
   }
  
-  void onDoublePress(void (*handler)(void)) {
+  void onDoublePress(ButtonHandler handler) {
     doublePressHandler = handler;
+    hasDoublePressHandler = true;
   }
 
-  void onLongPress(void (*handler)(void)) {
+  void onLongPress(ButtonHandler handler) {
     longPressHandler = handler;
   }
 
-  void onDoubleLongPress(void (*handler)(void)) {
+  void onDoubleLongPress(ButtonHandler handler) {
     doubleLongPressHandler = handler;
+    hasDoublePressHandler = true;
   }
 
-  void onButtonUp(void (*handler)(void)) {
+  void onButtonUp(ButtonHandler handler) {
     buttonUpHandler = handler;
   }
 };
@@ -175,6 +162,9 @@ private:
   std::vector<HardwareControl *> controlsVec;
 public:
   ~HardwareControls() {
+    for (auto control : controlsVec) {
+      delete control;
+    }
     controlsVec.clear();
   }
 

@@ -67,8 +67,29 @@ PowerManager powerManager;
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
 
-void nextPattern() {
-  patternManager.nextPattern();
+void setupButtons() {
+  SPSTButton *buttons[3];
+  buttons[0] = controls.addButton(BUTTON_PIN_1);
+  buttons[1] = controls.addButton(BUTTON_PIN_2);
+  buttons[2] = controls.addButton(BUTTON_PIN_3);
+
+  buttons[0]->onSinglePress([]() {
+    patternManager.previousPattern();
+  });
+  buttons[1]->onSinglePress([]() {
+    patternManager.poke();
+  });
+  buttons[2]->onSinglePress([]() {
+    patternManager.nextPattern();
+  });
+
+  for (int b = 0; b < 3; ++b) {
+    buttons[b]->onLongPress([b]() {
+      ChargePattern *charge = new ChargePattern();
+      charge->spoke = b;
+      patternManager.startPattern(charge);
+    });
+  }
 }
 
 void setup() {
@@ -106,13 +127,7 @@ void setup() {
 
   fc.tick();
 
-  SPSTButton *button1 = controls.addButton(BUTTON_PIN_1);
-  button1->onSinglePress(&nextPattern);
-  SPSTButton *button2 = controls.addButton(BUTTON_PIN_2);
-  button2->onSinglePress(&nextPattern);
-  SPSTButton *button3 = controls.addButton(BUTTON_PIN_3);
-  button3->onSinglePress(&nextPattern);
-
+  setupButtons();
   controls.update();
 
   initLEDGraph();

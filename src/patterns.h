@@ -63,6 +63,8 @@ public:
   long frameTime() {
     return (lastUpdateTime == -1 ? 0 : millis() - lastUpdateTime);
   }
+
+  virtual void poke() { } // handle user-input
 };
 
 /* ------------------------------------------------------------------------------------------------------ */
@@ -120,7 +122,6 @@ public:
 
 private:
 
-  vector<Bit> bits;
   EVMPixelBuffer buffer;
 
   unsigned long lastTick = 0;
@@ -264,6 +265,7 @@ public:
     logf("--------");
   }
 
+  vector<Bit> bits;
   unsigned numBits;
   unsigned maxBitsPerSecond = 0; // limit how fast new bits are spawned, 0 = no limit
   unsigned speed; // in pixels/second
@@ -367,6 +369,8 @@ public:
 
 class DownstreamPattern : public Pattern {
   BitsFiller *bitsFiller;
+  typedef enum {trans, bi, rainbow, modeCount} ColorMode;
+  ColorMode colorMode;
 public:
   DownstreamPattern() {
     BitsFiller::BitDirection circledirection = random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise;
@@ -376,22 +380,44 @@ public:
     bitsFiller->fadeUpDistance = 3;
     
     int bitCount = 3;
-    CRGBPalette256 palette = Trans_Flag_gp;
+    
     for (int i = 0; i < bitCount; ++i) {
       BitsFiller::Bit &bit = bitsFiller->addBit();
       bit.px = circleleds[i * circleleds.size() / bitCount];
-      bit.color = ColorFromPalette(palette, i * 0xFF / 5);
+      bit.colorIndex = i * 0xFF / 8;
     }
+    colorMode = (ColorMode)(random8()%modeCount);
+    updateColors();
   }
   ~DownstreamPattern() {
     delete bitsFiller;
   }
-  void setup() {
-  }
-
+  
   void update(EVMDrawingContext &ctx) {
     ctx.leds.fill_solid(CRGB::Black);
     bitsFiller->update(ctx);
+  }
+
+  void updateColors() {
+    for (unsigned b = 0; b < bitsFiller->bits.size(); ++b) {
+      if (colorMode == trans) {
+        bitsFiller->bits[b].color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, b * 0xFF / 5);
+      } else if (colorMode == bi) {
+        bitsFiller->bits[b].color = ColorFromPalette((CRGBPalette256)Bi_Flag_gp, b * 0xFF / 2);
+      }
+    }
+    if (colorMode == rainbow) {
+      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {
+        bit.color = CHSV(millis()/20 + bit.colorIndex, 0xFF, 0xFF);
+      };
+    } else {
+      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {};
+    }
+  }
+
+  void poke() {
+    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
+    updateColors();
   }
 
   const char *description() {
@@ -409,7 +435,7 @@ class CouplingPattern : public Pattern {
 public:
   CouplingPattern() {
     for (int i = 0; i < 2; ++i) {
-      spokesFillers[i] = new BitsFiller(8, 50, 0, {Edge::outbound, Edge::clockwise | Edge::counterclockwise});
+      spokesFillers[i] = new BitsFiller(8, 50, 3000, {Edge::outbound, Edge::clockwise | Edge::counterclockwise});
       spokesFillers[i]->spawnPixels = &circleleds;
       spokesFillers[i]->allowedPixels = &allowedPixels[i];
       spokesFillers[i]->spawnRule = BitsFiller::maintainPopulation;
@@ -422,6 +448,21 @@ public:
   ~CouplingPattern() {
     delete spokesFillers[0];
     delete spokesFillers[1];
+  }
+
+  CRGBPalette256 palette = Trans_Flag_gp;
+  uint8_t paletteIndex = 0;
+  void poke() {
+    const int numPalettes = 3;
+    paletteIndex = addmod8(paletteIndex, 1, numPalettes);
+    switch (paletteIndex) {
+      case 0:
+        palette = Trans_Flag_gp; break;
+      case 1:
+        palette = Bi_Flag_gp; break;
+      case 2:
+        palette = Lesbian_Flag_gp; break;
+    }
   }
 
   void update(EVMDrawingContext &ctx) {
@@ -448,13 +489,11 @@ public:
         allowedPixels[i].insert(circleleds.begin(), circleleds.end());
 
         // pick a color/palette for each
-        // FIXME: how can we expose palette selection?
         if (random8(2) == 0) {
-          spokesFillers[i]->handleNewBit = [](BitsFiller::Bit &bit) {
-            bit.color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8());
+          spokesFillers[i]->handleNewBit = [this](BitsFiller::Bit &bit) {
+            bit.color = ColorFromPalette(palette, random8());
           };
         } else {
-          CRGBPalette256 palette = Trans_Flag_gp;//ARRAY_SAMPLE(flag_palettes);
           CRGB solidColor = ColorFromPalette(palette, random8());
           spokesFillers[i]->handleNewBit = [solidColor](BitsFiller::Bit &bit) {
             bit.color = solidColor;
@@ -489,14 +528,17 @@ class ChargePattern : public Pattern {
   BitsFiller *bitsFiller;
   set<int> allowedPixels;
 public:
+  int spoke; 
   ChargePattern() {
     vector<BitsFiller::BitDirections> directions = {EdgeType::outbound, EdgeType::none};
-    bitsFiller = new BitsFiller(50, 80, 0, directions);
+    bitsFiller = new BitsFiller(50, 70, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->splitDirections = {EdgeType::outbound};
     bitsFiller->fadeUpDistance = 0;
-    bitsFiller->fadeDown = 8;
-    bitsFiller->maxBitsPerSecond = 20;
+    bitsFiller->fadeDown = 6;
+    bitsFiller->maxBitsPerSecond = 25;
+    
+    spoke = random8()%3;
   }
 
   ~ChargePattern() {
@@ -506,12 +548,19 @@ public:
   void setup() {
     allowedPixels.clear();
 
-    int spoke = random8()%3;
-    logf("Charge chose %i", spoke);
+    const vector<int> *spokes[] = {&earthleds, &venusleds, &marsleds};
+    allowedPixels.insert(spokes[spoke]->begin(), spokes[spoke]->end());
+    allowedPixels.insert(circleleds.begin(), circleleds.end());
+    bitsFiller->allowedPixels = &allowedPixels;
+
+    updateMode();
+  }
+
+  void updateMode() {
     CRGB baseColors[] = {transFlagWhite, transFlagPink, transFlagBlue};
 
-    static int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
-    bitsFiller->handleNewBit = [spoke, baseColors](BitsFiller::Bit &bit) {
+    bitsFiller->handleNewBit = [=](BitsFiller::Bit &bit) {
+      static int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
       // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
       // but add some fuzz to cause some bits fo travel around the point opposite the spoke too.
       int cutoff = cutoffs[spoke];
@@ -542,11 +591,11 @@ public:
       uint8_t blendAmount = min((unsigned long)0xFF, 0xFF * bit.age() / 500);
       bit.color = blend(bit.initialColor, targetColor, blendAmount);
     };
-    
-    const vector<int> *spokes[] = {&earthleds, &venusleds, &marsleds};
-    allowedPixels.insert(spokes[spoke]->begin(), spokes[spoke]->end());
-    allowedPixels.insert(circleleds.begin(), circleleds.end());
-    bitsFiller->allowedPixels = &allowedPixels;
+  }
+
+  void poke() {
+#warning unimplemented
+    updateMode();
   }
 
   void update(EVMDrawingContext &ctx) {
