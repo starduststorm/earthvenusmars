@@ -239,7 +239,9 @@ public:
       ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE1; // interrupt when RESULT > WINLT. See Note on WINMODE.
       while (ADC->STATUS.bit.SYNCBUSY);
     } else {
-      FastLED.setBrightness(0xFF * (value - sleepThreshold)/(4096. - sleepThreshold));
+      uint8_t brightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
+      logf("Brightness -> %u", brightness);
+      FastLED.setBrightness(brightness);
     }
   }
 };

@@ -33,7 +33,7 @@ class AnalogDial : public HardwareControl {
     }
     // potentiometer reads are noisy, jitter may be around ±30 or so. 
     // Wait for significant change to notify the handler, but then still allow smooth updates as the pot is turned
-    bool significantChange = abs(lastValue - value) > updateThreshold;
+    bool significantChange = abs((int)lastValue - (int)value) > updateThreshold;
     bool recentSignificantChange = (millis() - lastChange < smoothUpdateDuration);
     bool endpointsChange = lastValue != value && (value == 0 || value == maxValue);
     
