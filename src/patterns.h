@@ -527,15 +527,18 @@ public:
 class ChargePattern : public Pattern {
   BitsFiller *bitsFiller;
   set<int> allowedPixels;
+
+  typedef enum {flag0, flag1, flag2, trans, bi, lesbian, pride, modeCount} ColorMode;
+  ColorMode colorMode = flag0;
 public:
   int spoke; 
   ChargePattern() {
     vector<BitsFiller::BitDirections> directions = {EdgeType::outbound, EdgeType::none};
-    bitsFiller = new BitsFiller(50, 70, 0, directions);
+    bitsFiller = new BitsFiller(30, 50, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->splitDirections = {EdgeType::outbound};
-    bitsFiller->fadeUpDistance = 0;
-    bitsFiller->fadeDown = 6;
+    bitsFiller->fadeUpDistance = 2;
+    bitsFiller->fadeDown = 5;
     bitsFiller->maxBitsPerSecond = 25;
     
     spoke = random8()%3;
@@ -575,26 +578,48 @@ public:
         bit.directions[1] = EdgeType::clockwise;
       }
 
-      // sprinkle bits of other flag colors in there
-      uint8_t colorChoice = random8();
-      if (colorChoice < 0x20) {
-        bit.color = baseColors[addmod8(spoke, 1, ARRAY_SIZE(baseColors))];
-      } else if (colorChoice < 0x40) {
-        bit.color = baseColors[addmod8(spoke, 2, ARRAY_SIZE(baseColors))];
-      } else {
-        bit.color = baseColors[spoke];
-      };
-    };
+      // bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {};
 
-    CRGB targetColor = baseColors[spoke];
-    bitsFiller->handleUpdateBit = [targetColor](BitsFiller::Bit &bit) {
-      uint8_t blendAmount = min((unsigned long)0xFF, 0xFF * bit.age() / 500);
-      bit.color = blend(bit.initialColor, targetColor, blendAmount);
+      switch(colorMode) {
+        case flag0:
+        case flag1:
+        case flag2: {
+          CRGB targetColor = baseColors[addmod8(spoke, 0 + colorMode, ARRAY_SIZE(baseColors))];
+          // sprinkle bits of other flag colors in there
+          uint8_t colorChoice = random8();
+          if (colorChoice < 0x20) {
+            bit.color = baseColors[addmod8(spoke, 1 + colorMode, ARRAY_SIZE(baseColors))];
+            bit.lifespan = 320;
+          } else if (colorChoice < 0x40) {
+            bit.color = baseColors[addmod8(spoke, 2 + colorMode, ARRAY_SIZE(baseColors))];
+            bit.lifespan = 320;
+          } else {
+            bit.color = baseColors[addmod8(spoke, 0 + colorMode, ARRAY_SIZE(baseColors))];
+          }
+          
+          bitsFiller->handleUpdateBit = [targetColor](BitsFiller::Bit &bit) {
+            if (bit.lifespan != 0) {
+              uint8_t blendAmount = min((unsigned long)0xFF, 0xFF * bit.age() / 500);
+              bit.color = blend(bit.initialColor, targetColor, blendAmount);
+            }
+          };
+          break;
+        }
+        case trans:
+          bit.color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8()); break;
+        case bi:
+          bit.color = ColorFromPalette((CRGBPalette256)Bi_Flag_gp, random8()); break;
+        case lesbian:
+          bit.color = ColorFromPalette((CRGBPalette256)Lesbian_Flag_gp, millis() / 5); break;          
+        case pride:
+          bit.color = ColorFromPalette((CRGBPalette256)Pride_Flag_gp, millis() / 8); break;
+        default: break;
+      }
     };
   }
 
   void poke() {
-#warning unimplemented
+    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
     updateMode();
   }
 
