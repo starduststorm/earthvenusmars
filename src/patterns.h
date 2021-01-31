@@ -425,6 +425,32 @@ public:
   }
 };
 
+// FIXME: WIP
+class UpstreamPattern : public Pattern {
+  BitsFiller bitsFiller;
+  // typedef enum {trans, bi, rainbow, modeCount} ColorMode;
+  // ColorMode colorMode;
+public:
+  UpstreamPattern() : bitsFiller(10, 40, 2000, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+    bitsFiller.flowRule = BitsFiller::priority;
+    bitsFiller.fadeUpDistance = 3;
+    bitsFiller.spawnPixels = &leafleds;
+    bitsFiller.maxBitsPerSecond = 6;
+    bitsFiller.handleNewBit = [](BitsFiller::Bit &bit) {
+      bit.color = CHSV(millis() / 4, 0xFF, 0xFF);
+    };
+  }
+
+  void update(EVMDrawingContext &ctx) {
+    ctx.leds.fill_solid(CRGB::Black);
+    bitsFiller.update(ctx);
+  }
+
+  const char *description() {
+    return "upstream";
+  }
+};
+
 /* ------------------------------------------------------------------------------- */
 
 class CouplingPattern : public Pattern {
@@ -528,7 +554,7 @@ class ChargePattern : public Pattern {
   BitsFiller *bitsFiller;
   set<int> allowedPixels;
 
-  typedef enum {flag0, flag1, flag2, trans, bi, lesbian, pride, modeCount} ColorMode;
+  typedef enum {flag0, flag1, flag2, pride, trans, bi, lesbian, modeCount} ColorMode;
   ColorMode colorMode = flag0;
 public:
   int spoke; 
@@ -669,6 +695,60 @@ public:
 
   const char *description() {
     return "intersex";
+  }
+};
+
+#include "Adafruit_ZeroFFT.h"
+#include <I2S.h>
+#define FFT_DATA_SIZE 128 // power of 2 between 16 and 2048 inclusive
+//the sample rate
+#define I2S_SAMPLE_RATE 8000
+
+class SoundTest : public Pattern {
+  q15_t samples[FFT_DATA_SIZE];
+public:
+  SoundTest() {
+    if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, 32)) {
+      logf("failed to initialize i2s");
+    }
+  }
+
+  ~SoundTest() {
+    I2S.end();
+  }
+  
+  void update(EVMDrawingContext &ctx) {
+    /*
+    int32_t avg = 0;
+  for(int i=0; i<DATA_SIZE; i++){
+    int16_t val = analogRead(A2);
+    avg += val;
+    data[i] = val;
+  }
+
+  //remove DC offset and gain up to 16 bits
+  avg = avg/DATA_SIZE;
+  for(int i=0; i<DATA_SIZE; i++) data[i] = (data[i] - avg) * 64;
+  */
+    
+    for (int i = 0; i < FFT_DATA_SIZE; ++i) {
+      samples[i] = I2S.read();
+    }
+
+    // run the FFT
+    ZeroFFT(samples, FFT_DATA_SIZE);
+
+    //data is only meaningful up to sample rate/2, discard the other half
+    for(int i = 0; i < FFT_DATA_SIZE/2; i++) {      
+      float freq = FFT_BIN(i, I2S_SAMPLE_RATE, FFT_DATA_SIZE);
+      ctx.leds[i] = CRGB(freq, 0xFF, 0xFF);
+      Serial.print(freq);
+      Serial.print(" Hz: ");
+      Serial.println(samples[i]);
+    }
+  }
+  const char *description() {
+    return "sound";
   }
 };
 

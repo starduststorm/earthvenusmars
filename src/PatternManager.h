@@ -10,7 +10,7 @@
 const bool kTestPatternTransitions = false;
 const long kIdlePatternTimeout = -1;//1000 * (kTestPatternTransitions ? 20 : 60 * 2);
 
-Pattern *testIdlePattern = NULL;//new CouplingPattern();
+Pattern *testIdlePattern = new SoundTest();
 
 class PatternManager {
   int patternIndex = -1;
