@@ -89,13 +89,14 @@ module draw_beveled_half(flip) {
 pcb_bottom_y = 51.3825;
 pcb_bottom_to_dial = 19.7;
 thumbdial_base_width = 7.62;
-
+thumbdial_center_to_edge_x = 1.785;
 // top half of case
 draw_beveled_half(1);
 difference() {
     draw_beveled_half(-1);
     
     // thumbdial cutout
-    translate([-placement_offset + encased_spoke_width/2, -pcb_bottom_y + pcb_bottom_to_dial + thumbdial_base_width/2, chunkthickness/2]) 
+    translate([-placement_offset + encased_spoke_width/2 - thumbdial_center_to_edge_x, -pcb_bottom_y + pcb_bottom_to_dial + thumbdial_base_width/2, chunkthickness/2]) 
     cylinder(r=thumbdial_base_width/2, h=chunkthickness+epsilon);
+
 }
