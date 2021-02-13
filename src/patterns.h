@@ -371,11 +371,12 @@ class DownstreamPattern : public Pattern {
   BitsFiller *bitsFiller;
   typedef enum {trans, bi, rainbow, modeCount} ColorMode;
   ColorMode colorMode;
+  const int kDefaultSpeed = 24;
 public:
   DownstreamPattern() {
     BitsFiller::BitDirection circledirection = random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise;
     vector<BitsFiller::BitDirections> directions = {circledirection, EdgeType::outbound};
-    bitsFiller = new BitsFiller(0, 24, 0, directions);
+    bitsFiller = new BitsFiller(0, kDefaultSpeed, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->fadeUpDistance = 3;
     
@@ -396,6 +397,10 @@ public:
   void update(EVMDrawingContext &ctx) {
     ctx.leds.fill_solid(CRGB::Black);
     bitsFiller->update(ctx);
+    
+    // TODO: play with speed variation. I'm not sure a simple oscillator is right, needs diff acceleration curve
+
+    //bitsFiller->speed = 24 + beatsin16(6, 0, 48);
   }
 
   void updateColors() {
@@ -431,13 +436,14 @@ class UpstreamPattern : public Pattern {
   // typedef enum {trans, bi, rainbow, modeCount} ColorMode;
   // ColorMode colorMode;
 public:
-  UpstreamPattern() : bitsFiller(10, 40, 2000, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  UpstreamPattern() : bitsFiller(10, 40, 1000, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFiller.flowRule = BitsFiller::priority;
     bitsFiller.fadeUpDistance = 3;
     bitsFiller.spawnPixels = &leafleds;
     bitsFiller.maxBitsPerSecond = 6;
     bitsFiller.handleNewBit = [](BitsFiller::Bit &bit) {
-      bit.color = CHSV(millis() / 4, 0xFF, 0xFF);
+      // bit.color = CHSV(millis() / 4, 0xFF, 0xFF);
+      bit.color = ARRAY_SAMPLE(transFlagColors);
     };
   }
 
@@ -698,19 +704,23 @@ public:
   }
 };
 
-#include "Adafruit_ZeroFFT.h"
-#include <I2S.h>
-#define FFT_DATA_SIZE 128 // power of 2 between 16 and 2048 inclusive
+
+// #include "Adafruit_ZeroFFT.h"
+// #define FFT_DATA_SIZE 128 // power of 2 between 16 and 2048 inclusive
 //the sample rate
 #define I2S_SAMPLE_RATE 8000
+#define I2S_SAMPLES 16
 
 class SoundTest : public Pattern {
-  q15_t samples[FFT_DATA_SIZE];
+  // q15_t samples[FFT_DATA_SIZE];
+  int samples[I2S_SAMPLES];
 public:
   SoundTest() {
-    if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, 32)) {
-      logf("failed to initialize i2s");
-    }
+    const int bitsPerSample = 32;
+    // FIXME: this may be crashing
+    // if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, bitsPerSample)) {
+    //   logf("failed to initialize i2s");
+    // }
   }
 
   ~SoundTest() {
@@ -718,38 +728,59 @@ public:
   }
   
   void update(EVMDrawingContext &ctx) {
-    /*
     int32_t avg = 0;
-  for(int i=0; i<DATA_SIZE; i++){
-    int16_t val = analogRead(A2);
-    avg += val;
-    data[i] = val;
-  }
-
-  //remove DC offset and gain up to 16 bits
-  avg = avg/DATA_SIZE;
-  for(int i=0; i<DATA_SIZE; i++) data[i] = (data[i] - avg) * 64;
-  */
-    
-    for (int i = 0; i < FFT_DATA_SIZE; ++i) {
-      samples[i] = I2S.read();
+    for (int i = 0; i < I2S_SAMPLES; ++i) {
+      // samples[i] = I2S.read();
+      // avg += samples[i];
     }
+    avg /= I2S_SAMPLES;
+
+    ctx.leds.fill_solid(CRGB::Black);
+
+    // move up earth/venus/mars based on avg amplitude
+    logf("avg = %i", avg);
+    int top = map(avg, 0, 1000, 0, circleleds.size());
+    for (int i = 0; i < top; ++i) {
+      // assert(i < NUM_LEDS, "i < NUM_LEDS");
+      // ctx.leds[i] = CRGB::Green;
+    }
+    
+
+
+    // TODO: lint for fft
+
+  //   int32_t avg = 0;
+  // for(int i=0; i<DATA_SIZE; i++){
+  //   int16_t val = analogRead(A2);
+  //   avg += val;
+  //   data[i] = val;
+  // }
+
+  // //remove DC offset and gain up to 16 bits
+  // avg = avg/DATA_SIZE;
+  // for(int i=0; i<DATA_SIZE; i++) data[i] = (data[i] - avg) * 64;
+  
+    
+    // for (int i = 0; i < FFT_DATA_SIZE; ++i) {
+    //   samples[i] = I2S.read();
+    // }
 
     // run the FFT
-    ZeroFFT(samples, FFT_DATA_SIZE);
+    // ZeroFFT(samples, FFT_DATA_SIZE);
 
     //data is only meaningful up to sample rate/2, discard the other half
-    for(int i = 0; i < FFT_DATA_SIZE/2; i++) {      
-      float freq = FFT_BIN(i, I2S_SAMPLE_RATE, FFT_DATA_SIZE);
-      ctx.leds[i] = CRGB(freq, 0xFF, 0xFF);
-      Serial.print(freq);
-      Serial.print(" Hz: ");
-      Serial.println(samples[i]);
-    }
+    // for(int i = 0; i < FFT_DATA_SIZE/2; i++) {      
+    //   float freq = FFT_BIN(i, I2S_SAMPLE_RATE, FFT_DATA_SIZE);
+    //   ctx.leds[i] = CRGB(freq, 0xFF, 0xFF);
+    //   Serial.print(freq);
+    //   Serial.print(" Hz: ");
+    //   Serial.println(samples[i]);
+    // }
   }
   const char *description() {
     return "sound";
   }
 };
+
 
 #endif

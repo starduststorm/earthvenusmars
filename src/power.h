@@ -203,7 +203,7 @@ public:
     AnalogDial *dial = controls.addAnalogDial(0);
     dial->readValueFunc = &getADCRead;
     dial->maxValue = 4096; // 12-bit
-    dial->updateThreshold = 60;
+    dial->updateThreshold = 90;
     
     dial->onChange([this](uint32_t value) {
       this->brightnessUpdate(value);
@@ -240,8 +240,10 @@ public:
       while (ADC->STATUS.bit.SYNCBUSY);
     } else {
       uint8_t brightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
-      logf("Brightness -> %u", brightness);
-      FastLED.setBrightness(brightness);
+      if (FastLED.getBrightness() != brightness) {
+        logf("Brightness -> %u", brightness);
+        FastLED.setBrightness(brightness);
+      }
     }
   }
 };

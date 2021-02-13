@@ -10,8 +10,6 @@
 const bool kTestPatternTransitions = false;
 const long kIdlePatternTimeout = -1;//1000 * (kTestPatternTransitions ? 20 : 60 * 2);
 
-Pattern *testIdlePattern = new SoundTest();
-
 class PatternManager {
   int patternIndex = -1;
   Pattern *activePattern = NULL;
@@ -21,6 +19,15 @@ class PatternManager {
   template<class T>
   static Pattern *construct() {
     return new T();
+  }
+
+  // Make testIdlePattern in this constructor instead of at global so the Pattern doesn't get made at launch
+  Pattern *MakeTestIdlePattern() {
+    static Pattern *testIdlePattern = NULL;
+    if (testIdlePattern == NULL) {
+      testIdlePattern = new UpstreamPattern();
+    }
+    return testIdlePattern;
   }
 
 public:
@@ -100,8 +107,9 @@ public:
 
     // start a new random pattern if there is none
     if (activePattern == NULL) {
-      if (testIdlePattern) {
-        startPattern(testIdlePattern);
+      Pattern *testPattern = MakeTestIdlePattern();
+      if (testPattern) {
+        startPattern(testPattern);
       } else {
         int choice = (int)random8(patternConstructors.size());
         startPatternAtIndex(choice);
