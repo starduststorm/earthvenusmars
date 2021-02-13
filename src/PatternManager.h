@@ -26,6 +26,7 @@ class PatternManager {
     static Pattern *testIdlePattern = NULL;
     if (testIdlePattern == NULL) {
       testIdlePattern = new UpstreamPattern();
+      // testIdlePattern = new SoundTest();
     }
     return testIdlePattern;
   }

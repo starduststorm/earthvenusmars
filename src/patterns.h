@@ -718,9 +718,12 @@ public:
   SoundTest() {
     const int bitsPerSample = 32;
     // FIXME: this may be crashing
-    // if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, bitsPerSample)) {
-    //   logf("failed to initialize i2s");
-    // }
+    loglf("trying to initialize i2s..");
+    if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, bitsPerSample)) {
+      logf("failed to initialize i2s");
+    } else {
+      logf("done");
+    }
   }
 
   ~SoundTest() {
@@ -730,15 +733,16 @@ public:
   void update(EVMDrawingContext &ctx) {
     int32_t avg = 0;
     for (int i = 0; i < I2S_SAMPLES; ++i) {
-      // samples[i] = I2S.read();
-      // avg += samples[i];
+      samples[i] = I2S.read();
+      avg += samples[i];
     }
     avg /= I2S_SAMPLES;
 
     ctx.leds.fill_solid(CRGB::Black);
+    ctx.leds[(millis()/500)%NUM_LEDS] = CRGB::Cyan;
 
     // move up earth/venus/mars based on avg amplitude
-    logf("avg = %i", avg);
+    //logf("avg = %i", avg);
     int top = map(avg, 0, 1000, 0, circleleds.size());
     for (int i = 0; i < top; ++i) {
       // assert(i < NUM_LEDS, "i < NUM_LEDS");
