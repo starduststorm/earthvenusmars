@@ -22,7 +22,7 @@ class PatternManager {
   }
 
   // Make testIdlePattern in this constructor instead of at global so the Pattern doesn't get made at launch
-  Pattern *MakeTestIdlePattern() {
+  Pattern *TestIdlePattern() {
     static Pattern *testIdlePattern = NULL;
     if (testIdlePattern == NULL) {
       testIdlePattern = new UpstreamPattern();
@@ -98,7 +98,7 @@ public:
 
     // time out idle patterns
     if (activePattern != NULL && kIdlePatternTimeout != -1 && activePattern->isRunning() && activePattern->runTime() > kIdlePatternTimeout) {
-      if (activePattern != testIdlePattern && activePattern->wantsToIdleStop()) {
+      if (activePattern != TestIdlePattern() && activePattern->wantsToIdleStop()) {
         activePattern->stop();
         delete activePattern;
         activePattern = NULL;
@@ -107,7 +107,7 @@ public:
 
     // start a new random pattern if there is none
     if (activePattern == NULL) {
-      Pattern *testPattern = MakeTestIdlePattern();
+      Pattern *testPattern = TestIdlePattern();
       if (testPattern) {
         startPattern(testPattern);
       } else {
