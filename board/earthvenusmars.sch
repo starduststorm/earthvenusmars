@@ -841,7 +841,7 @@ U 1 1 5FBFDA7E
 P 4600 5000
 F 0 "J1" V 4500 4800 50  0000 L CNN
 F 1 "Conn_01x05_Female" V 4650 4500 50  0000 L CNN
-F 2 "Pad_SMD:Pad_SMD_1.27mm_01x05" H 4600 5000 50  0001 C CNN
+F 2 "earthvenusmars:programmer_pads_v2" H 4600 5000 50  0001 C CNN
 F 3 "~" H 4600 5000 50  0001 C CNN
 	1    4600 5000
 	1    0    0    -1  
