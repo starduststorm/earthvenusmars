@@ -46,7 +46,7 @@ module caddy() {
                             // arm
                             arc(r1, r2, arm_arclen, arms_height, taper=2, center=true);
                             // rest
-                            arc(r0-2, r0, arm_arclen, rest_height, taper=1, center=true);
+                            arc(r0-2-epsilon, r0, arm_arclen, rest_height, taper=1, center=true);
                         }
                     }
                 }
