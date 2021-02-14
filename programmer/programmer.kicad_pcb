@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 25)
+    (drawings 31)
     (tracks 71)
     (zones 0)
     (modules 5)
@@ -351,6 +351,12 @@
     )
   )
 
+  (gr_circle (center 100 100) (end 108 100) (layer B.SilkS) (width 0.12) (tstamp 60290F96))
+  (gr_circle (center 100 100) (end 111.059976 100) (layer B.SilkS) (width 0.12) (tstamp 60290F95))
+  (gr_circle (center 96 89.7) (end 96.2106 89.7) (layer B.SilkS) (width 0.4) (tstamp 60290F94))
+  (gr_circle (center 100 100) (end 116.856113 100) (layer B.SilkS) (width 0.12) (tstamp 60290F93))
+  (gr_circle (center 96.9 107.4) (end 97.1 107.4) (layer B.SilkS) (width 0.4) (tstamp 60290F92))
+  (gr_circle (center 115.4 93.2) (end 115.512 93.2) (layer B.SilkS) (width 0.4) (tstamp 60290F91))
   (gr_circle (center 115.4 93.2) (end 115.512 93.2) (layer F.SilkS) (width 0.4) (tstamp 60290E1F))
   (gr_circle (center 96 89.7) (end 96.2106 89.7) (layer F.SilkS) (width 0.4) (tstamp 60290E1F))
   (gr_circle (center 96.9 107.4) (end 97.1 107.4) (layer F.SilkS) (width 0.4))
