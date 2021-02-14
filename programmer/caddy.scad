@@ -20,10 +20,10 @@ module caddy() {
     r2 = 27; // outer arms to cradle board
     
     arms_height = 6;
-    base_height = 2;
+    base_height = 3;
     rest_height = 5.2 - base_height; // pogopin recommended working height is 5.57mm, min=4.87
 
-    screwhole_radius = 1.5;
+    screwhole_radius = 1.25;
     
     spoke_arclen = PI/3*RAD;
     arm_arclen = PI/8*RAD;
