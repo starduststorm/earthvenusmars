@@ -146,10 +146,10 @@ Wire Wire Line
 Wire Wire Line
 	6250 3850 6250 4050
 $Comp
-L Connector_Generic:Conn_02x05_Odd_Even JLINK1
+L Connector_Generic:Conn_02x05_Odd_Even SWD1
 U 1 1 602AB4EE
 P 6050 3650
-F 0 "JLINK1" H 6100 4067 50  0000 C CNN
+F 0 "SWD1" H 6100 4067 50  0000 C CNN
 F 1 "Conn_02x05_Top_Bottom" H 6000 3950 50  0000 C CNN
 F 2 "Connector_PinHeader_1.27mm:PinHeader_2x05_P1.27mm_Vertical_SMD" H 6050 3650 50  0001 C CNN
 F 3 "~" H 6050 3650 50  0001 C CNN
