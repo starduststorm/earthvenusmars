@@ -731,6 +731,7 @@ public:
   int secondsPerPalette = 10;
   uint8_t minBrightness = 0;
   uint8_t maxColorJump = 0xFF;
+  bool pauseRotation = false;
   
   PaletteRotation(int minBrightness=0) {
     this->minBrightness = minBrightness;
@@ -743,17 +744,24 @@ public:
   }
   
   void paletteRotationTick() {
-    EVERY_N_MILLISECONDS(40) {
-      nblendPaletteTowardPalette(currentPalette, targetPalette, sizeof(T) / 3);
-    }
-    EVERY_N_SECONDS(secondsPerPalette) {
-      assignPalette(&targetPalette);
+    if (!pauseRotation) {
+      EVERY_N_MILLISECONDS(40) {
+        nblendPaletteTowardPalette(currentPalette, targetPalette, sizeof(T) / 3);
+      }
+      EVERY_N_SECONDS(secondsPerPalette) {
+        assignPalette(&targetPalette);
+      }
     }
   }
 
-  T getPalette() {
+  T& getPalette() {
     paletteRotationTick();
     return currentPalette;
+  }
+
+  // unblended override
+  void setPalette(T palette) {
+    currentPalette = palette;
   }
 
   CRGB getPaletteColor(uint8_t n, uint8_t brightness = 0xFF) {

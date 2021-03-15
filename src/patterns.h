@@ -83,6 +83,7 @@ public:
     friend BitsFiller;
   private:
     unsigned long birthmilli;
+    bool firstFrame = true;
   public:
     int px;
     vector<BitDirection> directions;
@@ -317,8 +318,22 @@ public:
 
     buffer.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
     
+    if (spawnRule == maintainPopulation) {
+      for (unsigned b = bits.size(); b < maxSpawnBits; ++b) {
+        if (maxBitsPerSecond != 0 && mils - lastBitSpawn < 1000 / maxBitsPerSecond) {
+          continue;
+        }
+        addBit();
+        lastBitSpawn = mils;
+      }
+    }
+
     if (mils - lastMove > 1000/speed) {
       for (int i = bits.size() - 1; i >= 0; --i) {
+        if (bits[i].firstFrame) {
+          // don't flow bits on the first frame. this allows pattern code to make their own bits that are displayed before being flowed
+          continue;
+        }
         bool bitAlive = flowBit(i);
         if (bitAlive && bits[i].lifespan != 0 && bits[i].age() > bits[i].lifespan) {
           killBit(i);
@@ -338,6 +353,7 @@ public:
     
     if (fadeUpDistance > 0) {
       for (Bit &bit : bits) {
+        if (bit.firstFrame) continue;
         // don't show full fade-up distance right when bit is created
         int bitFadeUpDistance = min((unsigned long)fadeUpDistance, speed * bit.age() / 1000);
         if (bitFadeUpDistance > 0) {
@@ -347,17 +363,12 @@ public:
       }
     }
 
-    if (spawnRule == maintainPopulation) {
-      for (unsigned b = bits.size(); b < maxSpawnBits; ++b) {
-        if (maxBitsPerSecond != 0 && mils - lastBitSpawn < 1000 / maxBitsPerSecond) {
-          continue;
-        }
-        addBit();
-        lastBitSpawn = mils;
-      }
-    }
     buffer.ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
     lastTick = mils;
+
+    for (Bit &bit : bits) {
+      bit.firstFrame = false;
+    }
   };
 
   Bit &addBit() {
@@ -750,14 +761,29 @@ public:
 
 #include "AudioManager.h"
 
-class SoundTest : public Pattern, public FFTProcessing {
-  BitsFiller bitsFiller;
+class SoundBits : public Pattern, public FFTProcessing, public PaletteRotation<CRGBPalette256> {
+  BitsFiller bitsFillerOut;
+  BitsFiller bitsFillerIn;
+
+    typedef enum {hue, trans, bi, lesbian, rotation, modeCount} ColorMode;
+  ColorMode colorMode = hue;
 public:
-  SoundTest() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
-    bitsFiller.flowRule = BitsFiller::random;
-    bitsFiller.fadeUpDistance = 3;
-    bitsFiller.spawnPixels = &circleleds;
-    bitsFiller.handleUpdateBit = [](BitsFiller::Bit &bit) {
+  SoundBits() : bitsFillerOut(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}),
+                bitsFillerIn(0, 60, 1200, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+    bitsFillerOut.flowRule = BitsFiller::random;
+    bitsFillerOut.fadeUpDistance = 3;
+    bitsFillerOut.spawnPixels = &circleleds;
+    bitsFillerOut.fadeDown = 6;
+    bitsFillerOut.handleUpdateBit = [](BitsFiller::Bit &bit) {
+      int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
+      bit.brightness = raw;
+    };
+
+    bitsFillerIn.flowRule = BitsFiller::random;
+    bitsFillerIn.fadeUpDistance = 3;
+    bitsFillerIn.spawnPixels = &leafleds;
+    bitsFillerOut.fadeDown = 6;
+    bitsFillerIn.handleUpdateBit = [](BitsFiller::Bit &bit) {
       int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
       bit.brightness = raw;
     };
@@ -765,33 +791,67 @@ public:
 
   void update(EVMDrawingContext &ctx) {
     vector<int> spectrum = fftUpdate();
-    fftLog(spectrum);
-    
-    ctx.leds.fill_solid(CRGB::Black);
-    bitsFiller.update(ctx);
+    // fftLog(spectrum);
+
     for (unsigned b = 0; b < spectrum.size(); ++b) {
-      if (spectrum[b] > 6) {
-        if (bitsFiller.bits.size() < 20) {
-          // logf("levels[%i]: %i, spawning a bit there are now %u bits", b, spectrum[b], bitsFiller.bits.size());
-          BitsFiller::Bit &bit = bitsFiller.addBit();
-          bit.initialColor = CHSV(millis() / 100 + 0xFF * b / 13, 0xFF, 0xFF);
-          bit.color = bit.initialColor;
-          bit.color.nscale8(min(0xFF, 0xFF * spectrum[b]/10));
-          bit.lifespan = min(2000, 2000 * spectrum[b]/20);
+      int thresh = 3;
+      if (spectrum[b] > thresh) {
+        unsigned maxbits = 50;
+        if (bitsFillerOut.bits.size() + bitsFillerIn.bits.size() < maxbits) {
+          // loglf("levels[%i]: %i; making a bit; out bits = %u, in bits = %u...", b, spectrum[b], bitsFillerOut.bits.size(), bitsFillerIn.bits.size());
+          bool spawnoutbound = b < spectrum.size() / 5;
+          unsigned maxlifespan = spawnoutbound ? 2000 : 1000;
+          BitsFiller::Bit &bit = (spawnoutbound ? bitsFillerOut : bitsFillerIn).addBit();
+          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[b]-thresh)/20);
+          // logf("done");
+
+          uint8_t colorIndex = millis() / 100 + 0xFF * b / 13;
+          CRGB color;
+          switch (colorMode) {
+            case hue:
+              color = CHSV(colorIndex, 0xFF, 0xFF); break;
+            default:
+              color = getPaletteColor(colorIndex);
+              break;
+          }
+          
+          color.nscale8(min(0xFF, 0xFF * (spectrum[b]-thresh)/10));
+          bit.color = color;
         }
       }
+    }
+
+    ctx.leds.fill_solid(CRGB::Black);
+
+    bitsFillerOut.update(ctx);
+    bitsFillerIn.update(ctx);
+  }
+
+  void poke() {
+    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
+    logf("  colormode -> %i", colorMode);
+    pauseRotation = (colorMode != rotation);
+
+    switch (colorMode) {
+      case trans:
+        setPalette(Trans_Flag_gp); break;
+      case bi:
+        setPalette(Bi_Flag_gp); break;
+      case lesbian:
+        setPalette(Lesbian_Flag_gp); break;
+      default: break;
     }
   }
 
   const char *description() {
-    return "soundtest";
+    return "SoundBits";
   }
 };
 
-class SoundTest2 : public Pattern, public FFTProcessing {
+class SoundTest : public Pattern, public FFTProcessing {
   BitsFiller bitsFiller;
 public:
-  SoundTest2() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  SoundTest() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFiller.flowRule = BitsFiller::random;
     bitsFiller.fadeUpDistance = 3;
     bitsFiller.spawnPixels = &circleleds;
@@ -818,7 +878,7 @@ public:
   }
 
   const char *description() {
-    return "soundtest2";
+    return "soundtest";
   }
 };
 
