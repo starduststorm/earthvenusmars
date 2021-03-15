@@ -25,8 +25,9 @@ class PatternManager {
   Pattern *TestIdlePattern() {
     static Pattern *testIdlePattern = NULL;
     if (testIdlePattern == NULL) {
-      testIdlePattern = new UpstreamPattern();
-      // testIdlePattern = new SoundTest();
+      // testIdlePattern = new LitPattern();
+      // testIdlePattern = new UpstreamPattern();
+      // testIdlePattern = new SoundTest2();
     }
     return testIdlePattern;
   }
@@ -36,6 +37,8 @@ public:
     patternConstructors.push_back(&(construct<DownstreamPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
     patternConstructors.push_back(&(construct<IntersexFlagPattern>));
+    patternConstructors.push_back(&(construct<SoundTest>));
+    patternConstructors.push_back(&(construct<SoundTest2>));
   }
 
   void nextPattern() {

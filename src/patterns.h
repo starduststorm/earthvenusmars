@@ -88,6 +88,7 @@ public:
     vector<BitDirection> directions;
     unsigned long lifespan;
     CRGB color;
+    uint8_t brightness = 0xFF;
 
     CRGB initialColor;  // storage only
     uint8_t colorIndex; // storage only
@@ -266,7 +267,7 @@ public:
   }
 
   vector<Bit> bits;
-  unsigned numBits;
+  unsigned maxSpawnBits;
   unsigned maxBitsPerSecond = 0; // limit how fast new bits are spawned, 0 = no limit
   unsigned speed; // in pixels/second
   unsigned long lifespan = 0; // in milliseconds, forever if 0
@@ -284,9 +285,9 @@ public:
   function<void(Bit &)> handleNewBit = [](Bit &bit){};
   function<void(Bit &)> handleUpdateBit = [](Bit &bit){};
 
-  BitsFiller(unsigned numBits, unsigned speed, unsigned long lifespan, vector<BitDirections> bitDirections)
-    : numBits(numBits), speed(speed), lifespan(lifespan), bitDirections(bitDirections) {
-    bits.reserve(numBits);
+  BitsFiller(unsigned maxSpawnBits, unsigned speed, unsigned long lifespan, vector<BitDirections> bitDirections)
+    : maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan), bitDirections(bitDirections) {
+    bits.reserve(maxSpawnBits);
     buffer.leds.fill_solid(CRGB::Black);
   };
 
@@ -301,6 +302,7 @@ public:
 
       CRGB existing = buffer.leds[n];
       CRGB blended = blend(existing, bit.color, dim8_raw(progress));
+      blended.nscale8(bit.brightness);
       buffer.leds[n] = blended;
       
       if (distanceRemaining > 0) {
@@ -329,7 +331,9 @@ public:
     }
 
     for (Bit &bit : bits) {
-      buffer.leds[bit.px] = bit.color;
+      CRGB color = bit.color;
+      color.nscale8(bit.brightness);
+      buffer.leds[bit.px] = color;
     }
     
     if (fadeUpDistance > 0) {
@@ -344,7 +348,7 @@ public:
     }
 
     if (spawnRule == maintainPopulation) {
-      for (unsigned b = bits.size(); b < numBits; ++b) {
+      for (unsigned b = bits.size(); b < maxSpawnBits; ++b) {
         if (maxBitsPerSecond != 0 && mils - lastBitSpawn < 1000 / maxBitsPerSecond) {
           continue;
         }
@@ -416,7 +420,9 @@ public:
         bit.color = CHSV(millis()/20 + bit.colorIndex, 0xFF, 0xFF);
       };
     } else {
-      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {};
+      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {
+
+      };
     }
   }
 
@@ -430,30 +436,67 @@ public:
   }
 };
 
+/* ------------------------------------------------------------------------------- */
+
 // FIXME: WIP
 class UpstreamPattern : public Pattern {
   BitsFiller bitsFiller;
   // typedef enum {trans, bi, rainbow, modeCount} ColorMode;
   // ColorMode colorMode;
 public:
-  UpstreamPattern() : bitsFiller(10, 40, 1000, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  UpstreamPattern() : bitsFiller(100, 40, 600, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFiller.flowRule = BitsFiller::priority;
     bitsFiller.fadeUpDistance = 3;
     bitsFiller.spawnPixels = &leafleds;
-    bitsFiller.maxBitsPerSecond = 6;
     bitsFiller.handleNewBit = [](BitsFiller::Bit &bit) {
       // bit.color = CHSV(millis() / 4, 0xFF, 0xFF);
       bit.color = ARRAY_SAMPLE(transFlagColors);
     };
+    bitsFiller.handleUpdateBit = [](BitsFiller::Bit &bit) {
+      int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
+      bit.brightness = raw;
+    };
   }
 
   void update(EVMDrawingContext &ctx) {
+    bitsFiller.maxBitsPerSecond = beatsin8(2, 16-4, 16+4);
     ctx.leds.fill_solid(CRGB::Black);
     bitsFiller.update(ctx);
   }
 
   const char *description() {
     return "upstream";
+  }
+};
+
+/* ------------------------------------------------------------------------------- */
+
+class LitPattern : public Pattern, public PaletteRotation<CRGBPalette256> {
+  void update(EVMDrawingContext &ctx) {
+    for (int i = 0; i < ctx.leds.size(); ++i) {
+      uint8_t hue=0, brightness=0;
+
+      hue = beatsin8(i/20 + 10, 0, 0xFF, 0, 6*i); 
+      brightness = beatsin8(13+i/3, 0x0F, 0xFF, 0, 3*i);
+
+      ctx.leds[i] = getPaletteColor(hue, brightness);
+    }
+  }
+
+  const char *description() {
+    return "lit";
+  };
+};
+
+/* ------------------------------------------------------------------------------- */
+
+class HeartBeatPattern : public Pattern {
+  void update(EVMDrawingContext &ctx) {
+    
+  }
+
+  const char *description() {
+    return "heartbeat";
   }
 };
 
@@ -610,8 +653,6 @@ public:
         bit.directions[1] = EdgeType::clockwise;
       }
 
-      // bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {};
-
       switch(colorMode) {
         case flag0:
         case flag1:
@@ -704,87 +745,81 @@ public:
   }
 };
 
+/* ------------------------------------------------------------------------------- */
 
-// #include "Adafruit_ZeroFFT.h"
-// #define FFT_DATA_SIZE 128 // power of 2 between 16 and 2048 inclusive
-//the sample rate
-#define I2S_SAMPLE_RATE 8000
-#define I2S_SAMPLES 16
 
-class SoundTest : public Pattern {
-  // q15_t samples[FFT_DATA_SIZE];
-  int samples[I2S_SAMPLES];
+#include "AudioManager.h"
+
+class SoundTest : public Pattern, public FFTProcessing {
+  BitsFiller bitsFiller;
 public:
-  SoundTest() {
-    const int bitsPerSample = 32;
-    // FIXME: this may be crashing
-    loglf("trying to initialize i2s..");
-    if (!I2S.begin(I2S_PHILIPS_MODE, I2S_SAMPLE_RATE, bitsPerSample)) {
-      logf("failed to initialize i2s");
-    } else {
-      logf("done");
-    }
+  SoundTest() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+    bitsFiller.flowRule = BitsFiller::random;
+    bitsFiller.fadeUpDistance = 3;
+    bitsFiller.spawnPixels = &circleleds;
+    bitsFiller.handleUpdateBit = [](BitsFiller::Bit &bit) {
+      int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
+      bit.brightness = raw;
+    };
   }
 
-  ~SoundTest() {
-    I2S.end();
-  }
-  
   void update(EVMDrawingContext &ctx) {
-    int32_t avg = 0;
-    for (int i = 0; i < I2S_SAMPLES; ++i) {
-      samples[i] = I2S.read();
-      avg += samples[i];
-    }
-    avg /= I2S_SAMPLES;
-
+    vector<int> spectrum = fftUpdate();
+    fftLog(spectrum);
+    
     ctx.leds.fill_solid(CRGB::Black);
-    ctx.leds[(millis()/500)%NUM_LEDS] = CRGB::Cyan;
-
-    // move up earth/venus/mars based on avg amplitude
-    //logf("avg = %i", avg);
-    int top = map(avg, 0, 1000, 0, circleleds.size());
-    for (int i = 0; i < top; ++i) {
-      // assert(i < NUM_LEDS, "i < NUM_LEDS");
-      // ctx.leds[i] = CRGB::Green;
+    bitsFiller.update(ctx);
+    for (unsigned b = 0; b < spectrum.size(); ++b) {
+      if (spectrum[b] > 6) {
+        if (bitsFiller.bits.size() < 20) {
+          // logf("levels[%i]: %i, spawning a bit there are now %u bits", b, spectrum[b], bitsFiller.bits.size());
+          BitsFiller::Bit &bit = bitsFiller.addBit();
+          bit.initialColor = CHSV(millis() / 100 + 0xFF * b / 13, 0xFF, 0xFF);
+          bit.color = bit.initialColor;
+          bit.color.nscale8(min(0xFF, 0xFF * spectrum[b]/10));
+          bit.lifespan = min(2000, 2000 * spectrum[b]/20);
+        }
+      }
     }
-    
-
-
-    // TODO: lint for fft
-
-  //   int32_t avg = 0;
-  // for(int i=0; i<DATA_SIZE; i++){
-  //   int16_t val = analogRead(A2);
-  //   avg += val;
-  //   data[i] = val;
-  // }
-
-  // //remove DC offset and gain up to 16 bits
-  // avg = avg/DATA_SIZE;
-  // for(int i=0; i<DATA_SIZE; i++) data[i] = (data[i] - avg) * 64;
-  
-    
-    // for (int i = 0; i < FFT_DATA_SIZE; ++i) {
-    //   samples[i] = I2S.read();
-    // }
-
-    // run the FFT
-    // ZeroFFT(samples, FFT_DATA_SIZE);
-
-    //data is only meaningful up to sample rate/2, discard the other half
-    // for(int i = 0; i < FFT_DATA_SIZE/2; i++) {      
-    //   float freq = FFT_BIN(i, I2S_SAMPLE_RATE, FFT_DATA_SIZE);
-    //   ctx.leds[i] = CRGB(freq, 0xFF, 0xFF);
-    //   Serial.print(freq);
-    //   Serial.print(" Hz: ");
-    //   Serial.println(samples[i]);
-    // }
   }
+
   const char *description() {
-    return "sound";
+    return "soundtest";
   }
 };
 
+class SoundTest2 : public Pattern, public FFTProcessing {
+  BitsFiller bitsFiller;
+public:
+  SoundTest2() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+    bitsFiller.flowRule = BitsFiller::random;
+    bitsFiller.fadeUpDistance = 3;
+    bitsFiller.spawnPixels = &circleleds;
+    bitsFiller.handleUpdateBit = [](BitsFiller::Bit &bit) {
+      int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
+      bit.brightness = raw;
+    };
+  }
+
+  void update(EVMDrawingContext &ctx) {
+    vector<int> spectrum = fftUpdate();
+    fftLog(spectrum);
+    
+    bitsFiller.update(ctx);
+    ctx.leds.fadeToBlackBy(15);
+    for (unsigned b = 0; b < spectrum.size(); ++b) {
+      int thresh = 5;
+      if (spectrum[b] > thresh) {
+        for (unsigned i = 0; i < circleleds.size(); ++i) {
+          ctx.leds[circleleds[i]] += CHSV(0xFF*b/spectrum.size(), 0xFF, min(0xFF, 0xFF * (spectrum[b]-thresh) / 10));
+        }
+      }
+    }
+  }
+
+  const char *description() {
+    return "soundtest2";
+  }
+};
 
 #endif

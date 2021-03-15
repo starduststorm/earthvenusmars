@@ -203,7 +203,7 @@ public:
     AnalogDial *dial = controls.addAnalogDial(0);
     dial->readValueFunc = &getADCRead;
     dial->maxValue = 4096; // 12-bit
-    dial->updateThreshold = 90;
+    dial->updateThreshold = 120;
     
     dial->onChange([this](uint32_t value) {
       this->brightnessUpdate(value);

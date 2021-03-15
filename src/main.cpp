@@ -44,6 +44,7 @@ static const uint8_t brightnessDialPin = 9;
 /* --------------------------------- */
 
 #define FASTLED_USE_PROGMEM 1
+// #define FASTLED_ALLOW_INTERRUPTS 0
 #include <FastLED.h>
 
 #include "util.h"

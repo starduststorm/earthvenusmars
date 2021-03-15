@@ -756,8 +756,8 @@ public:
     return currentPalette;
   }
 
-  CRGB getPaletteColor(uint8_t n) {
-    return ColorFromPalette(getPalette(), n);
+  CRGB getPaletteColor(uint8_t n, uint8_t brightness = 0xFF) {
+    return ColorFromPalette(getPalette(), n, brightness);
   }
 
   CRGB getTrackedColor(uint8_t n) {
