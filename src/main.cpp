@@ -1,5 +1,12 @@
 #define DEBUG 1
 
+// for memory logging
+#ifdef __arm__
+extern "C" char* sbrk(int incr);
+#else
+extern char *__brkval;
+#endif
+
 #include <Arduino.h>
 // Arduino on samd21 defines min and max differently than the STL so we need to undefine them
 #undef min

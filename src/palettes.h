@@ -685,7 +685,8 @@ PaletteManager<CRGBPalette16> paletteManager;
 
 /* -------------------------------------------------------------------- */
 
-void nblendPaletteTowardPalette(CRGBPalette256& current, CRGBPalette256& target, uint16_t maxChanges)
+template<typename PaletteType>
+void nblendPaletteTowardPalette(PaletteType& current, PaletteType& target, uint16_t maxChanges)
 {
   uint8_t* p1;
   uint8_t* p2;
@@ -694,7 +695,7 @@ void nblendPaletteTowardPalette(CRGBPalette256& current, CRGBPalette256& target,
   p1 = (uint8_t*)current.entries;
   p2 = (uint8_t*)target.entries;
 
-  const uint16_t totalChannels = sizeof(CRGBPalette256);
+  const uint16_t totalChannels = sizeof(PaletteType);
   for( uint16_t i = 0; i < totalChannels; i++) {
     // if the values are equal, no changes are needed
     if( p1[i] == p2[i] ) { continue; }
@@ -746,7 +747,7 @@ public:
   void paletteRotationTick() {
     if (!pauseRotation) {
       EVERY_N_MILLISECONDS(40) {
-        nblendPaletteTowardPalette(currentPalette, targetPalette, sizeof(T) / 3);
+        nblendPaletteTowardPalette<T>(currentPalette, targetPalette, sizeof(T) / 3);
       }
       EVERY_N_SECONDS(secondsPerPalette) {
         assignPalette(&targetPalette);
@@ -764,6 +765,10 @@ public:
     currentPalette = palette;
   }
 
+  void randomizePalette() {
+    assignPalette(&currentPalette);
+  }
+
   CRGB getPaletteColor(uint8_t n, uint8_t brightness = 0xFF) {
     return ColorFromPalette(getPalette(), n, brightness);
   }
@@ -773,7 +778,7 @@ public:
     if (n >= colorIndexCount) {
       return CRGB::Black;
     }
-    T palette = getPalette();
+    T& palette = getPalette();
     CRGB color = ColorFromPalette(palette, colorIndexes[n]);
     while (linearBrightness(color) < minBrightness) {
       colorIndexes[n] = addmod8(colorIndexes[n], 1, 0xFF);

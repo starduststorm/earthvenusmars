@@ -10,6 +10,7 @@
 #include "palettes.h"
 #include "ledgraph.h"
 #include "drawing.h"
+#include "AudioManager.h"
 
 class Pattern {
 private:  
@@ -70,7 +71,6 @@ public:
 /* ------------------------------------------------------------------------------------------------------ */
 
 // a lil patternlet that can be instantiated to run bits
-// TODO: requires universal fade-down. run in a display buffer to avoid that?
 class BitsFiller {
 public:
   typedef EdgeType BitDirection;
@@ -86,7 +86,7 @@ public:
     bool firstFrame = true;
   public:
     int px;
-    vector<BitDirection> directions;
+    vector<BitDirection> directions; // FIXME: maybe not the right choice after all because this eats minimum 12 bytes per instance. 
     unsigned long lifespan;
     CRGB color;
     uint8_t brightness = 0xFF;
@@ -501,9 +501,74 @@ class LitPattern : public Pattern, public PaletteRotation<CRGBPalette256> {
 
 /* ------------------------------------------------------------------------------- */
 
-class HeartBeatPattern : public Pattern {
+class HeartBeatPattern : public Pattern, public FFTProcessing {
+  const uint8_t basebpm = 70;
+  uint8_t bpm = 40;
+  unsigned long lastSystole = 0;
+  unsigned long diastoleAt = 0;
+  const CRGB bloodColor = CRGB(0xFF, 0, 0x15);
+  
+  unsigned long lastTick = 0;
+  int fadeDown = 2;
+  float avgAmp = 0;
+
+  BitsFiller pumpFiller;
+public:
+  HeartBeatPattern() : pumpFiller(0, 30, 1200, {EdgeType::outbound}) {
+    pumpFiller.flowRule = BitsFiller::split;
+    pumpFiller.fadeDown = fadeDown;
+  }
+
+  void beat(EVMDrawingContext &ctx, bool parity, uint8_t intensity) {
+    CRGB scaledColor = bloodColor;
+    scaledColor.nscale8(intensity);
+
+    int spawnpixels[] = {earthleds[0], venusleds[0], marsleds[0]};
+
+    if (parity) {
+      for (int i = 0; i < 3; ++i) {
+        BitsFiller::Bit &bit = pumpFiller.addBit();
+        bit.px = spawnpixels[i];
+        bit.color = scaledColor;
+      }
+    }
+
+    for (unsigned i = 0; i < circleleds.size(); ++i) {
+      if ((int)roundf((i+circleleds.size()/12.)/6.)%2 != (int)parity) {
+        int c = circleleds[i];
+        ctx.leds[c] = scaledColor;
+      }
+    }
+  }
+
   void update(EVMDrawingContext &ctx) {
-    
+    unsigned long mils = millis();
+
+    if (lastTick != 0) {
+      ctx.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
+    }
+    lastTick = mils;
+
+    unsigned milsPerBeat = 1000 * 60 / bpm;
+    if (mils - lastSystole > milsPerBeat) {
+      beat(ctx, true, 0xFF);
+      lastSystole = mils;
+      diastoleAt = lastSystole + milsPerBeat * 0.24;
+    }
+    if (diastoleAt != 0 && mils > diastoleAt) {
+      beat(ctx, false, 0x8F);
+      diastoleAt = 0;
+    }
+    pumpFiller.update(ctx);
+
+    // louder -> higher bpm
+    const unsigned ampSamples = 800;
+    const unsigned int ampBaseline = 474;
+    unsigned long amplitude = min(1000u, fftUpdate().amplitude);
+    amplitude = max(0, (long)amplitude - (long)ampBaseline);
+    avgAmp = (avgAmp * (ampSamples-1) + amplitude) / ampSamples;
+    logf("amp: %lu, avgAmp: %i", amplitude, (int)avgAmp);
+    bpm = basebpm + 3 * avgAmp;
   }
 
   const char *description() {
@@ -758,10 +823,7 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
-
-#include "AudioManager.h"
-
-class SoundBits : public Pattern, public FFTProcessing, public PaletteRotation<CRGBPalette256> {
+class SoundBits : public Pattern, public FFTProcessing, public PaletteRotation<CRGBPalette32> {
   BitsFiller bitsFillerOut;
   BitsFiller bitsFillerIn;
 
@@ -790,7 +852,7 @@ public:
   }
 
   void update(EVMDrawingContext &ctx) {
-    vector<int> spectrum = fftUpdate();
+    vector<int> spectrum = fftUpdate().spectrum;
     // fftLog(spectrum);
 
     for (unsigned b = 0; b < spectrum.size(); ++b) {
@@ -839,6 +901,8 @@ public:
         setPalette(Bi_Flag_gp); break;
       case lesbian:
         setPalette(Lesbian_Flag_gp); break;
+      case rotation:
+        randomizePalette(); break;
       default: break;
     }
   }
@@ -862,7 +926,7 @@ public:
   }
 
   void update(EVMDrawingContext &ctx) {
-    vector<int> spectrum = fftUpdate();
+    vector<int> spectrum = fftUpdate().spectrum;
     fftLog(spectrum);
     
     bitsFiller.update(ctx);
@@ -871,7 +935,7 @@ public:
       int thresh = 5;
       if (spectrum[b] > thresh) {
         for (unsigned i = 0; i < circleleds.size(); ++i) {
-          ctx.leds[circleleds[i]] += CHSV(0xFF*b/spectrum.size(), 0xFF, min(0xFF, 0xFF * (spectrum[b]-thresh) / 10));
+          ctx.leds[circleleds[i]] += CHSV(0xFF*(b-2)/8, 0xFF, min(0xFF, 0xFF * (spectrum[b]-thresh) / 10));
         }
       }
     }

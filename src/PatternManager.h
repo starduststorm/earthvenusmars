@@ -38,7 +38,9 @@ public:
     patternConstructors.push_back(&(construct<CouplingPattern>));
     patternConstructors.push_back(&(construct<IntersexFlagPattern>));
     patternConstructors.push_back(&(construct<SoundBits>));
-    patternConstructors.push_back(&(construct<SoundTest>));
+    
+    // patternConstructors.push_back(&(construct<HeartBeatPattern>));
+    // patternConstructors.push_back(&(construct<SoundTest>));
   }
 
   void nextPattern() {

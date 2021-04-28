@@ -1,12 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#ifdef __arm__
-extern "C" char* sbrk(int incr);
-#else
-extern char *__brkval;
-#endif
-
 #include <Arduino.h>
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
 
@@ -24,7 +18,7 @@ static int vasprintf(char** strp, const char* fmt, va_list ap) {
   char tmp[1];
   int size = vsnprintf(tmp, 1, fmt, ap2);
   if (size <= 0) {
-    strp=NULL;
+    *strp=NULL;
     return size;
   }
   va_end(ap2);
