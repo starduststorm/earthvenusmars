@@ -27,12 +27,12 @@ $EndComp
 $Comp
 L power:GND #PWR0102
 U 1 1 5EB2B290
-P 3800 4550
-F 0 "#PWR0102" H 3800 4300 50  0001 C CNN
-F 1 "GND" V 3805 4422 50  0000 R CNN
-F 2 "" H 3800 4550 50  0001 C CNN
-F 3 "" H 3800 4550 50  0001 C CNN
-	1    3800 4550
+P 3700 4550
+F 0 "#PWR0102" H 3700 4300 50  0001 C CNN
+F 1 "GND" V 3705 4422 50  0000 R CNN
+F 2 "" H 3700 4550 50  0001 C CNN
+F 3 "" H 3700 4550 50  0001 C CNN
+	1    3700 4550
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -478,12 +478,12 @@ Connection ~ 5400 1750
 Wire Wire Line
 	5400 1750 5500 1750
 $Comp
-L Connector_Generic:Conn_01x05 J4
+L Connector_Generic:Conn_01x04 J4
 U 1 1 5F9E60C8
 P 3600 4750
 F 0 "J4" V 3564 4462 50  0000 R CNN
-F 1 "Conn_01x05" V 3700 4950 50  0000 R CNN
-F 2 "Connector_PinHeader_1.27mm:PinHeader_1x05_P1.27mm_Vertical" H 3600 4750 50  0001 C CNN
+F 1 "Conn_01x04" V 3700 4950 50  0000 R CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 3600 4750 50  0001 C CNN
 F 3 "~" H 3600 4750 50  0001 C CNN
 	1    3600 4750
 	0    1    1    0   
@@ -683,8 +683,6 @@ Wire Wire Line
 	3150 3650 3950 3650
 Wire Wire Line
 	3050 3750 3050 3550
-Wire Wire Line
-	3050 3550 3250 3550
 Wire Wire Line
 	2850 3550 2850 3750
 Wire Wire Line
@@ -887,25 +885,6 @@ SWDIO
 Text Label 4000 5000 0    50   ~ 0
 SWCLK
 $Comp
-L Connector:Conn_01x02_Female J2
-U 1 1 5FC334AA
-P 3150 3200
-F 0 "J2" V 3088 3012 50  0000 R CNN
-F 1 "Conn_01x02_Female" V 3200 3450 50  0000 R CNN
-F 2 "Pad_SMD:Pad_SMD_1.27mm_01x02" H 3150 3200 50  0001 C CNN
-F 3 "~" H 3150 3200 50  0001 C CNN
-	1    3150 3200
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	3150 3650 3150 3400
-Connection ~ 3150 3650
-Wire Wire Line
-	3250 3550 3250 3400
-Connection ~ 3250 3550
-Wire Wire Line
-	3250 3550 3950 3550
-$Comp
 L power:GND #PWR0138
 U 1 1 5FC4F9CF
 P 4400 5200
@@ -935,5 +914,6 @@ Wire Wire Line
 	3600 4550 3600 4150
 Wire Wire Line
 	3600 4150 3950 4150
-NoConn ~ 3700 4550
+Wire Wire Line
+	3050 3550 3950 3550
 $EndSCHEMATC
