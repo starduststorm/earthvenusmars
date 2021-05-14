@@ -5,6 +5,7 @@ RAD = 180 / PI;
 DEG = 1;
 
 epsilon = 0.001; // fudge to fix floating point rounding issues?
+tolerance = 0.2;  // 3D printing tolerance to fit around objects
 
 module caddy() {
     module arc(r1, r2, theta, h, taper = 0, center=false) {
@@ -17,7 +18,7 @@ module caddy() {
     
     r0 = 20; // caddy circle
     r1 = 24; // board diameter
-    r2 = 27; // outer arms to cradle board
+    r2 = 27+tolerance; // outer arms to cradle board
     
     arms_height = 6;
     base_height = 3;
