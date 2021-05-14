@@ -87,20 +87,21 @@ module draw_beveled_half(flip) {
 };
 
 pcb_bottom_y = 52.79; // measured board center to pcb bottom y
-pcb_bottom_to_dial = 19.7;
-thumbdial_radius = 4.7 + tolerance;
+pcb_bottom_to_dial_center = 24.4;
+thumbdial_radius = 4.6 + tolerance;
 thumbdial_center_to_edge_x = 1.81;
 
 //cutouts
 base_circle_cutout_overlap = 5.5;
-base_cable_cutout_width = 6;
+base_cable_cutout_width = 5;
+base_cable_caddy_width = 1.5*base_cable_cutout_width;
 
 // top case
 draw_beveled_half(1);
 
 // bottom case
-translate([-1 * part_placement_offset, 0,0]) {
-    difference() { 
+translate([-1 * part_placement_offset, 0,0]) 
+    difference() {
     union() {
         // back base
         theshape(outeroffset, basethickness, inneroffset, 0, base_cutouts=true);
@@ -110,16 +111,17 @@ translate([-1 * part_placement_offset, 0,0]) {
     }
     translate([0,0,-epsilon]) scale([1,1,1+epsilon]) union() {
         // center cutout
-        cylinder(r = edge_cut_radius -base_circle_cutout_overlap, h = basethickness);
+        cylinder(r = edge_cut_radius - base_circle_cutout_overlap, h = basethickness);
         
         // wire cutout
-        translate([-base_cable_cutout_width/2, -pcb_bottom_y-2*outeroffset/*just cut out the rounded edge*/, 0]) cube([base_cable_cutout_width, pcb_bottom_y, basethickness]);
+        translate([-base_cable_cutout_width/2, -pcb_bottom_y-2*outeroffset/*just cut out the rounded edge*/, 0]) {
+            cube([base_cable_cutout_width, pcb_bottom_y, basethickness]);
+        }
         
         // thumbdial cutout
-        translate([-encased_spoke_width/2 + thumbdial_center_to_edge_x, -pcb_bottom_y + pcb_bottom_to_dial + thumbdial_radius, 0])  {
+        translate([-encased_spoke_width/2 + thumbdial_center_to_edge_x, -pcb_bottom_y + pcb_bottom_to_dial_center, 0])  {
             cylinder(r=thumbdial_radius, h=basethickness);
             translate([0,  -thumbdial_radius, 0]) cube([2*thumbdial_radius, 2*thumbdial_radius, basethickness]);
         }
     }
-}
 }
