@@ -492,12 +492,9 @@ Text Label 3650 4150 0    50   ~ 0
 USB_D+
 Text Label 3950 4050 2    50   ~ 0
 USB_D-
-NoConn ~ 3950 3150
 NoConn ~ 3950 3050
 NoConn ~ 3950 2950
 NoConn ~ 3950 2850
-NoConn ~ 3950 2250
-NoConn ~ 3950 2150
 NoConn ~ 3950 2050
 NoConn ~ 3950 1950
 NoConn ~ 3950 1850
@@ -751,18 +748,6 @@ F 4 "KMR731NGLFS" H 6350 3050 50  0001 C CNN "Designation"
 	1    0    0    -1  
 $EndComp
 $Comp
-L Switch:SW_SPST SW3
-U 1 1 5F910AB5
-P 6350 3400
-F 0 "SW3" H 6350 3635 50  0000 C CNN
-F 1 "SW_SPST" H 6350 3544 50  0000 C CNN
-F 2 "Button_Switch_SMD:KMR731NG_LFS" H 6350 3400 50  0001 C CNN
-F 3 "~" H 6350 3400 50  0001 C CNN
-F 4 "KMR731NGLFS" H 6350 3400 50  0001 C CNN "Designation"
-	1    6350 3400
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:GND #PWR0133
 U 1 1 5F9110A0
 P 6550 2700
@@ -787,22 +772,18 @@ $EndComp
 $Comp
 L power:GND #PWR0135
 U 1 1 5F9113D1
-P 6300 3550
-F 0 "#PWR0135" H 6300 3300 50  0001 C CNN
-F 1 "GND" V 6305 3422 50  0000 R CNN
-F 2 "" H 6300 3550 50  0001 C CNN
-F 3 "" H 6300 3550 50  0001 C CNN
-	1    6300 3550
+P 6300 3250
+F 0 "#PWR0135" H 6300 3000 50  0001 C CNN
+F 1 "GND" V 6305 3122 50  0000 R CNN
+F 2 "" H 6300 3250 50  0001 C CNN
+F 3 "" H 6300 3250 50  0001 C CNN
+	1    6300 3250
 	0    -1   -1   0   
 $EndComp
-Text GLabel 3950 2450 0    50   Input ~ 0
+Text GLabel 3950 2150 0    50   Input ~ 0
 BUTTON_1
-Text GLabel 3950 3750 0    50   Input ~ 0
+Text GLabel 3950 3150 0    50   Input ~ 0
 BUTTON_2
-Text GLabel 5350 2250 2    50   Input ~ 0
-BUTTON_3
-Text GLabel 6150 3400 0    50   Input ~ 0
-BUTTON_3
 Text GLabel 6150 3050 0    50   Input ~ 0
 BUTTON_2
 Text GLabel 6150 2700 0    50   Input ~ 0
@@ -810,27 +791,27 @@ BUTTON_1
 $Comp
 L Device:R_POT RV1
 U 1 1 5FA0CDD3
-P 6300 3700
-F 0 "RV1" H 6230 3654 50  0000 R CNN
-F 1 "R_POT" H 6230 3745 50  0000 R CNN
-F 2 "Pot_dial_3352T-1-103LF:Pot_dial_3352T-1-103LF" H 6300 3700 50  0001 C CNN
-F 3 "~" H 6300 3700 50  0001 C CNN
-	1    6300 3700
+P 6300 3400
+F 0 "RV1" H 6230 3354 50  0000 R CNN
+F 1 "R_POT" H 6230 3445 50  0000 R CNN
+F 2 "Pot_dial_3352T-1-103LF:Pot_dial_3352T-1-103LF" H 6300 3400 50  0001 C CNN
+F 3 "~" H 6300 3400 50  0001 C CNN
+	1    6300 3400
 	-1   0    0    1   
 $EndComp
 Text GLabel 3950 2550 0    50   Input ~ 0
 DIAL_1
-Text GLabel 6150 3700 0    50   Input ~ 0
+Text GLabel 6150 3400 0    50   Input ~ 0
 DIAL_1
 $Comp
 L power:+3.3V #PWR0136
 U 1 1 5FBE3505
-P 6300 3850
-F 0 "#PWR0136" H 6300 3700 50  0001 C CNN
-F 1 "+3.3V" V 6315 3978 50  0000 L CNN
-F 2 "" H 6300 3850 50  0001 C CNN
-F 3 "" H 6300 3850 50  0001 C CNN
-	1    6300 3850
+P 6300 3550
+F 0 "#PWR0136" H 6300 3400 50  0001 C CNN
+F 1 "+3.3V" V 6315 3678 50  0000 L CNN
+F 2 "" H 6300 3550 50  0001 C CNN
+F 3 "" H 6300 3550 50  0001 C CNN
+	1    6300 3550
 	0    1    1    0   
 $EndComp
 $Comp
@@ -843,17 +824,6 @@ F 2 "earthvenusmars:programmer_pads_v2" H 4600 5000 50  0001 C CNN
 F 3 "~" H 4600 5000 50  0001 C CNN
 	1    4600 5000
 	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR0137
-U 1 1 5FBFE728
-P 6550 3400
-F 0 "#PWR0137" H 6550 3150 50  0001 C CNN
-F 1 "GND" V 6555 3272 50  0000 R CNN
-F 2 "" H 6550 3400 50  0001 C CNN
-F 3 "" H 6550 3400 50  0001 C CNN
-	1    6550 3400
-	0    -1   -1   0   
 $EndComp
 $Comp
 L ATSAMD21G18A-AU:ATSAMD21G18A-AU U1
@@ -916,4 +886,50 @@ Wire Wire Line
 	3600 4150 3950 4150
 Wire Wire Line
 	3050 3550 3950 3550
+Text GLabel 3950 2250 0    50   Input ~ 0
+TOUCH_PIN_1
+NoConn ~ 3950 2450
+Text GLabel 3950 3750 0    50   Input ~ 0
+TOUCH_PIN_2
+Text GLabel 6300 3950 0    50   Input ~ 0
+TOUCH_PIN_2
+Text GLabel 6300 4150 0    50   Input ~ 0
+TOUCH_PIN_3
+$Comp
+L Connector:Conn_01x01_Female J_T2
+U 1 1 60BC2291
+P 6500 3950
+F 0 "J_T2" H 6528 3976 50  0000 L CNN
+F 1 "Conn_01x01_Female" H 6528 3885 50  0000 L CNN
+F 2 "earthvenusmars:touch_venus" H 6500 3950 50  0001 C CNN
+F 3 "~" H 6500 3950 50  0001 C CNN
+	1    6500 3950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x01_Female J_T3
+U 1 1 60BC3BD3
+P 6500 4150
+F 0 "J_T3" H 6528 4176 50  0000 L CNN
+F 1 "Conn_01x01_Female" H 6528 4085 50  0000 L CNN
+F 2 "earthvenusmars:touch_mars" H 6500 4150 50  0001 C CNN
+F 3 "~" H 6500 4150 50  0001 C CNN
+	1    6500 4150
+	1    0    0    -1  
+$EndComp
+Text GLabel 6300 3750 0    50   Input ~ 0
+TOUCH_PIN_1
+$Comp
+L Connector:Conn_01x01_Female J_T1
+U 1 1 60BC9517
+P 6500 3750
+F 0 "J_T1" H 6528 3776 50  0000 L CNN
+F 1 "Conn_01x01_Female" H 6528 3685 50  0000 L CNN
+F 2 "earthvenusmars:touch_earth" H 6500 3750 50  0001 C CNN
+F 3 "~" H 6500 3750 50  0001 C CNN
+	1    6500 3750
+	1    0    0    -1  
+$EndComp
+Text GLabel 5350 2250 2    50   Input ~ 0
+TOUCH_PIN_3
 $EndSCHEMATC
