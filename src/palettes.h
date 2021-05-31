@@ -506,8 +506,8 @@ DEFINE_GRADIENT_PALETTE( Blue_Cyan_Yellow_gp ) {
   255, 255, 255,  0
 };
 
-// Gradient palette for trans flag
-// Size: 40 bytes of program space.
+// Following palettes and color matching by Opal Holley
+// Colors are pulled from publically available flag values, then refined to render better on APA102-2020 LEDs manually
 
 DEFINE_GRADIENT_PALETTE( Trans_Flag_gp ) {
   0,   0x2A, 0x9F, 0xFA,
@@ -527,8 +527,6 @@ CRGB transFlagBlue = CRGB(0x2A, 0x9F, 0xFA);
 CRGB transFlagWhite = CRGB(0xBA, 0xBA, 0xBA);
 CRGB transFlagColors[] = {transFlagBlue, transFlagPink, transFlagWhite};
 
-// Flag colors pulled from google searches and refined to render better on APA102-2020 LEDs manually
-// colors could stand to be tweaked even more, especially the purples and the lesbian flag color differentiation.
 DEFINE_GRADIENT_PALETTE( Bi_Flag_gp ) {
   0,   0xB6, 0x02, 0x40,
   101, 0xB6, 0x02, 0x40,
@@ -566,16 +564,59 @@ DEFINE_GRADIENT_PALETTE( Pride_Flag_gp ) {
   255, 0x75, 0x07, 0xB7,
 };
 
-// Single array of defined cpt-city color palettes.
-// This will let us programmatically choose one based on
-// a number, rather than having to activate each explicitly
-// by name every time.
-// Since it is const, this array could also be moved
-// into PROGMEM to save SRAM, but for simplicity of illustration
-// we'll keep it in a regular SRAM array.
+DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
+  0,   0x00, 0x00, 0x00,
+  63,  0x00, 0x00, 0x00,
+  64,  0xA4, 0xA4, 0xA4,
+  127, 0xA4, 0xA4, 0xA4,
+  128, 0xFF, 0xFF, 0xFF,
+  195, 0xFF, 0xFF, 0xFF,
+  196, 0x81, 0x00, 0x81,
+  255, 0x81, 0x00, 0x81,
+};
+
+DEFINE_GRADIENT_PALETTE( Enby_Flag_gp ) {
+  0,   0xFF, 0xF4, 0x30,
+  63,  0xFF, 0xF4, 0x30,
+  64,  0xFF, 0xFF, 0xFF,
+  127, 0xFF, 0xFF, 0xFF,
+  128, 0x9C, 0x59, 0xD1,
+  195, 0x9C, 0x59, 0xD1,
+  196, 0x00, 0x00, 0x00,
+  255, 0x00, 0x00, 0x00,
+};
+
+DEFINE_GRADIENT_PALETTE( Genderqueer_Flag_gp ) {
+  0,   0xB7, 0x7F, 0xDD,
+  101, 0xB7, 0x7F, 0xDD,
+  102, 0xFF, 0xFF, 0xFF,
+  152, 0xFF, 0xFF, 0xFF,
+  153, 0x48, 0x82, 0x1E,
+  255, 0x48, 0x82, 0x1E,
+};
+
+DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
+  0,   0xFF, 0x1B, 0x8D,
+  101, 0xFF, 0x1B, 0x8D,
+  102, 0xFF, 0xDA, 0x00,
+  152, 0xFF, 0xDA, 0x00,
+  153, 0x1B, 0xB3, 0xFF,
+  255, 0x1B, 0xB3, 0xFF,
+};
+
+const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
+  Trans_Flag_gp,
+  Pride_Flag_gp,
+  Enby_Flag_gp,
+  Genderqueer_Flag_gp,
+  Bi_Flag_gp,
+  Lesbian_Flag_gp,
+  Ace_Flag_gp,
+  Pan_Flag_gp,
+};
+
 //
-// This list of color palettes acts as a "playlist"; you can
-// add or delete, or re-arrange as you wish.
+
 const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   Sunset_Real_gp,
   es_rivendell_15_gp,
