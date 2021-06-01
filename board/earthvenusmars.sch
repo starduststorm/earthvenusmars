@@ -573,10 +573,6 @@ F 4 "KMR731NGLFS" H 6350 2700 50  0001 C CNN "Designation"
 	1    0    0    -1  
 $EndComp
 Connection ~ 5350 1550
-Wire Wire Line
-	3950 3950 3650 3950
-Wire Wire Line
-	3950 3850 3650 3850
 Text Label 3800 3850 0    50   ~ 0
 SDA
 Text Label 3800 3950 0    50   ~ 0
@@ -685,8 +681,6 @@ Wire Wire Line
 	2950 3750 2950 3350
 Wire Wire Line
 	2600 3350 2950 3350
-NoConn ~ 3650 3850
-NoConn ~ 3650 3950
 Wire Wire Line
 	1300 2500 1500 2500
 Wire Wire Line
@@ -932,4 +926,40 @@ $EndComp
 Text GLabel 5350 2250 2    50   Input ~ 0
 TOUCH_PIN_3
 NoConn ~ 3950 2150
+$Comp
+L Connector:Conn_01x02_Female J_LED1
+U 1 1 60BA94AC
+P 3050 3150
+F 0 "J_LED1" V 3100 3200 50  0000 R CNN
+F 1 "Conn_01x02_Female" V 3000 3450 50  0000 R CNN
+F 2 "earthvenusmars:SMD_Pad_01x02_1.27mm" H 3050 3150 50  0001 C CNN
+F 3 "~" H 3050 3150 50  0001 C CNN
+	1    3050 3150
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3150 3350 3150 3650
+Connection ~ 3150 3650
+Wire Wire Line
+	3050 3350 3050 3550
+Connection ~ 3050 3550
+$Comp
+L Connector:Conn_01x02_Female J_I2C1
+U 1 1 60BB2E0D
+P 3250 2900
+F 0 "J_I2C1" V 3300 2900 50  0000 R CNN
+F 1 "Conn_01x02_Female" V 3200 3200 50  0000 R CNN
+F 2 "earthvenusmars:SMD_Pad_01x02_1.27mm" H 3250 2900 50  0001 C CNN
+F 3 "~" H 3250 2900 50  0001 C CNN
+	1    3250 2900
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3350 3850 3350 3100
+Wire Wire Line
+	3350 3850 3950 3850
+Wire Wire Line
+	3250 3100 3250 3950
+Wire Wire Line
+	3250 3950 3950 3950
 $EndSCHEMATC
