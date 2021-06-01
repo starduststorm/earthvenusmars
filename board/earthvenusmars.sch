@@ -492,7 +492,6 @@ Text Label 3650 4150 0    50   ~ 0
 USB_D+
 Text Label 3950 4050 2    50   ~ 0
 USB_D-
-NoConn ~ 3950 3050
 NoConn ~ 3950 2950
 NoConn ~ 3950 2850
 NoConn ~ 3950 2050
@@ -507,7 +506,7 @@ NoConn ~ 5350 2850
 NoConn ~ 5350 2950
 NoConn ~ 3950 3450
 NoConn ~ 3950 3250
-NoConn ~ 3950 4250
+NoConn ~ 3950 3150
 NoConn ~ 3950 4350
 Wire Wire Line
 	3950 3350 3700 3350
@@ -780,9 +779,9 @@ F 3 "" H 6300 3250 50  0001 C CNN
 	1    6300 3250
 	0    -1   -1   0   
 $EndComp
-Text GLabel 3950 2150 0    50   Input ~ 0
+Text GLabel 3950 3050 0    50   Input ~ 0
 BUTTON_1
-Text GLabel 3950 3150 0    50   Input ~ 0
+Text GLabel 3950 4250 0    50   Input ~ 0
 BUTTON_2
 Text GLabel 6150 3050 0    50   Input ~ 0
 BUTTON_2
@@ -932,4 +931,5 @@ F 3 "~" H 6500 3750 50  0001 C CNN
 $EndComp
 Text GLabel 5350 2250 2    50   Input ~ 0
 TOUCH_PIN_3
+NoConn ~ 3950 2150
 $EndSCHEMATC
