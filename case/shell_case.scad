@@ -89,18 +89,18 @@ module draw_beveled_half(flip) {
 };
 
 pcb_bottom_y = 52.79; // measured board center to pcb bottom y
-pcb_bottom_to_dial_center = 24.4;
+pcb_bottom_to_dial_center = 26.4;
 thumbdial_radius = 4.6 + tolerance;
-thumbdial_center_to_edge_x = 1.81;
+thumbdial_center_to_edge_x = 1.3;
 
 //cutouts
 
-microphone_cutout_radius = 5.5;
+microphone_cutout_radius = 4.43 /* measured */ + 0.6 /* tolerance */;
 microphone_cutout_depth = 1.5; // 0805 1uF capacitor seems to be tallest part at 1.4mm expected
 microphone_cutout_position = [-10.65, 1.28, basethickness - microphone_cutout_depth]; // from center of board
 
 base_cable_cutout_depth = 0.9; // my usb inner insulated strand is 0.76mm diameter
-base_cable_cutout_center_position = [0, -47 - outeroffset, basethickness - base_cable_cutout_depth];
+base_cable_cutout_center_position = [0, -37 - outeroffset, basethickness - base_cable_cutout_depth];
 base_cable_cutout_center_radius = 4;
 
 base_cable_spoke_1_position = [5.25, base_cable_cutout_center_position[1] + 3.9, base_cable_cutout_center_position[2]]; // from center
@@ -108,7 +108,7 @@ base_cable_spoke_2_position = [-base_cable_spoke_1_position[0], base_cable_spoke
 base_cable_cutout_spoke_width = 4.2;
 base_cable_cutout_spoke_cap_radius = 2.1;
 
-base_cable_stabilizer_height = 0.25;
+base_cable_stabilizer_height = 0.3;
 
 // top case
 //draw_beveled_half(1);
@@ -116,7 +116,7 @@ base_cable_stabilizer_height = 0.25;
 // bottom case
 translate([-1 * part_placement_offset, 0, 0]) {
     // cable stabilizers
-    for(y = [0:1:5])
+    for(y = [0:2:16])
     translate(base_cable_cutout_center_position+[base_cable_cutout_center_radius,-y,0])
         rotate([0,-PI/2*RAD,0])
             linear_extrude(base_cable_cutout_center_radius*2)
@@ -155,8 +155,10 @@ translate([-1 * part_placement_offset, 0, 0]) {
             translate(spoke_2_rect_pos + [0,0,base_cable_cutout_depth/2])
                 rotate([0,0,spoke_2_angle])
                     cube([norm(base_cable_spoke_2_position - base_cable_cutout_center_position), base_cable_cutout_spoke_width, base_cable_cutout_depth], center=true);
+            // wire route out of board
+            wire_length = 20; // long enough to exit board
             translate(base_cable_cutout_center_position + [-base_cable_cutout_spoke_width/2,0,0])
-                scale([1,-1,1]) cube([base_cable_cutout_spoke_width, 10, base_cable_cutout_depth+boardthickness]);
+                scale([1,-1,1]) cube([base_cable_cutout_spoke_width, wire_length, base_cable_cutout_depth+boardthickness]);
             
             // thumbdial cutout
             translate([-encased_spoke_width/2 + thumbdial_center_to_edge_x, -pcb_bottom_y + pcb_bottom_to_dial_center, 0])  {
