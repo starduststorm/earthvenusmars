@@ -488,7 +488,6 @@ NoConn ~ 3950 1950
 NoConn ~ 3950 1850
 NoConn ~ 5350 2350
 NoConn ~ 5350 2450
-NoConn ~ 5350 2550
 NoConn ~ 5350 2650
 NoConn ~ 5350 2750
 NoConn ~ 5350 2850
@@ -910,7 +909,6 @@ F 3 "~" H 6500 3750 50  0001 C CNN
 $EndComp
 Text GLabel 5350 2250 2    50   Input ~ 0
 TOUCH_PIN_3
-NoConn ~ 3950 2150
 $Comp
 L Connector:Conn_01x02_Female J_LED1
 U 1 1 60BA94AC
@@ -1007,4 +1005,50 @@ Wire Wire Line
 	3400 4800 3400 5100
 Wire Wire Line
 	2600 4800 3400 4800
+$Comp
+L Device:Thermistor_NTC TH1
+U 1 1 60C6FD5E
+P 3000 2000
+F 0 "TH1" H 3050 2200 50  0000 R CNN
+F 1 "Thermistor_NTC" H 3250 2250 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" H 3000 2050 50  0001 C CNN
+F 3 "~" H 3000 2050 50  0001 C CNN
+F 4 "ERTJ1VG103GA" H 3000 2000 50  0001 C CNN "Designation"
+	1    3000 2000
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 60C7ADC4
+P 2750 2000
+F 0 "R3" H 2680 1954 50  0000 R CNN
+F 1 "R" H 2680 2045 50  0000 R CNN
+F 2 "Resistor_SMD:R_0603_1608Metric" V 2680 2000 50  0001 C CNN
+F 3 "~" H 2750 2000 50  0001 C CNN
+	1    2750 2000
+	-1   0    0    1   
+$EndComp
+Text GLabel 5350 2550 2    50   Input ~ 0
+THERMISTOR_PWR
+Text GLabel 2750 1850 1    50   Input ~ 0
+THERMISTOR_PWR
+Wire Wire Line
+	3000 2150 3950 2150
+$Comp
+L power:GND #PWR?
+U 1 1 60C9B9A5
+P 3000 1850
+F 0 "#PWR?" H 3000 1600 50  0001 C CNN
+F 1 "GND" H 3005 1677 50  0000 C CNN
+F 2 "" H 3000 1850 50  0001 C CNN
+F 3 "" H 3000 1850 50  0001 C CNN
+	1    3000 1850
+	-1   0    0    1   
+$EndComp
+Connection ~ 3950 2150
+Wire Wire Line
+	3950 2150 4000 2150
+Connection ~ 3000 2150
+Wire Wire Line
+	2750 2150 3000 2150
 $EndSCHEMATC
