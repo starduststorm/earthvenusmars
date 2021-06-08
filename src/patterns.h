@@ -73,8 +73,6 @@ public:
 // a lil patternlet that can be instantiated to run bits
 class BitsFiller {
 public:
-  typedef EdgeType BitDirection;
-  typedef EdgeTypes BitDirections;
   typedef enum { random, priority, split } FlowRule;
   typedef enum { kill } LeafRule;
   typedef enum { maintainPopulation, manualSpawn } SpawnRule;
@@ -85,17 +83,19 @@ public:
     unsigned long birthmilli;
     bool firstFrame = true;
   public:
+    EdgeTypesPair directions;
+    
     int px;
-    vector<BitDirection> directions; // FIXME: maybe not the right choice after all because this eats minimum 12 bytes per instance. 
     unsigned long lifespan;
+
     CRGB color;
     uint8_t brightness = 0xFF;
 
-    CRGB initialColor;  // storage only
+    CRGB initialColor;  // storage only  // FIXME memory: this is only used in ChargePattern. replace it with additional instances of BitsFiller? or another fading technique?
     uint8_t colorIndex; // storage only
 
-    Bit(int px, vector<BitDirection> directions, unsigned long lifespan) 
-      : px(px), directions(directions), lifespan(lifespan) {
+    Bit(int px, EdgeTypesPair directions, unsigned long lifespan) 
+      : directions(directions), px(px), lifespan(lifespan) {
       reset();
       // logf("bit constructor for this = %p, px = %i, directions = %i, lifespan = %i", this, px, directions, lifespan);
     }
@@ -128,7 +128,6 @@ private:
 
   unsigned long lastTick = 0;
   unsigned long lastMove = 0;
-  unsigned long lastColorChange = 0;
   unsigned long lastBitSpawn = 0;
 
   int spawnLocation() {
@@ -139,24 +138,26 @@ private:
   }
 
   Bit makeBit(Bit *fromBit=NULL) {
-    // TODO: performance hit of doing this for every new bit? we chould cache the vectorized version of direction or just require a vector at the callsite instead of a bitfield.
-    vector<BitDirection> directionsForBit;
-    for (unsigned priority = 0; priority < bitDirections.size(); ++priority) {
-      BitDirections directions = bitDirections[priority];
-      vector<BitDirection> vectorized;
-      for (unsigned i = 0; i < EdgeTypeCount; ++i) {
-        if (directions & 1 << i) {
-          vectorized.push_back((EdgeType)(1 << i));
+    // the bit directions at the BitsFiller level may contain multiple options, choose one at random for this bit
+    EdgeTypesPair directionsForBit = {0};
+
+    for (int n = 0; n < 2; ++n) {
+      uint8_t bit[EdgeTypesCount] = {0};
+      uint8_t bitcount = 0;
+      for (int i = 0; i < EdgeTypesCount; ++i) {
+        uint8_t nybble = bitDirections.pair >> (n * EdgeTypesCount);
+        if (nybble & 1 << i) {
+          bit[bitcount++] = i;
         }
       }
-      BitDirection direction = vectorized.at(random8()%vectorized.size());
-      directionsForBit.push_back(direction);
+      if (bitcount) {
+        directionsForBit.pair |= 1 << (bit[random8()%bitcount] + n * EdgeTypesCount);
+      }
     }
 
     if (fromBit) {
       return Bit(*fromBit);
     } else {
-      // TODO: need to store colorIndex/etc differently if we have additional color rules
       return Bit(spawnLocation(), directionsForBit, lifespan);
     }
   }
@@ -178,34 +179,26 @@ private:
     return true;
   }
 
-  vector<int> nextIndexes(int index, const vector<BitDirection> &bitDirections) {
+  vector<int> nextIndexes(int index, EdgeTypesPair bitDirections) {
     vector<int> next;
     switch (flowRule) {
-      case priority:
-        for (BitDirection direction : bitDirections) {
-          auto adj = ledgraph.adjacencies(index, direction);
-          for (auto edge : adj) {
-            if (isIndexAllowed(edge.to)) {
-              next.push_back(edge.to);
-              break;
-            }
-          }
-          if (!next.empty()) {
-            // FIXME: priority should choose randomly between edges of the same priority
-            // but the randomness needs to be stable while pathing this bit during fade-up during repeated calls to nextIndexes
+      case priority: {
+        auto adj = ledgraph.adjacencies(index, bitDirections);
+        for (auto edge : adj) {
+          if (isIndexAllowed(edge.to)) {
+            next.push_back(edge.to);
             break;
           }
         }
         break;
+      }
       case random:
       case split: {
         vector<Edge> nextEdges;
-        for (BitDirection direction : bitDirections) {
-          auto adj = ledgraph.adjacencies(index, direction);
-          for (auto a : adj) {
-            if (isIndexAllowed(a.to)) {
-              nextEdges.push_back(a);
-            }
+        auto adj = ledgraph.adjacencies(index, bitDirections);
+        for (auto a : adj) {
+          if (isIndexAllowed(a.to)) {
+            nextEdges.push_back(a);
           }
         }
         if (flowRule == split) {
@@ -215,13 +208,13 @@ private:
           } else {
             // split along all allowed split directions, or none if none are allowed
             for (Edge nextEdge : nextEdges) {
-              if (splitDirections.size() == 0 || splitDirections.end() != find(splitDirections.begin(), splitDirections.end(), nextEdge.type)) {
+              if (splitDirections & nextEdge.type) {
                 next.push_back(nextEdge.to);
               }
             }
           }
         } else if (nextEdges.size() > 0) {
-          // FIXME: EdgeType::random behavior also doesn't work right with the way fadeUp is implemented
+          // FIXME: EdgeType::random behavior doesn't work right with the way fadeUp is implemented
           next.push_back(nextEdges.at(random8()%nextEdges.size()).to);
         }
         break;
@@ -258,10 +251,9 @@ public:
     for (unsigned b = 0; b < bits.size(); ++b) {
       Bit &bit = bits[b];
       logf("Bit %i: px=%i, birthmilli=%lu, colorIndex=%u", b, bit.px, bit.birthmilli, bit.colorIndex);
-      Serial.print("  Directions: ");
-      for (BitDirection bd : bit.directions) {
-        Serial.print((int)bd);
-        Serial.print(", ");
+      Serial.print("  Directions: 0b");
+      for (int i = 2*EdgeTypesCount - 1; i >= 0; --i) {
+        Serial.print(bit.directions.pair & (1 << i));
       }
       Serial.println();
     }
@@ -273,13 +265,13 @@ public:
   unsigned maxBitsPerSecond = 0; // limit how fast new bits are spawned, 0 = no limit
   unsigned speed; // in pixels/second
   unsigned long lifespan = 0; // in milliseconds, forever if 0
-  vector<BitDirections> bitDirections; // vector of bitfield
+  EdgeTypesPair bitDirections;
   FlowRule flowRule = random;
   LeafRule leafRule = kill;
   SpawnRule spawnRule = maintainPopulation;
   unsigned fadeUpDistance = 0; // fade up n pixels ahead of bit motion
   
-  vector<BitDirection> splitDirections; // if flowRule is split, which directions are allowed to split (empty for all directions)
+  EdgeTypes splitDirections = EdgeType::all; // if flowRule is split, which directions are allowed to split
   
   const vector<int> *spawnPixels = NULL; // list of pixels to automatically spawn bits on
   set<int> *allowedPixels = NULL; // set of pixels that bits are allowed to travel to
@@ -287,8 +279,9 @@ public:
   function<void(Bit &)> handleNewBit = [](Bit &bit){};
   function<void(Bit &)> handleUpdateBit = [](Bit &bit){};
 
-  BitsFiller(unsigned maxSpawnBits, unsigned speed, unsigned long lifespan, vector<BitDirections> bitDirections)
-    : maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan), bitDirections(bitDirections) {
+  BitsFiller(unsigned maxSpawnBits, unsigned speed, unsigned long lifespan, vector<EdgeTypes> bitDirections)
+    : maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan) {
+      this->bitDirections = MakeEdgeTypesPair(bitDirections);
     bits.reserve(maxSpawnBits);
     buffer.leds.fill_solid(CRGB::Black);
   };
@@ -390,8 +383,8 @@ class DownstreamPattern : public Pattern {
   const int kDefaultSpeed = 24;
 public:
   DownstreamPattern() {
-    BitsFiller::BitDirection circledirection = random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise;
-    vector<BitsFiller::BitDirections> directions = {circledirection, EdgeType::outbound};
+    EdgeType circledirection = (random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise);
+    vector<EdgeTypes> directions = {circledirection, EdgeType::outbound};
     bitsFiller = new BitsFiller(0, kDefaultSpeed, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->fadeUpDistance = 3;
@@ -518,7 +511,7 @@ public:
   HeartBeatPattern() : pumpFiller(0, 30, 1200, {EdgeType::outbound}) {
     pumpFiller.flowRule = BitsFiller::split;
     pumpFiller.fadeDown = fadeDown;
-    pumpFiller.splitDirections = {EdgeType::outbound};
+    pumpFiller.splitDirections = EdgeType::outbound;
   }
 
   void beat(EVMDrawingContext &ctx, bool parity, uint8_t intensity) {
@@ -541,7 +534,7 @@ public:
       for (unsigned i = 0; i < spoke_tip_leds.size(); ++i) {
         BitsFiller::Bit &bit = pumpFiller.addBit();
         bit.px = spoke_tip_leds[i];
-        bit.directions = {EdgeType::inbound};
+        bit.directions.edgeTypes.first = EdgeType::inbound;
         bit.color = scaledColor;
       }
       
@@ -549,7 +542,8 @@ public:
         const int circleSixth = circleleds.size() / 6;
         BitsFiller::Bit &bit = pumpFiller.addBit();
         bit.px = circleleds[(i>>1) * circleleds.size() / 3 + circleSixth + i%2];
-        bit.directions = {EdgeType::outbound, (i%2 == 0 ? EdgeType::counterclockwise : EdgeType::clockwise)};
+        bit.directions.edgeTypes.first = EdgeType::outbound;
+        bit.directions.edgeTypes.second = (i%2 == 0 ? EdgeType::counterclockwise : EdgeType::clockwise);
         bit.color = scaledColor;
       }
     }
@@ -606,7 +600,7 @@ public:
       spokesFillers[i]->maxBitsPerSecond = 10;
       spokesFillers[i]->fadeDown = 3;
       spokesFillers[i]->flowRule = BitsFiller::split;
-      spokesFillers[i]->splitDirections = {EdgeType::outbound};
+      spokesFillers[i]->splitDirections = EdgeType::outbound;
     }
   }
   ~CouplingPattern() {
@@ -632,8 +626,8 @@ public:
   void update(EVMDrawingContext &ctx) {
     ctx.leds.fill_solid(CRGB::Black);
 
-    static const unsigned relationshipDuration = 1200; // maybe consider therapy if your relationships only last 1200ms
-    static const unsigned lookingDuration = 500; // standards++
+    static const unsigned relationshipDuration = 1400; // maybe consider therapy if your relationships only last 1400ms
+    static const unsigned lookingDuration = 150; // dang, standards++
 
     unsigned long mils = millis();
     if (state == looking && mils - lastStateChange > lookingDuration) {
@@ -669,15 +663,20 @@ public:
         }
       }
       // start splitting bits down the chosen spokes
-      spokesFillers[0]->splitDirections = {EdgeType::outbound};
-      spokesFillers[1]->splitDirections = {EdgeType::outbound};
+      spokesFillers[0]->splitDirections = EdgeType::outbound;
+      spokesFillers[1]->splitDirections = EdgeType::outbound;
       state = coupling;
       lastStateChange = mils;
 
     } else if (state == coupling && mils - lastStateChange > relationshipDuration) {
-      // breakup fml, stop following the spokes
-      spokesFillers[0]->splitDirections = {};
-      spokesFillers[1]->splitDirections = {};
+      // breakup fml
+      // stop following the spokes before we change allowedPixels, this helps prevent pixels from stopping mid-spoke during breakups. closure? this feature is called closure.
+      for (int base : spoke_base_leds) {
+        allowedPixels->erase(base);
+      }
+      // and allow the bits to flow around in the circle in the meantime
+      spokesFillers[0]->splitDirections = EdgeType::all;
+      spokesFillers[1]->splitDirections = EdgeType::all;
       state = looking;
       lastStateChange = mils;
     }
@@ -701,10 +700,9 @@ class ChargePattern : public Pattern {
 public:
   int spoke; 
   ChargePattern() {
-    vector<BitsFiller::BitDirections> directions = {EdgeType::outbound, EdgeType::none};
-    bitsFiller = new BitsFiller(30, 50, 0, directions);
+    bitsFiller = new BitsFiller(30, 50, 0, {EdgeType::outbound});
     bitsFiller->flowRule = BitsFiller::split;
-    bitsFiller->splitDirections = {EdgeType::outbound};
+    bitsFiller->splitDirections = EdgeType::outbound;
     bitsFiller->fadeUpDistance = 2;
     bitsFiller->fadeDown = 5;
     bitsFiller->maxBitsPerSecond = 25;
@@ -741,9 +739,9 @@ public:
       bit.px = circleleds[circleindex];
       
       if ((unsigned)mod_wrap(circleindex - cutoff + directionFuzz, circleleds.size()) > circleleds.size() / 2) {
-        bit.directions[1] = EdgeType::counterclockwise;
+        bit.directions.edgeTypes.second = EdgeType::counterclockwise;
       } else {
-        bit.directions[1] = EdgeType::clockwise;
+        bit.directions.edgeTypes.second = EdgeType::clockwise;
       }
 
       switch(colorMode) {

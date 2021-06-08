@@ -11,16 +11,27 @@
 
 using namespace std;
 
+const uint8_t EdgeTypesCount = 4;
+
+typedef union {
+  struct {
+    uint8_t first:4;
+    uint8_t second:4;
+  } edgeTypes;
+  uint8_t pair;
+} EdgeTypesPair;
+
 struct Edge {
     typedef enum {
         none             = 0,
         inbound          = 1 << 0,
         outbound         = 1 << 1,
         clockwise        = 1 << 2,
-        counterclockwise = 1 << 3
+        counterclockwise = 1 << 3,
+        all              = 0xFF,
     } EdgeType;
     
-    int from, to; 
+    int from, to;
     EdgeType type;
     Edge(int from, int to, EdgeType type) : from(from), to(to), type(type) {};
     Edge transpose() {
@@ -38,7 +49,19 @@ struct Edge {
 
 typedef Edge::EdgeType EdgeType;
 typedef uint8_t EdgeTypes;
-unsigned EdgeTypeCount = 4;
+
+EdgeTypesPair MakeEdgeTypesPair(vector<EdgeTypes> vec) {
+    assert(vec.size() <= 2, "only two edge type directions allowed");
+    unsigned size = vec.size();
+    EdgeTypesPair pair = {0};
+    if (size > 0) {
+        pair.edgeTypes.first = vec[0];
+    }
+    if (size > 1) {
+        pair.edgeTypes.second = vec[1];
+    }
+    return pair;
+}
 
 class Graph {
 public:
@@ -59,15 +82,23 @@ public:
         }
     }
 
-    vector<Edge> adjacencies(int vertex, EdgeTypes matching = 0) {
+    vector<Edge> adjacencies(int vertex, EdgeTypesPair pair) {
+        auto adj = adjacencies(vertex, pair.edgeTypes.first);
+        auto adj2 = adjacencies(vertex, pair.edgeTypes.second);
+        adj.insert(adj.end(), adj2.begin(), adj2.end());
+        return adj;
+    }
+
+    vector<Edge> adjacencies(int vertex, EdgeTypes matching) {
+        if (matching == 0) {
+            return vector<Edge>();
+        }
         vector<Edge> adjacencies = vector<Edge>(adjList[vertex]);
-        if (matching) {
-            for (auto it = adjacencies.begin(); it != adjacencies.end();) {
-                if (!(matching & it->type)) {
-                    adjacencies.erase(it);
-                } else {
-                    ++it;
-                }
+        for (auto it = adjacencies.begin(); it != adjacencies.end();) {
+            if (!(matching & it->type)) {
+                adjacencies.erase(it);
+            } else {
+                ++it;
             }
         }
         return adjacencies;
@@ -81,6 +112,7 @@ Graph ledgraph;
 const vector<int> circleleds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65}; // 34
 const vector<int> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
 const vector<int> spoke_tip_leds = {19, 46, 73};
+const vector<int> spoke_base_leds = {12, 39, 68};
 
 const vector<int> venusleds = {66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75}; // 12
 const vector<int> marsleds = {39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50}; // 14
