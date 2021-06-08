@@ -632,14 +632,18 @@ public:
   void update(EVMDrawingContext &ctx) {
     ctx.leds.fill_solid(CRGB::Black);
 
+    static const unsigned relationshipDuration = 1200; // maybe consider therapy if your relationships only last 1200ms
+    static const unsigned lookingDuration = 500; // standards++
+
     unsigned long mils = millis();
-    if (state == looking && mils - lastStateChange > 500) {
+    if (state == looking && mils - lastStateChange > lookingDuration) {
       const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
       const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
       const vector<int> *spokes[2] = {0};
+
       // omg matchmaking time
       do {
-        if (random8(2) == 0) {
+        if (random8(3) != 0) {
           spokes[0] = ARRAY_SAMPLE(earthspokelists);
         } else {
           spokes[0] = ARRAY_SAMPLE(planetspokelists);
@@ -670,7 +674,7 @@ public:
       state = coupling;
       lastStateChange = mils;
 
-    } else if (state == coupling && mils - lastStateChange > 1200) {
+    } else if (state == coupling && mils - lastStateChange > relationshipDuration) {
       // breakup fml, stop following the spokes
       spokesFillers[0]->splitDirections = {};
       spokesFillers[1]->splitDirections = {};
