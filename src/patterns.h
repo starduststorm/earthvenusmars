@@ -221,6 +221,7 @@ private:
             }
           }
         } else if (nextEdges.size() > 0) {
+          // FIXME: EdgeType::random behavior also doesn't work right with the way fadeUp is implemented
           next.push_back(nextEdges.at(random8()%nextEdges.size()).to);
         }
         break;
@@ -502,14 +503,14 @@ class LitPattern : public Pattern, public PaletteRotation<CRGBPalette256> {
 /* ------------------------------------------------------------------------------- */
 
 class HeartBeatPattern : public Pattern, public FFTProcessing {
-  const uint8_t basebpm = 70;
+  const uint8_t basebpm = 60;
   uint8_t bpm = 40;
   unsigned long lastSystole = 0;
   unsigned long diastoleAt = 0;
   const CRGB bloodColor = CRGB(0xFF, 0, 0x15);
   
   unsigned long lastTick = 0;
-  int fadeDown = 2;
+  int fadeDown = 3;
   float avgAmp = 0;
 
   BitsFiller pumpFiller;
@@ -517,26 +518,39 @@ public:
   HeartBeatPattern() : pumpFiller(0, 30, 1200, {EdgeType::outbound}) {
     pumpFiller.flowRule = BitsFiller::split;
     pumpFiller.fadeDown = fadeDown;
+    pumpFiller.splitDirections = {EdgeType::outbound};
   }
 
   void beat(EVMDrawingContext &ctx, bool parity, uint8_t intensity) {
     CRGB scaledColor = bloodColor;
     scaledColor.nscale8(intensity);
-
-    int spawnpixels[] = {earthleds[0], venusleds[0], marsleds[0]};
-
+    
     if (parity) {
-      for (int i = 0; i < 3; ++i) {
+      // systole
+      // ok I'm cheating here - the systole/diastole timing will actually be swapped and some of the diastole bits will priority-turn outbound to form the systole
+      // it just looks better
+
+      // static int systole_spawnpixels[] = {earthleds[0], venusleds[0], marsleds[0]};
+      // for (unsigned i = 0; i < ARRAY_SIZE(systole_spawnpixels); ++i) {
+      //   BitsFiller::Bit &bit = pumpFiller.addBit();
+      //   bit.px = systole_spawnpixels[i];
+      //   bit.color = scaledColor;
+      // }
+    } else {
+      // diastole
+      for (unsigned i = 0; i < spoke_tip_leds.size(); ++i) {
         BitsFiller::Bit &bit = pumpFiller.addBit();
-        bit.px = spawnpixels[i];
+        bit.px = spoke_tip_leds[i];
+        bit.directions = {EdgeType::inbound};
         bit.color = scaledColor;
       }
-    }
-
-    for (unsigned i = 0; i < circleleds.size(); ++i) {
-      if ((int)roundf((i+circleleds.size()/12.)/6.)%2 != (int)parity) {
-        int c = circleleds[i];
-        ctx.leds[c] = scaledColor;
+      
+      for (unsigned i = 0; i < 6; ++i) {
+        const int circleSixth = circleleds.size() / 6;
+        BitsFiller::Bit &bit = pumpFiller.addBit();
+        bit.px = circleleds[(i>>1) * circleleds.size() / 3 + circleSixth + i%2];
+        bit.directions = {EdgeType::outbound, (i%2 == 0 ? EdgeType::counterclockwise : EdgeType::clockwise)};
+        bit.color = scaledColor;
       }
     }
   }
@@ -561,14 +575,13 @@ public:
     }
     pumpFiller.update(ctx);
 
-    // louder -> higher bpm
-    const unsigned ampSamples = 800;
-    const unsigned int ampBaseline = 474;
+    // louder -> get yo blood pumpin
+    const unsigned ampSamples = 1200;
+    const unsigned int ampBaseline = 494;
     unsigned long amplitude = min(1000u, fftUpdate().amplitude);
     amplitude = max(0, (long)amplitude - (long)ampBaseline);
     avgAmp = (avgAmp * (ampSamples-1) + amplitude) / ampSamples;
-    logf("amp: %lu, avgAmp: %i", amplitude, (int)avgAmp);
-    bpm = basebpm + 3 * avgAmp;
+    bpm = min(150, basebpm + 3 * avgAmp);
   }
 
   const char *description() {
