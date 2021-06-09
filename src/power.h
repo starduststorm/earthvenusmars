@@ -7,9 +7,70 @@
 #include "util.h"
 #include "ledgraph.h"
 
+#define THERMISTOR_PIN A4       // PA05
+#define THERMISTOR_POWER_PIN 16 // PB09
+
 volatile int handleADC = 0;
 volatile uint32_t adcRead = 0;
 volatile bool sleepPending = 0;
+
+static void syncADC() { while (ADC->STATUS.bit.SYNCBUSY); }
+
+static void disableADC() {
+  ADC->CTRLA.bit.ENABLE = 0;
+  syncADC();
+}
+
+static void enableADC(bool discardNext) {
+  ADC->CTRLA.bit.ENABLE = 1;
+  syncADC();
+  
+  if (discardNext) {
+    // throw away a result
+    ADC->SWTRIG.bit.START = 1;
+    syncADC();
+    while (ADC->INTFLAG.bit.RESRDY == 0);
+  }
+}
+
+int EVMAnalogRead(int pin) {
+  // analogRead but restores old settings
+  // we need to disable the ADC before changing settings
+  // TODO: this whole function still takes ~12ms which seems abnormally long, most of it spent waiting for RESRDY. any dropped frames don't seem noticeable tho.
+  NVIC_DisableIRQ(ADC_IRQn);
+  disableADC();
+
+  pinPeripheral(pin, PIO_ANALOG);
+  
+  uint32_t oldInputCtrl = ADC->INPUTCTRL.reg;
+  uint8_t oldIntFlag = ADC->INTFLAG.reg;
+  uint8_t oldCtrlB = ADC->CTRLB.reg;
+
+  ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV4_Val; // lowest prescaler, otherwise conversion takes forever
+  syncADC();
+  ADC->INTFLAG.bit.WINMON = 0x0;
+  syncADC();
+  ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[pin].ulADCChannelNumber; // select pin
+  syncADC();
+
+  enableADC(false); // TODO: looks like we don't need to discard the first result after enabling the ADC? this doesn't seem to affect the read accuracy
+  ADC->SWTRIG.bit.START = 1;
+  while (ADC->INTFLAG.bit.RESRDY == 0); // wait for conversion
+  uint32_t valueRead = ADC->RESULT.reg;
+  disableADC();
+
+  ADC->INPUTCTRL.reg = oldInputCtrl;
+  syncADC();
+  ADC->INTFLAG.reg = oldIntFlag;
+  syncADC();
+  ADC->CTRLB.reg = oldCtrlB;
+  syncADC();
+
+  enableADC(true); // re-enable ADC for old usage, discarding the first result after re-enabling the ADC because otherwise it does impact the brightness read
+  NVIC_EnableIRQ(ADC_IRQn); 
+
+  return valueRead;
+}
 
 void ADC_Handler() {
   // unset deep-sleep in case woken by interrupt
@@ -32,15 +93,74 @@ void ADC_Handler() {
 }
 
 uint32_t getADCRead() {
+  // read out the volatile global for the pot dial to use
   return adcRead;
 }
 
-void brightnessDialChange(uint32_t value);
+uint8_t ADCResolution() {
+  switch (ADC->CTRLB.bit.RESSEL) {
+    case ADC_CTRLB_RESSEL_16BIT_Val: return 16;
+    case ADC_CTRLB_RESSEL_12BIT_Val: return 12;
+    case ADC_CTRLB_RESSEL_10BIT_Val: return 10;
+    case ADC_CTRLB_RESSEL_8BIT_Val: return 8;
+    default: return 10;
+  }
+}
+
+class Thermistor {
+public:
+  static const uint16_t nominalResistance = 10000; // resistance at nominal temp 
+  static const uint16_t nominalTemperature = 25; // 25°C
+  static const uint16_t betaCoefficient = 3380; // B25/50 for 0603 10k SMT thermistor ERT-J1VG103GA
+  static const uint16_t seriesResistor = 10000;
+
+  int16_t samplePin;
+  int16_t powerPin;
+
+  Thermistor(int samplePin, int powerPin=-1) : samplePin(samplePin), powerPin(powerPin) {
+    if (powerPin != -1) {
+        pinMode(powerPin, OUTPUT);
+    }
+  }
+
+  uint16_t measure() {
+    if (powerPin != -1) {
+      digitalWrite(powerPin, HIGH);
+    }
+    int read = EVMAnalogRead(samplePin);
+    if (powerPin != -1) {
+      digitalWrite(powerPin, LOW);
+    }
+    return read;
+  }
+
+  float temperature() {
+    float val = measure();
+    val = (1 << ADCResolution()) / val - 1;
+    val = seriesResistor / val;
+  
+    // thanks adafruit
+    float steinhart;
+    steinhart = val / nominalResistance;              // (R/Ro)
+    steinhart = log(steinhart);                       // ln(R/Ro)
+    steinhart /= betaCoefficient;                     // 1/B * ln(R/Ro)
+    steinhart += 1.0 / (nominalTemperature + 273.15); // + (1/To)
+    steinhart = 1.0 / steinhart;                      // Invert
+    steinhart -= 273.15;
+    return steinhart;
+  }
+};
 
 class PowerManager {
 private:
   HardwareControls controls;
+  Thermistor thermistor;
+  unsigned long lastThermalCheck = 0;
+  bool discardNextADCRead = false;
   bool sleeping = 0;
+  
+  uint8_t targetBrightness = 0xFF;
+  uint8_t maxBrightness = 0xFF;
   
   void listen_for_adc_interrupt() {
     logf("Sleeping...");
@@ -65,6 +185,8 @@ private:
 public:
   uint16_t wakeThreshold = 0.06 * 4096; // 12-bit ADC
   uint16_t sleepThreshold = 0.04 * 4096; // 12-bit ADC
+
+  PowerManager() : thermistor(Thermistor(THERMISTOR_PIN, THERMISTOR_POWER_PIN)) { }
 
   void wakeBlink(CRGBArray<NUM_LEDS> &leds) {
     const int windInFrames = 50;
@@ -137,7 +259,7 @@ public:
     // PORT->Group[g_APinDescription[11].ulPort].PINCFG[g_APinDescription[11].ulPin].bit.PMUXEN = 1;
     // PORT->Group[g_APinDescription[11].ulPort].PMUX[g_APinDescription[11].ulPin >> 1].reg |= PORT_PMUX_PMUXE_H;
     while (GCLK->STATUS.bit.SYNCBUSY);
-
+  
     //confugure and enable the gen clock
     GCLK->CLKCTRL.reg = (uint32_t)(GCLK_CLKCTRL_ID_ADC /* is GCLK_ADC */ | GCLK_CLKCTRL_GEN_GCLK2 | GCLK_CLKCTRL_CLKEN);
     while (GCLK->STATUS.bit.SYNCBUSY);
@@ -232,7 +354,46 @@ public:
       }
     } else if (handleADC) {
       handleADC = 0;
-      controls.update();
+      if (discardNextADCRead) {
+        discardNextADCRead = false;
+      } else {
+        controls.update();
+      }
+    }
+
+    // thermal management
+    if (millis() - lastThermalCheck > 5000) {
+      // unsigned long logstart = millis();
+      int temp = (int)thermistor.temperature();
+      // unsigned long logstop = millis();
+      // logf("thermistor read took %ims", logstop-logstart); // this is taking 11-12ms??
+
+      const int tempThresh = 55;
+      const int tempRange = 90 - tempThresh;
+      if (temp > 150) {
+        // assume faulty read
+        logf("temp read %i°C. faulty sensor?", temp);
+      } else if (temp > tempThresh) {
+        maxBrightness = lerp8by8(0xFF, 0x33, min(0xFF, 0xFF * (temp - tempThresh) / tempRange));
+        logf("temp read %i°C. scaling max brightness to %u", temp, maxBrightness);
+      } else {
+        logf("temp is fine: %i°C", temp);
+        maxBrightness = 0xFF;
+      }
+      // TODO: in real world usage I suspect the temperature will jump around enough that we may see visible brightness changes happening frequently.
+      // therefore this may want to gently fade the brightness over a couple seconds.
+      setBrightness(targetBrightness);
+
+      lastThermalCheck = millis();
+      discardNextADCRead = true;
+    }
+  }
+
+  void setBrightness(uint8_t brightness) {
+    brightness = lerp8by8(0, maxBrightness, brightness);
+    if (FastLED.getBrightness() != brightness) {
+      logf("Brightness -> %u", brightness);
+      FastLED.setBrightness(brightness);
     }
   }
 
@@ -242,11 +403,8 @@ public:
       ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE1; // interrupt when RESULT > WINLT. See Note on WINMODE.
       while (ADC->STATUS.bit.SYNCBUSY);
     } else {
-      uint8_t brightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
-      if (FastLED.getBrightness() != brightness) {
-        logf("Brightness -> %u", brightness);
-        FastLED.setBrightness(brightness);
-      }
+      targetBrightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
+      setBrightness(targetBrightness);
     }
   }
 };
