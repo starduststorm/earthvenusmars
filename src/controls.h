@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <functional>
+#include "Adafruit_FreeTouch.h"
 
 class HardwareControl {
   friend class HardwareControls;
@@ -80,8 +81,12 @@ class SPSTButton : public HardwareControl {
   std::function<void(void)> doubleLongPressHandler = []{};
   std::function<void(void)> buttonUpHandler = []{}; // called on button-up only after longPress or doubleLongPress
 
+  virtual void initPin(int pin) {
+    pinMode(pin, INPUT_PULLUP);
+  }
+
   void update() {
-    bool buttonPressed = digitalRead(pin) == LOW;
+    bool buttonPressed = isButtonPressed();
     long readTime = millis();
 
     if (waitForButtonUp) {
@@ -130,7 +135,11 @@ public:
   long doublePressInterval = 400;
 
   SPSTButton(int pin) : HardwareControl(pin) {
-    pinMode(pin, INPUT_PULLUP);
+    initPin(pin);
+  }
+
+  virtual bool isButtonPressed() {
+    return (digitalRead(pin) == LOW);
   }
 
   void onSinglePress(ButtonHandler handler) {
@@ -156,6 +165,43 @@ public:
   }
 };
 
+class TouchButton : public SPSTButton {
+  Adafruit_FreeTouch *touchObj;
+  void initPin(int pin) { } // no-op, skip SPSTButton init and do pin init in constructor
+  bool touchRegistered = false;
+public:
+  uint16_t touchThreshold = 700; // sample above (10-bit) threshold will be considered touch down
+  uint16_t touchReleaseBuffer = 100; // sample must fall below threshold-buffer for touch release
+
+  TouchButton(int pin, oversample_t oversample, series_resistor_t seriesResistor, freq_mode_t freqMode) : SPSTButton(pin) {
+    touchObj = new Adafruit_FreeTouch(pin, oversample, seriesResistor, freqMode);
+    touchObj->begin();
+  }
+
+  ~TouchButton() {
+    delete touchObj;
+  }
+
+  bool isButtonPressed() {
+    uint16_t sample = touchObj->measure();
+    if (sample == (uint16_t)-1) {
+      logf("touch sample failed");
+    }
+
+    assert(touchThreshold > touchReleaseBuffer, "touchThreshold must be > touchReleaseBuffer");
+    if (sample > touchThreshold) {
+      touchRegistered = true;
+    } else if (sample < (uint32_t)(touchThreshold - touchReleaseBuffer)) {
+      touchRegistered = false;
+    }
+    return touchRegistered;
+  }
+
+  int measure() {
+    return touchObj->measure();
+  }
+};
+
 /* --------------------- */
 
 class HardwareControls {
@@ -171,6 +217,12 @@ public:
 
   SPSTButton *addButton(int pin) {
     SPSTButton *button = new SPSTButton(pin);
+    controlsVec.push_back(button);
+    return button;
+  }
+
+  TouchButton *addTouchButton(int pin, oversample_t oversample=OVERSAMPLE_4, series_resistor_t seriesResistor=RESISTOR_0, freq_mode_t freqMode=FREQ_MODE_NONE) {
+    TouchButton *button = new TouchButton(pin, oversample, seriesResistor, freqMode);
     controlsVec.push_back(button);
     return button;
   }

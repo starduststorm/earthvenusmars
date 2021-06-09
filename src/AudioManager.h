@@ -8,8 +8,6 @@
 #include <vector>
 #include "util.h"
 
-using namespace std;
-
 struct FFTFrame {
   vector<int> spectrum;
   unsigned int amplitude;
@@ -72,11 +70,17 @@ public:
     int16_t data[fftSize];
     for(int i=0; i<fftSize; i++) {
       int32_t sample = 0;
+      uint16_t tries = 0;
       while (!sample) {
         int32_t left=0, right=0;
-        if (i2s.rxReady())
+        if (i2s.rxReady()) {
           i2s.read(&left, &right); 
+        }
         sample = left?:right;
+        if (tries++ > 50) {
+          logf("i2s read failed");
+          break;
+        }
       }
       // convert to 16 bit since our SPH0645LM4H-B supports 18 bits & fills the lower bits with zeros
       // but the ZeroFFT only supports 16 bit

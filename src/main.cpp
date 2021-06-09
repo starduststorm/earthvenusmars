@@ -41,9 +41,18 @@ SPIClass ledsSPI (&sercom3, LEDS_MISO, LEDS_SCK, LEDS_MOSI, SPI_PAD_2_SCK_3, SER
 I2SClass micI2S (0, MIC_CLK_GEN, MIC_SD, MIC_SCK, MIC_FS);
 
 // pin numbers from arduino zero variant.cpp
+#if EVM_HARDWARE_VERSION > 1
+#define BUTTON_PIN_1 2   // PA14  Use for patterns switcher
+#define BUTTON_PIN_2 26  // PA27  Use for colors switcher
+
+#define TOUCH_PIN_1 8    // PA06  Use for top-left spoke
+#define TOUCH_PIN_2 17   // PA04  Use for bottom spoke
+#define TOUCH_PIN_3 19   // PB02  Use for top-right spoke
+#else
 #define BUTTON_PIN_1 4   // PA08  Use for top-left spoke
 #define BUTTON_PIN_2 39  // PA21  Use for bottom spoke
 #define BUTTON_PIN_3 19  // PB02  Use for top-right spoke
+#endif
 
 static const uint8_t brightnessDialPort = PORTA;
 static const uint8_t brightnessDialPin = 9;
@@ -62,8 +71,8 @@ static const uint8_t brightnessDialPin = 9;
 #include "ledgraph.h"
 
 #define WAIT_FOR_SERIAL 1
-#define UNCONNECTED_PIN_1 A1
-#define UNCONNECTED_PIN_2 A3
+#define UNCONNECTED_PIN_1 A1  // PB08
+#define UNCONNECTED_PIN_2 A0  // PA02
 
 EVMPixelBuffer pixelBuffer;
 
@@ -76,6 +85,35 @@ static bool serialTimeout = false;
 static unsigned long setupDoneTime;
 
 void setupButtons() {
+#if EVM_HARDWARE_VERSION > 1
+  SPSTButton *buttons[2];
+  buttons[0] = controls.addButton(BUTTON_PIN_1);
+  buttons[1] = controls.addButton(BUTTON_PIN_2);
+
+  buttons[0]->onSinglePress([]() {
+    patternManager.nextPattern();
+  });
+  buttons[0]->onLongPress([]() {
+    patternManager.previousPattern();
+  });
+
+  buttons[1]->onSinglePress([]() {
+    patternManager.poke();
+  });
+
+  TouchButton *touchPads[3];
+  touchPads[0] = controls.addTouchButton(TOUCH_PIN_1);
+  touchPads[1] = controls.addTouchButton(TOUCH_PIN_2);
+  touchPads[2] = controls.addTouchButton(TOUCH_PIN_3);
+
+  for (int b = 0; b < 3; ++b) {
+    touchPads[b]->onLongPress([b]() {
+      ChargePattern *charge = new ChargePattern();
+      charge->spoke = b;
+      patternManager.startPattern(charge);
+    });
+  }
+#else
   SPSTButton *buttons[3];
   buttons[0] = controls.addButton(BUTTON_PIN_1);
   buttons[1] = controls.addButton(BUTTON_PIN_2);
@@ -98,6 +136,7 @@ void setupButtons() {
       patternManager.startPattern(charge);
     });
   }
+#endif
 }
 
 void setup() {
