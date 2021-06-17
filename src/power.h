@@ -204,6 +204,9 @@ public:
     dial->readValueFunc = &getADCRead;
     dial->maxValue = 4096; // 12-bit
     dial->updateThreshold = 120;
+
+    // poke the dial handler
+    handleADC = 1;
     
     dial->onChange([this](uint32_t value) {
       this->brightnessUpdate(value);

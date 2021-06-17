@@ -38,7 +38,7 @@ class AnalogDial : public HardwareControl {
     bool endpointsChange = lastValue != value && (value == 0 || value == maxValue);
     
     if (significantChange || recentSignificantChange || endpointsChange) {
-      // logf("pot update: significantChange = %i [%i - %i > %u], recentSignificantChange = %i, endpointsChange = %i", significantChange, lastValue, value, updateThreshold, recentSignificantChange, endpointsChange);
+      // logf("pot update: significantChange = %i [%u - %u > %u], recentSignificantChange = %i, endpointsChange = %i", significantChange, lastValue, value, updateThreshold, recentSignificantChange, endpointsChange);
       if (significantChange || endpointsChange) {
         lastChange = millis();
         lastValue = value;
