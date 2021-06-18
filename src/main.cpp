@@ -84,23 +84,64 @@ PowerManager powerManager;
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
 
+void DrawModal(int fps, unsigned long durationMillis, std::function<void(int frame)> tick) {
+  int delayMillis = 1000/fps;
+  unsigned long start = millis();
+  unsigned long elapsed = 0;
+  do {
+    tick(elapsed);
+    FastLED.show();
+    FastLED.delay(delayMillis);
+    elapsed = millis() - start;
+  } while (elapsed < durationMillis);
+}
+
+void paletteAutorotateWelcome() {
+  DrawModal(120, 100, [](unsigned long elapsed) {
+    pixelBuffer.ctx.leds.fadeToBlackBy(15);
+  });
+  DrawModal(120, 1200, [](unsigned long elapsed) {
+    pixelBuffer.ctx.leds.fadeToBlackBy(15);
+    for (unsigned c = 0; c < circleleds.size(); ++c) {
+      uint8_t fadeUp = min(0xFFu, 0xFF * elapsed / 250);
+      uint8_t fadeDown = 0xFF - 0xFF * max(0, (long)elapsed - 1000) / 200;
+      pixelBuffer.leds[circleleds[c]] = CHSV(0xFF * (c+elapsed/30) / circleleds.size(), 0xFF, scale8(fadeUp, fadeDown));
+    }
+  });
+}
+
 void setupButtons() {
 #if EVM_HARDWARE_VERSION > 1
   SPSTButton *buttons[2];
   buttons[0] = controls.addButton(BUTTON_PIN_1);
   buttons[1] = controls.addButton(BUTTON_PIN_2);
 
+  // Patterns Button
   buttons[0]->onSinglePress([]() {
     patternManager.nextPattern();
   });
-  buttons[0]->onLongPress([]() {
+  buttons[0]->onDoublePress([]() {
     patternManager.previousPattern();
   });
-
-  buttons[1]->onSinglePress([]() {
-    patternManager.poke();
+  buttons[0]->onLongPress([]() {
+    patternManager.togglePatternAutoRotate();
   });
 
+  // Colors Button
+  buttons[1]->onSinglePress([]() {
+    patternManager.nextPalette();
+  });
+  buttons[1]->onDoublePress([]() {
+    patternManager.previousPalette();
+  });
+  buttons[1]->onLongPress([]() {
+    patternManager.togglePaletteAutoRotate();
+    if (!patternManager.colorManager->pauseRotation) {
+      paletteAutorotateWelcome();
+    }
+  });
+  
+  // EVM Touch Pads
   TouchButton *touchPads[3];
   touchPads[0] = controls.addTouchButton(TOUCH_PIN_1);
   touchPads[1] = controls.addTouchButton(TOUCH_PIN_2);
@@ -123,7 +164,7 @@ void setupButtons() {
     patternManager.previousPattern();
   });
   buttons[1]->onSinglePress([]() {
-    patternManager.poke();
+    patternManager.nextPalette();
   });
   buttons[2]->onSinglePress([]() {
     patternManager.nextPattern();
@@ -176,6 +217,8 @@ void setup() {
 
   setupButtons();
   controls.update();
+
+  patternManager.setup();
 
   initLEDGraph();
   assert(ledgraph.adjList.size() == NUM_LEDS, "adjlist size should match num_leds");

@@ -6,13 +6,12 @@
 #include "patterns.h"
 #include "ledgraph.h"
 
-/* ---- Test Options ---- */
-const bool kTestPatternTransitions = false;
-const long kIdlePatternTimeout = -1;//1000 * (kTestPatternTransitions ? 20 : 60 * 2);
-
 class PatternManager {
   int patternIndex = -1;
   Pattern *activePattern = NULL;
+
+  bool patternAutoRotate = false;
+  unsigned long patternTimeout = 10*1000;
 
   std::vector<Pattern * (*)(void)> patternConstructors;
 
@@ -33,6 +32,8 @@ class PatternManager {
   }
 
 public:
+  EVMColorManager *colorManager;
+
   PatternManager() {
     patternConstructors.push_back(&(construct<DownstreamPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
@@ -43,7 +44,13 @@ public:
     // patternConstructors.push_back(&(construct<SoundTest>));
   }
 
+  ~PatternManager() {
+    delete activePattern;
+    delete colorManager;
+  }
+
   void nextPattern() {
+    patternAutoRotate = false;
     patternIndex = addmod8(patternIndex, 1, patternConstructors.size());
     if (!startPatternAtIndex(patternIndex)) {
       nextPattern();
@@ -51,11 +58,16 @@ public:
   }
 
   void previousPattern() {
-    int ctorCount = patternConstructors.size();
-    patternIndex = addmod8(patternIndex, ctorCount-1, ctorCount);
+    patternAutoRotate = false;
+    patternIndex = mod_wrap(patternIndex - 1, patternConstructors.size());
     if (!startPatternAtIndex(patternIndex)) {
       previousPattern();
     }
+  }
+
+  void togglePatternAutoRotate() {
+    logf("Toggle pattern autorotate");
+    patternAutoRotate = !patternAutoRotate;
   }
 
   void stopPattern() {
@@ -65,13 +77,32 @@ public:
       activePattern = NULL;
     }
   }
+  
+  // Palettes
 
-  void poke() {
+  void nextPalette() {
+    colorManager->pauseRotation = true;
+    colorManager->nextPalette();
     if (activePattern) {
-      logf("Poke pattern %s", activePattern->description());
-      activePattern->poke();
+      activePattern->colorModeChanged();
     }
   }
+
+  void previousPalette() {
+    colorManager->pauseRotation = true;
+    colorManager->previousPalette();
+    if (activePattern) {
+      activePattern->colorModeChanged();
+    }
+  }
+
+  void togglePaletteAutoRotate() {
+    colorManager->togglePaletteAutoRotate();
+    if (activePattern) {
+      activePattern->colorModeChanged();
+    }
+  }
+
 private:
   bool startPatternAtIndex(int index) {
     auto ctor = patternConstructors[index];
@@ -88,12 +119,18 @@ public:
   bool startPattern(Pattern *pattern) {
     stopPattern();
     if (pattern->wantsToRun()) {
+      pattern->colorManager = colorManager;
+      pattern->colorModeChanged();
       pattern->start();
       activePattern = pattern;
       return true;
     } else {
       return false;
     }
+  }
+
+  void setup() {
+    colorManager = new EVMColorManager();
   }
 
   template<typename BufferType>
@@ -103,7 +140,7 @@ public:
     }
 
     // time out idle patterns
-    if (activePattern != NULL && kIdlePatternTimeout != -1 && activePattern->isRunning() && activePattern->runTime() > kIdlePatternTimeout) {
+    if (patternAutoRotate && activePattern != NULL && activePattern->isRunning() && activePattern->runTime() > patternTimeout) {
       if (activePattern != TestIdlePattern() && activePattern->wantsToIdleStop()) {
         activePattern->stop();
         delete activePattern;

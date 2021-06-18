@@ -522,11 +522,6 @@ DEFINE_GRADIENT_PALETTE( Trans_Flag_gp ) {
   255, 0x2A, 0x9F, 0xFA,
 };
 
-CRGB transFlagPink = CRGB(0xF1, 0x55, 0x70);
-CRGB transFlagBlue = CRGB(0x2A, 0x9F, 0xFA);
-CRGB transFlagWhite = CRGB(0xBA, 0xBA, 0xBA);
-CRGB transFlagColors[] = {transFlagBlue, transFlagPink, transFlagWhite};
-
 DEFINE_GRADIENT_PALETTE( Bi_Flag_gp ) {
   0,   0xB6, 0x02, 0x40,
   101, 0xB6, 0x02, 0x40,
@@ -564,41 +559,50 @@ DEFINE_GRADIENT_PALETTE( Pride_Flag_gp ) {
   255, 0x75, 0x07, 0xB7,
 };
 
-DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
-  0,   0x00, 0x00, 0x00,
-  63,  0x00, 0x00, 0x00,
-  64,  0xA4, 0xA4, 0xA4,
-  127, 0xA4, 0xA4, 0xA4,
-  128, 0xFF, 0xFF, 0xFF,
-  195, 0xFF, 0xFF, 0xFF,
-  196, 0x81, 0x00, 0x81,
-  255, 0x81, 0x00, 0x81,
-};
+// if anyone can find a way to make the ace flag look good on leds, lemee know
+// DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
+//   0,   0x00, 0x00, 0x00,
+//   63,  0x00, 0x00, 0x00,
+//   64,  0x40, 0x40, 0x40,
+//   127, 0xA4, 0xA4, 0xA4,
+//   128, 0xFF, 0xFF, 0xFF,
+//   195, 0xFF, 0xFF, 0xFF,
+//   196, 0x81, 0x00, 0x81,
+//   255, 0x81, 0x00, 0x81,
+// };
 
 DEFINE_GRADIENT_PALETTE( Enby_Flag_gp ) {
+  // 0,   0xFF, 0xF4, 0x30,
+  // 63,  0xFF, 0xF4, 0x30,
+  // 64,  0xFF, 0xFF, 0xFF,
+  // 127, 0xFF, 0xFF, 0xFF,
+  // 128, 0x90, 0x30, 0xD1,
+  // 195, 0x90, 0x30, 0xD1,
+  // 196, 0x00, 0x00, 0x00,
+  // 255, 0x00, 0x00, 0x00,
+
+// cutting out the black because we can't do anything with it
   0,   0xFF, 0xF4, 0x30,
-  63,  0xFF, 0xF4, 0x30,
-  64,  0xFF, 0xFF, 0xFF,
-  127, 0xFF, 0xFF, 0xFF,
-  128, 0x9C, 0x59, 0xD1,
-  195, 0x9C, 0x59, 0xD1,
-  196, 0x00, 0x00, 0x00,
-  255, 0x00, 0x00, 0x00,
+  85,  0xFF, 0xF4, 0x30,
+  86,  0xFF, 0xFF, 0xFF,
+  170, 0xFF, 0xFF, 0xFF,
+  171, 0x90, 0x30, 0xD1,
+  255, 0x90, 0x30, 0xD1,
 };
 
 DEFINE_GRADIENT_PALETTE( Genderqueer_Flag_gp ) {
-  0,   0xB7, 0x7F, 0xDD,
-  85, 0xB7, 0x7F, 0xDD,
-  86, 0xFF, 0xFF, 0xFF,
+  0,   0xA7, 0x50, 0xDD,
+  85,  0xA7, 0x50, 0xDD,
+  86,  0xFF, 0xFF, 0xFF,
   170, 0xFF, 0xFF, 0xFF,
-  171, 0x48, 0x82, 0x1E,
-  255, 0x48, 0x82, 0x1E,
+  171, 0x28, 0x82, 0x10,
+  255, 0x28, 0x82, 0x10,
 };
 
 DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
   0,   0xFF, 0x1B, 0x8D,
-  85, 0xFF, 0x1B, 0x8D,
-  86, 0xFF, 0xDA, 0x00,
+  85,  0xFF, 0x1B, 0x8D,
+  86,  0xFF, 0xDA, 0x00,
   170, 0xFF, 0xDA, 0x00,
   171, 0x1B, 0xB3, 0xFF,
   255, 0x1B, 0xB3, 0xFF,
@@ -606,14 +610,30 @@ DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
 
 const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
   Trans_Flag_gp,
-  Pride_Flag_gp,
   Enby_Flag_gp,
   Genderqueer_Flag_gp,
+  Pride_Flag_gp,
   Bi_Flag_gp,
   Lesbian_Flag_gp,
-  Ace_Flag_gp,
+  // Ace_Flag_gp,
   Pan_Flag_gp,
 };
+
+const uint8_t gPridePaletteCount =
+  sizeof( gPrideFlagPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
+
+unsigned pridePaletteColorCount(TProgmemRGBGradientPalettePtr progpal) {
+  // cribbed from FastLED for counting entries in DEFINE_GRADIENT_PALETTE 
+  TRGBGradientPaletteEntryUnion* progent = (TRGBGradientPaletteEntryUnion*)(progpal);
+  TRGBGradientPaletteEntryUnion u;
+  uint16_t count = 0;
+  do {
+      u.dword = FL_PGM_READ_DWORD_NEAR(progent + count);
+      ++count;
+  } while ( u.index != 255);
+        
+  return count >> 1; // flag colors = 1/2 entries
+}
 
 //
 
@@ -660,7 +680,6 @@ const uint8_t gGradientPaletteCount =
   sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
 
 /* --- */
-
 
 static int linearBrightness(CRGB color) {
   // I'm looking at you fire_gp
@@ -722,8 +741,6 @@ public:
   }
 };
 
-PaletteManager<CRGBPalette16> paletteManager;
-
 /* -------------------------------------------------------------------- */
 
 template<typename PaletteType>
@@ -756,16 +773,16 @@ void nblendPaletteTowardPalette(PaletteType& current, PaletteType& target, uint1
   }
 }
 
-template <class T>
+template <typename PaletteType>
 class PaletteRotation {
 private:
-  PaletteManager<T> manager;
-  T currentPalette;
-  T targetPalette;
+  PaletteManager<PaletteType> manager;
+  PaletteType currentPalette;
+  PaletteType targetPalette;
   uint8_t *colorIndexes = NULL;
   uint8_t colorIndexCount = 0;
 
-  void assignPalette(T* palettePr) {
+  void assignPalette(PaletteType* palettePr) {
     manager.getRandomPalette(palettePr, minBrightness, maxColorJump);
   }
 
@@ -788,7 +805,7 @@ public:
   void paletteRotationTick() {
     if (!pauseRotation) {
       EVERY_N_MILLISECONDS(40) {
-        nblendPaletteTowardPalette<T>(currentPalette, targetPalette, sizeof(T) / 3);
+        nblendPaletteTowardPalette<PaletteType>(currentPalette, targetPalette, sizeof(PaletteType) / 3);
       }
       EVERY_N_SECONDS(secondsPerPalette) {
         assignPalette(&targetPalette);
@@ -796,13 +813,13 @@ public:
     }
   }
 
-  T& getPalette() {
+  PaletteType& getPalette() {
     paletteRotationTick();
     return currentPalette;
   }
 
   // unblended override
-  void setPalette(T palette) {
+  void setPalette(PaletteType palette) {
     currentPalette = palette;
   }
 
@@ -819,7 +836,7 @@ public:
     if (n >= colorIndexCount) {
       return CRGB::Black;
     }
-    T& palette = getPalette();
+    PaletteType& palette = getPalette();
     CRGB color = ColorFromPalette(palette, colorIndexes[n]);
     while (linearBrightness(color) < minBrightness) {
       colorIndexes[n] = addmod8(colorIndexes[n], 1, 0xFF);
@@ -841,7 +858,7 @@ public:
     colorIndexCount = count;
     colorIndexes = new uint8_t[colorIndexCount];
     for (unsigned i = 0; i < colorIndexCount; ++i) {
-      colorIndexes[i] = random8();
+      colorIndexes[i] = 0xFF * i / colorIndexCount;
     }
   }
 
@@ -851,5 +868,79 @@ public:
       colorIndexes = NULL;
       colorIndexCount = 0;
     }
+  }
+
+  uint8_t trackedColorsCount() {
+    return colorIndexCount;
+  }
+};
+
+/* -------------------------------------------------------------------- */
+
+template <typename PaletteType>
+class FlagColorManager : public PaletteRotation<PaletteType> {
+private:
+  unsigned numFlagBands = 0;
+  unsigned paletteIndex = 0;
+
+  void updatePalette() {
+    this->setPalette(gPrideFlagPalettes[paletteIndex]);
+    numFlagBands = pridePaletteColorCount(gPrideFlagPalettes[paletteIndex]);
+  }
+
+public:
+  FlagColorManager() {
+    this->minBrightness = 0x10;
+    updatePalette();
+    this->pauseRotation = true;
+  }
+
+  void nextPalette() {
+    paletteIndex = addmod8(paletteIndex, 1, gPridePaletteCount);
+    logf("Next palette to %i", paletteIndex);
+    updatePalette();
+  }
+
+  void previousPalette() {
+    paletteIndex = mod_wrap(paletteIndex-1, gPridePaletteCount);
+    logf("Previous palette to %i", paletteIndex);
+    updatePalette();
+  }
+
+  void togglePaletteAutoRotate() {
+    this->pauseRotation = !this->pauseRotation;
+    logf("Toggle palette autorotate");
+    if (this->pauseRotation) {
+      updatePalette();
+    }
+  }
+
+  CRGB getFlagBand(int bandIndex) {
+    assert(numFlagBands != 0, "tried to get flag bands when not displaying a flag");
+    if (numFlagBands == 0) {
+      return CRGB::Black;
+    }
+    return this->getPaletteColor(0xFF * bandIndex / numFlagBands + 0xFF / (numFlagBands*2));
+  }
+
+  CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL) {
+    uint8_t index;
+    if (linearPalette) {
+      index = millis() / (500 / 0xFF * numFlagBands);
+    } else {
+      index = random8();
+    }
+    if (colorIndex) {
+      *colorIndex = index;
+    }
+    return this->getPaletteColor(index);
+  }
+
+  unsigned getNumFlagBands() {
+    if (paletteIndex == 0) {
+      // hack for not showing redundant colors in trans flag
+      return 3;
+    }
+    return numFlagBands;
   }
 };

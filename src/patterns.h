@@ -3,7 +3,6 @@
 
 #include <FastLED.h>
 #include <vector>
-#include <deque>
 #include <functional>
 
 #include "util.h"
@@ -12,12 +11,15 @@
 #include "drawing.h"
 #include "AudioManager.h"
 
+typedef FlagColorManager<CRGBPalette32> EVMColorManager;
+
 class Pattern {
 private:  
   long startTime = -1;
   long stopTime = -1;
   long lastUpdateTime = -1;
 public:
+  EVMColorManager *colorManager;
   virtual ~Pattern() { }
 
   void start() {
@@ -57,15 +59,15 @@ public:
     return startTime != -1;
   }
 
-  long runTime() {
+  unsigned long runTime() {
     return startTime == -1 ? 0 : millis() - startTime;
   }
 
-  long frameTime() {
+  unsigned long frameTime() {
     return (lastUpdateTime == -1 ? 0 : millis() - lastUpdateTime);
   }
 
-  virtual void poke() { } // handle user-input
+  virtual void colorModeChanged() { }
 };
 
 /* ------------------------------------------------------------------------------------------------------ */
@@ -372,68 +374,68 @@ public:
     bits.push_back(newbit);
     return bits.back();
   }
+
+  void removeAllBits() {
+    bits.clear();
+  }
 };
 
 /* ------------------------------------------------------------------------------- */
 
 class DownstreamPattern : public Pattern {
   BitsFiller *bitsFiller;
-  typedef enum {trans, bi, rainbow, modeCount} ColorMode;
-  ColorMode colorMode;
-  const int kDefaultSpeed = 24;
+  unsigned circleBits = 0;
 public:
   DownstreamPattern() {
     EdgeType circledirection = (random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise);
     vector<EdgeTypes> directions = {circledirection, EdgeType::outbound};
-    bitsFiller = new BitsFiller(0, kDefaultSpeed, 0, directions);
+    bitsFiller = new BitsFiller(0, 24, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
-    bitsFiller->fadeUpDistance = 3;
-    
-    int bitCount = 3;
-    
-    for (int i = 0; i < bitCount; ++i) {
-      BitsFiller::Bit &bit = bitsFiller->addBit();
-      bit.px = circleleds[i * circleleds.size() / bitCount];
-      bit.colorIndex = i * 0xFF / 8;
-    }
-    colorMode = (ColorMode)(random8()%modeCount);
-    updateColors();
   }
   ~DownstreamPattern() {
+    colorManager->releaseTrackedColors();
     delete bitsFiller;
   }
-  
+
   void update(EVMDrawingContext &ctx) {
     ctx.leds.fill_solid(CRGB::Black);
     bitsFiller->update(ctx);
-    
-    // TODO: play with speed variation. I'm not sure a simple oscillator is right, needs diff acceleration curve
 
-    //bitsFiller->speed = 24 + beatsin16(6, 0, 48);
+    // shiftTrackedColors
+    if (!colorManager->pauseRotation) {
+      for (int i = 0; i < colorManager->trackedColorsCount(); ++i) {
+        bitsFiller->bits[i].color = colorManager->getTrackedColor(i);
+      }
+      colorManager->paletteRotationTick();
+    }
   }
 
-  void updateColors() {
-    for (unsigned b = 0; b < bitsFiller->bits.size(); ++b) {
-      if (colorMode == trans) {
-        bitsFiller->bits[b].color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, b * 0xFF / 5);
-      } else if (colorMode == bi) {
-        bitsFiller->bits[b].color = ColorFromPalette((CRGBPalette256)Bi_Flag_gp, b * 0xFF / 2);
+  void colorModeChanged() {
+    unsigned oldCircleBits = circleBits;
+    if (colorManager->pauseRotation) {
+      circleBits = colorManager->getNumFlagBands();
+      colorManager->releaseTrackedColors();
+    } else {
+      // keep it simple with 3 bits with doing full palette rotation
+      colorManager->prepareTrackedColors(3);
+      circleBits = 3;
+    }
+
+    if (circleBits != oldCircleBits) {
+      bitsFiller->removeAllBits();
+      for (unsigned i = 0; i < circleBits; ++i) {
+        BitsFiller::Bit &bit = bitsFiller->addBit();
+        bit.px = circleleds[i * circleleds.size() / circleBits];
       }
     }
-    if (colorMode == rainbow) {
-      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {
-        bit.color = CHSV(millis()/20 + bit.colorIndex, 0xFF, 0xFF);
-      };
-    } else {
-      bitsFiller->handleUpdateBit = [](BitsFiller::Bit &bit) {
-
-      };
+    if (colorManager->pauseRotation) {
+      for (unsigned i = 0; i < circleBits; ++i) {
+        bitsFiller->bits[i].color = colorManager->getFlagBand(i);
+      }
     }
-  }
 
-  void poke() {
-    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
-    updateColors();
+    bitsFiller->fadeDown = circleBits+1;
+    bitsFiller->fadeUpDistance = max(2, 6-(int)circleBits);
   }
 
   const char *description() {
@@ -455,7 +457,8 @@ public:
     bitsFiller.spawnPixels = &leafleds;
     bitsFiller.handleNewBit = [](BitsFiller::Bit &bit) {
       // bit.color = CHSV(millis() / 4, 0xFF, 0xFF);
-      bit.color = ARRAY_SAMPLE(transFlagColors);
+      CRGBPalette32 palette = Trans_Flag_gp;
+      bit.color = ColorFromPalette(palette, random8());
     };
     bitsFiller.handleUpdateBit = [](BitsFiller::Bit &bit) {
       int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
@@ -608,18 +611,13 @@ public:
     delete spokesFillers[1];
   }
 
-  CRGBPalette256 palette = Trans_Flag_gp;
-  uint8_t paletteIndex = 0;
-  void poke() {
-    const int numPalettes = 3;
-    paletteIndex = addmod8(paletteIndex, 1, numPalettes);
-    switch (paletteIndex) {
-      case 0:
-        palette = Trans_Flag_gp; break;
-      case 1:
-        palette = Bi_Flag_gp; break;
-      case 2:
-        palette = Lesbian_Flag_gp; break;
+  void colorModeChanged() {
+    // change bit colors for the new palette immediately for better feedback
+    for (int i = 0; i < 2; ++i) {
+      for (BitsFiller::Bit &bit : spokesFillers[i]->bits) {
+        CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
+        bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+      }
     }
   }
 
@@ -653,12 +651,16 @@ public:
         // pick a color/palette for each
         if (random8(2) == 0) {
           spokesFillers[i]->handleNewBit = [this](BitsFiller::Bit &bit) {
-            bit.color = ColorFromPalette(palette, random8());
+            uint8_t colorIndex = 0;
+            bit.color = colorManager->flagSample(false, &colorIndex);
+            bit.colorIndex = colorIndex;
           };
         } else {
-          CRGB solidColor = ColorFromPalette(palette, random8());
-          spokesFillers[i]->handleNewBit = [solidColor](BitsFiller::Bit &bit) {
+          uint8_t colorIndex = 0;
+          CRGB solidColor = colorManager->flagSample(false, &colorIndex);
+          spokesFillers[i]->handleNewBit = [solidColor, colorIndex](BitsFiller::Bit &bit) {
             bit.color = solidColor;
+            bit.colorIndex = colorIndex;
           };
         }
       }
@@ -694,9 +696,6 @@ public:
 class ChargePattern : public Pattern {
   BitsFiller *bitsFiller;
   set<int> allowedPixels;
-
-  typedef enum {flag0, flag1, flag2, pride, trans, bi, lesbian, modeCount} ColorMode;
-  ColorMode colorMode = flag0;
 public:
   int spoke; 
   ChargePattern() {
@@ -721,13 +720,9 @@ public:
     allowedPixels.insert(spokes[spoke]->begin(), spokes[spoke]->end());
     allowedPixels.insert(circleleds.begin(), circleleds.end());
     bitsFiller->allowedPixels = &allowedPixels;
-
-    updateMode();
   }
 
-  void updateMode() {
-    CRGB baseColors[] = {transFlagWhite, transFlagPink, transFlagBlue};
-
+  void colorModeChanged() {
     bitsFiller->handleNewBit = [=](BitsFiller::Bit &bit) {
       static int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
       // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
@@ -743,48 +738,8 @@ public:
       } else {
         bit.directions.edgeTypes.second = EdgeType::clockwise;
       }
-
-      switch(colorMode) {
-        case flag0:
-        case flag1:
-        case flag2: {
-          CRGB targetColor = baseColors[addmod8(spoke, 0 + colorMode, ARRAY_SIZE(baseColors))];
-          // sprinkle bits of other flag colors in there
-          uint8_t colorChoice = random8();
-          if (colorChoice < 0x20) {
-            bit.color = baseColors[addmod8(spoke, 1 + colorMode, ARRAY_SIZE(baseColors))];
-            bit.lifespan = 320;
-          } else if (colorChoice < 0x40) {
-            bit.color = baseColors[addmod8(spoke, 2 + colorMode, ARRAY_SIZE(baseColors))];
-            bit.lifespan = 320;
-          } else {
-            bit.color = baseColors[addmod8(spoke, 0 + colorMode, ARRAY_SIZE(baseColors))];
-          }
-          
-          bitsFiller->handleUpdateBit = [targetColor](BitsFiller::Bit &bit) {
-            if (bit.lifespan != 0) {
-              uint8_t blendAmount = min((unsigned long)0xFF, 0xFF * bit.age() / 500);
-              bit.color = blend(bit.initialColor, targetColor, blendAmount);
-            }
-          };
-          break;
-        }
-        case trans:
-          bit.color = ColorFromPalette((CRGBPalette256)Trans_Flag_gp, random8()); break;
-        case bi:
-          bit.color = ColorFromPalette((CRGBPalette256)Bi_Flag_gp, random8()); break;
-        case lesbian:
-          bit.color = ColorFromPalette((CRGBPalette256)Lesbian_Flag_gp, millis() / 5); break;          
-        case pride:
-          bit.color = ColorFromPalette((CRGBPalette256)Pride_Flag_gp, millis() / 8); break;
-        default: break;
-      }
+      bit.color = colorManager->flagSample(true);
     };
-  }
-
-  void poke() {
-    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
-    updateMode();
   }
 
   void update(EVMDrawingContext &ctx) {
@@ -838,12 +793,9 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
-class SoundBits : public Pattern, public FFTProcessing, public PaletteRotation<CRGBPalette32> {
+class SoundBits : public Pattern, public FFTProcessing {
   BitsFiller bitsFillerOut;
   BitsFiller bitsFillerIn;
-
-    typedef enum {hue, trans, bi, lesbian, rotation, modeCount} ColorMode;
-  ColorMode colorMode = hue;
 public:
   SoundBits() : bitsFillerOut(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}),
                 bitsFillerIn(0, 60, 1200, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
@@ -866,34 +818,39 @@ public:
     };
   }
 
+  void colorModeChanged() {
+    // change bit colors for the new palette immediately for better feedback
+    for (BitsFiller::Bit &bit : bitsFillerOut.bits) {
+      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
+      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+    }
+    for (BitsFiller::Bit &bit : bitsFillerIn.bits) {
+      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
+      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+    }
+  }
+
   void update(EVMDrawingContext &ctx) {
     vector<int> spectrum = fftUpdate().spectrum;
     // fftLog(spectrum);
 
-    for (unsigned b = 0; b < spectrum.size(); ++b) {
+    for (unsigned freqBucket = 0; freqBucket < spectrum.size(); ++freqBucket) {
       int thresh = 3;
-      if (spectrum[b] > thresh) {
+      if (spectrum[freqBucket] > thresh) {
         unsigned maxbits = 50;
         if (bitsFillerOut.bits.size() + bitsFillerIn.bits.size() < maxbits) {
           // loglf("levels[%i]: %i; making a bit; out bits = %u, in bits = %u...", b, spectrum[b], bitsFillerOut.bits.size(), bitsFillerIn.bits.size());
-          bool spawnoutbound = b < spectrum.size() / 5;
+          bool spawnoutbound = freqBucket < spectrum.size() / 5;
           unsigned maxlifespan = spawnoutbound ? 2000 : 1000;
           BitsFiller::Bit &bit = (spawnoutbound ? bitsFillerOut : bitsFillerIn).addBit();
-          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[b]-thresh)/20);
+          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[freqBucket]-thresh)/20);
           // logf("done");
 
-          uint8_t colorIndex = millis() / 100 + 0xFF * b / 13;
-          CRGB color;
-          switch (colorMode) {
-            case hue:
-              color = CHSV(colorIndex, 0xFF, 0xFF); break;
-            default:
-              color = getPaletteColor(colorIndex);
-              break;
-          }
-          
-          color.nscale8(min(0xFF, 0xFF * (spectrum[b]-thresh)/10));
+          uint8_t colorIndex = millis() / 100 + 0xFF * freqBucket / 13;
+          CRGB color = colorManager->getPaletteColor(colorIndex);
+          color.nscale8(min(0xFF, 0xFF * (spectrum[freqBucket]-thresh)/10));
           bit.color = color;
+          bit.colorIndex = colorIndex;
         }
       }
     }
@@ -902,24 +859,6 @@ public:
 
     bitsFillerOut.update(ctx);
     bitsFillerIn.update(ctx);
-  }
-
-  void poke() {
-    colorMode = (ColorMode)addmod8(colorMode, 1, modeCount);
-    logf("  colormode -> %i", colorMode);
-    pauseRotation = (colorMode != rotation);
-
-    switch (colorMode) {
-      case trans:
-        setPalette(Trans_Flag_gp); break;
-      case bi:
-        setPalette(Bi_Flag_gp); break;
-      case lesbian:
-        setPalette(Lesbian_Flag_gp); break;
-      case rotation:
-        randomizePalette(); break;
-      default: break;
-    }
   }
 
   const char *description() {
