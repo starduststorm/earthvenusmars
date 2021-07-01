@@ -378,6 +378,13 @@ public:
   void removeAllBits() {
     bits.clear();
   }
+
+  void resetBitColors(EVMColorManager *colorManager) {
+    for (Bit &bit : bits) {
+      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
+      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+    }
+  }
 };
 
 /* ------------------------------------------------------------------------------- */
@@ -614,10 +621,7 @@ public:
   void colorModeChanged() {
     // change bit colors for the new palette immediately for better feedback
     for (int i = 0; i < 2; ++i) {
-      for (BitsFiller::Bit &bit : spokesFillers[i]->bits) {
-        CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
-        bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
-      }
+      spokesFillers[i]->resetBitColors(colorManager);
     }
   }
 
@@ -820,15 +824,14 @@ public:
 
   void colorModeChanged() {
     // change bit colors for the new palette immediately for better feedback
-    for (BitsFiller::Bit &bit : bitsFillerOut.bits) {
-      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
-      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+    bitsFillerOut.resetBitColors(colorManager);
+    bitsFillerIn.resetBitColors(colorManager);
     }
-    for (BitsFiller::Bit &bit : bitsFillerIn.bits) {
-      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
-      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
-    }
-  }
+
+  const unsigned maxbits = 50;
+  const int soundMinThreshold = 3;
+  int soundThreshold = soundMinThreshold;
+  unsigned long lastThreshAdjust = 0;
 
   void update(EVMDrawingContext &ctx) {
     vector<int> spectrum = fftUpdate().spectrum;

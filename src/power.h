@@ -325,7 +325,7 @@ public:
     AnalogDial *dial = controls.addAnalogDial(0);
     dial->readValueFunc = &getADCRead;
     dial->maxValue = 4096; // 12-bit
-    dial->updateThreshold = 120;
+    dial->updateThreshold = 140;
 
     // poke the dial handler
     handleADC = 1;
@@ -360,7 +360,7 @@ public:
         controls.update();
       }
     }
-
+#if EVM_HARDWARE_VERSION == 2
     // thermal management
     if (millis() - lastThermalCheck > 5000) {
       // unsigned long logstart = millis();
@@ -370,7 +370,7 @@ public:
 
       const int tempThresh = 55;
       const int tempRange = 90 - tempThresh;
-      if (temp > 150) {
+      if (temp > 150 || temp < -100) {
         // assume faulty read
         logf("temp read %i°C. faulty sensor?", temp);
       } else if (temp > tempThresh) {
@@ -387,6 +387,7 @@ public:
       lastThermalCheck = millis();
       discardNextADCRead = true;
     }
+#endif
   }
 
   void setBrightness(uint8_t brightness) {

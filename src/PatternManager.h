@@ -11,7 +11,7 @@ class PatternManager {
   Pattern *activePattern = NULL;
 
   bool patternAutoRotate = false;
-  unsigned long patternTimeout = 10*1000;
+  unsigned long patternTimeout = 40*1000;
 
   std::vector<Pattern * (*)(void)> patternConstructors;
 
@@ -27,6 +27,7 @@ class PatternManager {
       // testIdlePattern = new LitPattern();
       // testIdlePattern = new UpstreamPattern();
       // testIdlePattern = new SoundTest2();
+      // testIdlePattern = new DownstreamPattern();
     }
     return testIdlePattern;
   }
