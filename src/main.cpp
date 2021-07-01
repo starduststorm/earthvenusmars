@@ -166,6 +166,12 @@ void setupButtons() {
   buttons[1]->onSinglePress([]() {
     patternManager.nextPalette();
   });
+  buttons[1]->onDoubleLongPress([]() {
+    patternManager.togglePaletteAutoRotate();
+    if (!patternManager.colorManager->pauseRotation) {
+      paletteAutorotateWelcome();
+    }
+  });
   buttons[2]->onSinglePress([]() {
     patternManager.nextPattern();
   });
