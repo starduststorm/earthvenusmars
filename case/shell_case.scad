@@ -67,7 +67,7 @@ module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false
     }
 };
 
-outeroffset = 2.2;  // max distance outside of board edge
+outeroffset = 1.8;  // max distance outside of board edge
 inneroffset = -1.2; // max distance overlapping from board edge
 
 boardthickness = 1.6 + tolerance;
@@ -88,16 +88,26 @@ module draw_beveled_half(flip) {
     }
 };
 
-pcb_bottom_y = 52.79; // measured board center to pcb bottom y
-pcb_bottom_to_dial_center = 26.4;
-thumbdial_radius = 4.6 + tolerance;
-thumbdial_center_to_edge_x = 1.3;
-
 //cutouts
 
-microphone_cutout_radius = 4.43 /* measured */ + 0.6 /* tolerance */;
-microphone_cutout_depth = 1.5; // 0805 1uF capacitor seems to be tallest part at 1.4mm expected
-microphone_cutout_position = [-10.65, 1.28, basethickness - microphone_cutout_depth]; // from center of board
+thumbdial_position = [-10.4, -28.6, 0]; // centered around circular dial
+thumbdial_radius = 4.6 + tolerance;
+thumbdial_center_to_part_cutout_edge_x  = 5.34;
+
+microphone_cutout_radius = 5.25 /* measured */ + 0.2 /* extra tolerance */;
+microphone_cutout_depth = 1.1 /* 423-1405-1-ND microphone datasheet */ + 0.2; /* extra tolerance */
+microphone_cutout_position = [-11, 0.84, basethickness - microphone_cutout_depth]; // from center of board
+
+thermistor_cutout_size = [3.2, 3, 0.9] /* measured */ + [0.2,0.2,0.2]; // extra tolerance
+thermistor_cutout_position = [-.57, 7.52, basethickness - thermistor_cutout_size[2]]; // from center of board
+
+usb_cutout_size = [8.6, 7.1 + outeroffset, basethickness+boardthickness]; // entire thickness
+usb_cutout_position = [0, -46.9, 0]; // center of board to top of usb
+
+bar_pin_cutout_distance = 6;
+bar_pin_cutout_position = [0, 13, 0];
+bar_pin_cutout_radius = 1;
+bar_pin_cutout_depth = boardthickness;
 
 base_cable_cutout_depth = 0.9; // my usb inner insulated strand is 0.76mm diameter
 base_cable_cutout_center_position = [0, -37 - outeroffset, basethickness - base_cable_cutout_depth];
@@ -115,14 +125,6 @@ base_cable_stabilizer_height = 0.3;
 
 // bottom case
 translate([-1 * part_placement_offset, 0, 0]) {
-    // cable stabilizers
-    for(y = [0:2:16])
-    translate(base_cable_cutout_center_position+[base_cable_cutout_center_radius,-y,0])
-        rotate([0,-PI/2*RAD,0])
-            linear_extrude(base_cable_cutout_center_radius*2)
-                polygon([[0,0], [0, 3/2*base_cable_stabilizer_height], [base_cable_stabilizer_height, 1/2*base_cable_stabilizer_height]]);
-
-
     difference() {
         union() {
             // back base
@@ -136,35 +138,27 @@ translate([-1 * part_placement_offset, 0, 0]) {
             translate(microphone_cutout_position)
                 cylinder(r = microphone_cutout_radius, h = microphone_cutout_depth);
             
-            // wire cutout
-            translate(base_cable_cutout_center_position) {
-                cylinder(r=base_cable_cutout_center_radius, h=base_cable_cutout_depth);
-            }
-            translate(base_cable_spoke_1_position)
-                cylinder(r=base_cable_cutout_spoke_cap_radius, h=base_cable_cutout_depth);
-            translate(base_cable_spoke_2_position)
-                cylinder(r=base_cable_cutout_spoke_cap_radius, h=base_cable_cutout_depth);
+            // thermistor cutout
+            translate(thermistor_cutout_position) translate([0,0,thermistor_cutout_size[2]/2])
+                cube(thermistor_cutout_size, center=true);
             
-            spoke_1_rect_pos = (base_cable_spoke_1_position + base_cable_cutout_center_position) / 2;
-            spoke_1_angle = angle(base_cable_spoke_1_position-base_cable_cutout_center_position, [1,0,0]);
-            translate(spoke_1_rect_pos + [0,0,base_cable_cutout_depth/2])
-                rotate([0,0,spoke_1_angle])
-                    cube([norm(base_cable_spoke_1_position - base_cable_cutout_center_position), base_cable_cutout_spoke_width, base_cable_cutout_depth], center=true);
-            spoke_2_rect_pos = (base_cable_spoke_2_position + base_cable_cutout_center_position) / 2;
-            spoke_2_angle = angle(base_cable_spoke_2_position-base_cable_cutout_center_position, [1,0,0]);
-            translate(spoke_2_rect_pos + [0,0,base_cable_cutout_depth/2])
-                rotate([0,0,spoke_2_angle])
-                    cube([norm(base_cable_spoke_2_position - base_cable_cutout_center_position), base_cable_cutout_spoke_width, base_cable_cutout_depth], center=true);
-            // wire route out of board
-            wire_length = 20; // long enough to exit board
-            translate(base_cable_cutout_center_position + [-base_cable_cutout_spoke_width/2,0,0])
-                scale([1,-1,1]) cube([base_cable_cutout_spoke_width, wire_length, base_cable_cutout_depth+boardthickness]);
-            
+            // usb cutout
+            translate(usb_cutout_position + [-usb_cutout_size[0]/2, -usb_cutout_size[1], 0])
+                cube(usb_cutout_size);
+
             // thumbdial cutout
-            translate([-encased_spoke_width/2 + thumbdial_center_to_edge_x, -pcb_bottom_y + pcb_bottom_to_dial_center, 0])  {
+            translate(thumbdial_position)  {
                 cylinder(r=thumbdial_radius, h=basethickness);
-                translate([0,  -thumbdial_radius, 0]) cube([2*thumbdial_radius, 2*thumbdial_radius, basethickness]);
+                translate([0,  -thumbdial_radius, 0]) cube([thumbdial_center_to_part_cutout_edge_x, 2*thumbdial_radius, basethickness]);
             }
+            
+            // pin cutouts
+            translate(bar_pin_cutout_position) {
+                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+            }
+
         }
     }
 }
