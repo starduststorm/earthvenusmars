@@ -81,11 +81,17 @@ class SPSTButton : public HardwareControl {
   std::function<void(void)> doubleLongPressHandler = []{};
   std::function<void(void)> buttonUpHandler = []{}; // called on button-up only after longPress or doubleLongPress
 
+  bool didInit = false;
+
   virtual void initPin(int pin) {
     pinMode(pin, INPUT_PULLUP);
   }
 
   void update() {
+    if (!didInit) {
+      initPin(pin);
+      didInit = true;
+    }
     bool buttonPressed = isButtonPressed();
     long readTime = millis();
 
@@ -108,7 +114,7 @@ class SPSTButton : public HardwareControl {
           doublePressHandler();
           singlePressTime = -1;
         } else {
-          singlePressTime = readTime;
+            singlePressTime = readTime;
         }
       } else if (buttonPressed && buttonDownTime == -1) {
         buttonDownTime = readTime;
@@ -134,12 +140,19 @@ public:
   long longPressInterval = 1000;
   long doublePressInterval = 400;
 
-  SPSTButton(int pin) : HardwareControl(pin) {
-    initPin(pin);
-  }
+  SPSTButton(int pin) : HardwareControl(pin) { }
 
   virtual bool isButtonPressed() {
-    return (digitalRead(pin) == LOW);
+    // HACK: on EVM hardware 2, the Colors button is wired to Arduino Zero's TX LED pin, which causes sporatic HIGH reads
+#if EVM_HARDWARE_VERSION == 2
+    noInterrupts();
+    pinMode(pin, INPUT_PULLUP);
+#endif
+    int read = (digitalRead(pin) == LOW);
+#if EVM_HARDWARE_VERSION == 2
+    interrupts();
+#endif
+    return read;
   }
 
   void onSinglePress(ButtonHandler handler) {
