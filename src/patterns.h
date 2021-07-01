@@ -335,7 +335,12 @@ public:
           killBit(i);
         }
       }
-      lastMove = mils;
+      if (mils - lastMove > 2000/speed) {
+        lastMove = mils;
+      } else {
+        // This helps avoid time drift, which for some reason can make one device run consistently faster than another
+        lastMove += 1000/speed;
+      }
     }
     for (Bit &bit : bits) {
       handleUpdateBit(bit);
@@ -826,7 +831,7 @@ public:
     // change bit colors for the new palette immediately for better feedback
     bitsFillerOut.resetBitColors(colorManager);
     bitsFillerIn.resetBitColors(colorManager);
-    }
+  }
 
   const unsigned maxbits = 50;
   const int soundMinThreshold = 3;
@@ -838,23 +843,35 @@ public:
     // fftLog(spectrum);
 
     for (unsigned freqBucket = 0; freqBucket < spectrum.size(); ++freqBucket) {
-      int thresh = 3;
-      if (spectrum[freqBucket] > thresh) {
-        unsigned maxbits = 50;
+      if (spectrum[freqBucket] > soundThreshold) {
+        
         if (bitsFillerOut.bits.size() + bitsFillerIn.bits.size() < maxbits) {
           // loglf("levels[%i]: %i; making a bit; out bits = %u, in bits = %u...", b, spectrum[b], bitsFillerOut.bits.size(), bitsFillerIn.bits.size());
           bool spawnoutbound = freqBucket < spectrum.size() / 5;
           unsigned maxlifespan = spawnoutbound ? 2000 : 1000;
           BitsFiller::Bit &bit = (spawnoutbound ? bitsFillerOut : bitsFillerIn).addBit();
-          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[freqBucket]-thresh)/20);
-          // logf("done");
+          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[freqBucket]-soundThreshold)/20);
+          // logf("done");                                                  
 
           uint8_t colorIndex = millis() / 100 + 0xFF * freqBucket / 13;
           CRGB color = colorManager->getPaletteColor(colorIndex);
-          color.nscale8(min(0xFF, 0xFF * (spectrum[freqBucket]-thresh)/10));
+          color.nscale8(min(0xFF, 0xFF * (spectrum[freqBucket]-soundThreshold)/10));
           bit.color = color;
           bit.colorIndex = colorIndex;
         }
+      }
+    }
+    // last effort dirty gain management
+    unsigned extantBits = bitsFillerOut.bits.size() + bitsFillerIn.bits.size();
+    if (millis() - lastThreshAdjust > 1000) {
+      if (extantBits >= (maxbits >> 1)) {
+        soundThreshold++;
+        logf("Is Loud. bit thresh to %i", soundThreshold);
+        lastThreshAdjust = millis();
+      } else if (extantBits < 5 && soundThreshold > soundMinThreshold) {
+        soundThreshold--;
+        logf("Is Quiet. bit thresh to %i", soundThreshold);
+        lastThreshAdjust = millis();
       }
     }
 
