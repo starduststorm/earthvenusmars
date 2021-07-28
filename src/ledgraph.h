@@ -22,7 +22,7 @@ typedef union {
 } EdgeTypesPair;
 
 struct Edge {
-    typedef enum {
+    typedef enum : uint8_t {
         none             = 0,
         inbound          = 1 << 0,
         outbound         = 1 << 1,
