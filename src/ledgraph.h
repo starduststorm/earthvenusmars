@@ -109,17 +109,27 @@ public:
 
 Graph ledgraph;
 
-const vector<int> circleleds = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65}; // 34
+#define CIRCLE_LEDS 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 30, 31, 32, 33, 34, 35, 36, 37, 38, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65 // 34
+
+#define EARTH_LEDS 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26 // 18
+#define VENUS_LEDS 66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75 // 12
+#define MARS_LEDS 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50 // 14
+
+const vector<int> circleleds = {CIRCLE_LEDS};
 const vector<int> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
 const vector<int> spoke_tip_leds = {19, 46, 73};
 const vector<int> spoke_base_leds = {12, 39, 68};
 
-const vector<int> venusleds = {66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75}; // 12
-const vector<int> marsleds = {39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50}; // 14
+const vector<int> venusleds = {VENUS_LEDS};
+const vector<int> marsleds = {MARS_LEDS};
 
-const vector<int> earthleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23, 28, 29, 27, 26}; // 18
+const vector<int> earthleds = {EARTH_LEDS};
 const vector<int> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
 const vector<int> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
+
+const set<int> circleEarthLeds = {CIRCLE_LEDS, EARTH_LEDS};
+const set<int> circleVenusLeds = {CIRCLE_LEDS, VENUS_LEDS};
+const set<int> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
 
 // indexes into circleleds vector opposite each spoke for use in pathing
 const int circleIndexOppositeEarth = 29;

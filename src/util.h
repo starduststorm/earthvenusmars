@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <stdarg.h>     /* va_list, va_start, va_arg, va_end */
+#include <functional>
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 #define ARRAY_SAMPLE(a) (ARRAY_SIZE(a) < 255 ? a[random8(ARRAY_SIZE(a))] : a[random16(ARRAY_SIZE(a))])
@@ -89,6 +90,18 @@ inline int mod_wrap(int x, int m) {
 inline float fmod_wrap(float x, int m) {
   float result = fmod(x, m);
   return result < 0 ? result + m : result;
+}
+
+void DrawModal(int fps, unsigned long durationMillis, std::function<void(unsigned long elapsed)> tick) {
+  int delayMillis = 1000/fps;
+  unsigned long start = millis();
+  unsigned long elapsed = 0;
+  do {
+    tick(elapsed);
+    FastLED.show();
+    FastLED.delay(delayMillis);
+    elapsed = millis() - start;
+  } while (elapsed < durationMillis);
 }
 
 class FrameCounter {

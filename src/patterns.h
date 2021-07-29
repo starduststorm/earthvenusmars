@@ -75,9 +75,8 @@ public:
 // a lil patternlet that can be instantiated to run bits
 class BitsFiller {
 public:
-  typedef enum { random, priority, split } FlowRule;
-  typedef enum { kill } LeafRule;
-  typedef enum { maintainPopulation, manualSpawn } SpawnRule;
+  typedef enum : uint8_t { random, priority, split } FlowRule;
+  typedef enum : uint8_t { maintainPopulation, manualSpawn } SpawnRule;
  
   struct Bit {
     friend BitsFiller;
@@ -85,19 +84,18 @@ public:
     unsigned long birthmilli;
     bool firstFrame = true;
   public:
+    uint8_t colorIndex; // storage only
+    
+    uint8_t px;
     EdgeTypesPair directions;
     
-    int px;
     unsigned long lifespan;
 
     CRGB color;
     uint8_t brightness = 0xFF;
 
-    CRGB initialColor;  // storage only  // FIXME memory: this is only used in ChargePattern. replace it with additional instances of BitsFiller? or another fading technique?
-    uint8_t colorIndex; // storage only
-
     Bit(int px, EdgeTypesPair directions, unsigned long lifespan) 
-      : directions(directions), px(px), lifespan(lifespan) {
+      : px(px), directions(directions), lifespan(lifespan) {
       reset();
       // logf("bit constructor for this = %p, px = %i, directions = %i, lifespan = %i", this, px, directions, lifespan);
     }
@@ -117,7 +115,6 @@ public:
     //   birthmilli = other.birthmilli;
     //   color = other.color;
     //   colorIndex = other.colorIndex;
-    //   initialColor = other.initialColor;
     // }
     unsigned long age() {
       return millis() - birthmilli;
@@ -231,12 +228,7 @@ private:
     vector<int> next = nextIndexes(bits[bitIndex].px, bits[bitIndex].directions);
     if (next.size() == 0) {
       // leaf behavior
-      switch (leafRule) {
-        case kill:
-          killBit(bitIndex);
-          return false;
-          break;
-      }
+      killBit(bitIndex);
     } else {
       bits[bitIndex].px = next.front();
       for (unsigned i = 1; i < next.size(); ++i) {
@@ -263,25 +255,25 @@ public:
   }
 
   vector<Bit> bits;
-  unsigned maxSpawnBits;
-  unsigned maxBitsPerSecond = 0; // limit how fast new bits are spawned, 0 = no limit
-  unsigned speed; // in pixels/second
-  unsigned long lifespan = 0; // in milliseconds, forever if 0
+  uint8_t maxSpawnBits;
+  uint8_t maxBitsPerSecond = 0; // limit how fast new bits are spawned, 0 = no limit
+  uint8_t speed; // in pixels/second
   EdgeTypesPair bitDirections;
+
+  unsigned long lifespan = 0; // in milliseconds, forever if 0
+
   FlowRule flowRule = random;
-  LeafRule leafRule = kill;
   SpawnRule spawnRule = maintainPopulation;
-  unsigned fadeUpDistance = 0; // fade up n pixels ahead of bit motion
-  
+  uint8_t fadeUpDistance = 0; // fade up n pixels ahead of bit motion
   EdgeTypes splitDirections = EdgeType::all; // if flowRule is split, which directions are allowed to split
   
   const vector<int> *spawnPixels = NULL; // list of pixels to automatically spawn bits on
-  set<int> *allowedPixels = NULL; // set of pixels that bits are allowed to travel to
+  const set<int> *allowedPixels = NULL; // set of pixels that bits are allowed to travel to
 
   function<void(Bit &)> handleNewBit = [](Bit &bit){};
   function<void(Bit &)> handleUpdateBit = [](Bit &bit){};
 
-  BitsFiller(unsigned maxSpawnBits, unsigned speed, unsigned long lifespan, vector<EdgeTypes> bitDirections)
+  BitsFiller(uint8_t maxSpawnBits, uint8_t speed, unsigned long lifespan, vector<EdgeTypes> bitDirections)
     : maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan) {
       this->bitDirections = MakeEdgeTypesPair(bitDirections);
     bits.reserve(maxSpawnBits);
@@ -375,7 +367,6 @@ public:
   Bit &addBit() {
     Bit newbit = makeBit();
     handleNewBit(newbit);
-    newbit.initialColor = newbit.color;
     bits.push_back(newbit);
     return bits.back();
   }
@@ -410,7 +401,6 @@ public:
   }
 
   void update(EVMDrawingContext &ctx) {
-    ctx.leds.fill_solid(CRGB::Black);
     bitsFiller->update(ctx);
 
     // shiftTrackedColors
@@ -480,7 +470,6 @@ public:
 
   void update(EVMDrawingContext &ctx) {
     bitsFiller.maxBitsPerSecond = beatsin8(2, 16-4, 16+4);
-    ctx.leds.fill_solid(CRGB::Black);
     bitsFiller.update(ctx);
   }
 
@@ -517,7 +506,6 @@ class HeartBeatPattern : public Pattern, public FFTProcessing {
   unsigned long diastoleAt = 0;
   const CRGB bloodColor = CRGB(0xFF, 0, 0x15);
   
-  unsigned long lastTick = 0;
   int fadeDown = 3;
   float avgAmp = 0;
 
@@ -566,11 +554,6 @@ public:
 
   void update(EVMDrawingContext &ctx) {
     unsigned long mils = millis();
-
-    if (lastTick != 0) {
-      ctx.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
-    }
-    lastTick = mils;
 
     unsigned milsPerBeat = 1000 * 60 / bpm;
     if (mils - lastSystole > milsPerBeat) {
@@ -631,8 +614,6 @@ public:
   }
 
   void update(EVMDrawingContext &ctx) {
-    ctx.leds.fill_solid(CRGB::Black);
-
     static const unsigned relationshipDuration = 1400; // maybe consider therapy if your relationships only last 1400ms
     static const unsigned lookingDuration = 150; // dang, standards++
 
@@ -703,57 +684,111 @@ public:
 /* ------------------------------------------------------------------------------- */
 
 class ChargePattern : public Pattern {
-  BitsFiller *bitsFiller;
-  set<int> allowedPixels;
+  BitsFiller *bitsFillers[3] = {0};
+  uint32_t spokeActivation[3] = {0};
+
+  void initSpoke(int spoke) {
+    logf("init spoke %i, currently %p", spoke, bitsFillers[spoke]);
+    if (bitsFillers[spoke] == NULL) {
+      bitsFillers[spoke] = new BitsFiller(30, 50, 0, {EdgeType::outbound});
+      bitsFillers[spoke]->flowRule = BitsFiller::split;
+      bitsFillers[spoke]->splitDirections = EdgeType::outbound;
+      bitsFillers[spoke]->fadeUpDistance = 2;
+      bitsFillers[spoke]->fadeDown = 5;
+      bitsFillers[spoke]->maxBitsPerSecond = 25;
+      
+      static const set<int> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
+      bitsFillers[spoke]->allowedPixels = allowedSets[spoke];
+
+      resetBitHandlers();
+    }
+    bitsFillers[spoke]->spawnRule = BitsFiller::maintainPopulation;
+  }
+
+  void teardownSpoke(int spoke) {
+    logf("teardownspoke %i", spoke);
+    if (bitsFillers[spoke] != NULL) {
+      delete bitsFillers[spoke];
+      bitsFillers[spoke] = NULL;
+    }
+  }
+  
+  void resetBitHandlers() {
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (bitsFillers[spoke]) {
+        bitsFillers[spoke]->handleNewBit = [=](BitsFiller::Bit &bit) {
+          static const int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
+          // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
+          // but add some fuzz to cause some bits fo travel around the point opposite the spoke too.
+          int cutoff = cutoffs[spoke];
+          int circleindex = mod_wrap(cutoff + random8()%6 - 3, circleleds.size());
+          int directionFuzz = random8()%8 - 4;
+          
+          bit.px = circleleds[circleindex];
+          
+          if ((unsigned)mod_wrap(circleindex - cutoff + directionFuzz, circleleds.size()) > circleleds.size() / 2) {
+            bit.directions.edgeTypes.second = EdgeType::counterclockwise;
+          } else {
+            bit.directions.edgeTypes.second = EdgeType::clockwise;
+          }
+          bit.color = colorManager->flagSample(true);
+        };
+      }
+    }
+  }
+
 public:
-  int spoke; 
+  
   ChargePattern() {
-    bitsFiller = new BitsFiller(30, 50, 0, {EdgeType::outbound});
-    bitsFiller->flowRule = BitsFiller::split;
-    bitsFiller->splitDirections = EdgeType::outbound;
-    bitsFiller->fadeUpDistance = 2;
-    bitsFiller->fadeDown = 5;
-    bitsFiller->maxBitsPerSecond = 25;
-    
-    spoke = random8()%3;
   }
 
   ~ChargePattern() {
-    delete bitsFiller;
-  }
-
-  void setup() {
-    allowedPixels.clear();
-
-    const vector<int> *spokes[] = {&earthleds, &venusleds, &marsleds};
-    allowedPixels.insert(spokes[spoke]->begin(), spokes[spoke]->end());
-    allowedPixels.insert(circleleds.begin(), circleleds.end());
-    bitsFiller->allowedPixels = &allowedPixels;
+    for (int i = 0; i < 3; ++i) {
+      if (bitsFillers[i]) {
+        delete bitsFillers[i];
+      }
+    }
   }
 
   void colorModeChanged() {
-    bitsFiller->handleNewBit = [=](BitsFiller::Bit &bit) {
-      static int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
-      // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
-      // but add some fuzz to cause some bits fo travel around the point opposite the spoke too.
-      int cutoff = cutoffs[spoke];
-      int circleindex = mod_wrap(cutoff + random8()%6 - 3, circleleds.size());
-      int directionFuzz = random8()%8 - 4;
-      
-      bit.px = circleleds[circleindex];
-      
-      if ((unsigned)mod_wrap(circleindex - cutoff + directionFuzz, circleleds.size()) > circleleds.size() / 2) {
-        bit.directions.edgeTypes.second = EdgeType::counterclockwise;
-      } else {
-        bit.directions.edgeTypes.second = EdgeType::clockwise;
-      }
-      bit.color = colorManager->flagSample(true);
-    };
+    resetBitHandlers();
   }
 
   void update(EVMDrawingContext &ctx) {
-    ctx.leds.fill_solid(CRGB::Black);
-    bitsFiller->update(ctx);    
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (bitsFillers[spoke]) {
+        bitsFillers[spoke]->update(ctx);
+        if (bitsFillers[spoke]->bits.size() == 0) {
+          // FIXME: this is wrong too, since fadedown won't have completed yet.
+          teardownSpoke(spoke);
+        }
+      }
+    }
+  }
+
+  // live responsiveness
+  void chargeSpoke(int spoke) {
+    initSpoke(spoke);
+    spokeActivation[spoke] = millis();
+  }
+
+  void runSpoke(int spoke) {
+    initSpoke(spoke);
+    spokeActivation[spoke] = UINT32_MAX;
+  }
+
+  void stopChargingSpoke(int spoke, unsigned long chargeDuration) {
+    if (millis() - spokeActivation[spoke] < chargeDuration) {
+      if (bitsFillers[spoke]) {
+        bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
+      }
+    }
+  }
+
+  void stopAllSpokes() {
+    for (int i = 0; i < 3; ++i) {
+      teardownSpoke(i);
+    }
   }
 
   const char *description() {
@@ -769,6 +804,7 @@ class IntersexFlagPattern : public Pattern {
   std::set<int> spokePixels;
 public:
   IntersexFlagPattern() : outerBits(20, 40, 4000, {EdgeType::inbound}), innerBits(8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
+    logf("intersex flag init");
     spokePixels.insert(earthleds.begin(), earthleds.end());
     spokePixels.insert(venusleds.begin(), venusleds.end());
     spokePixels.insert(marsleds.begin(), marsleds.end());
@@ -790,7 +826,6 @@ public:
   }
 
   void update(EVMDrawingContext &ctx) {
-    ctx.leds.fill_solid(CRGB::Black);
     outerBits.update(ctx);
     innerBits.update(ctx);
   }
@@ -874,8 +909,6 @@ public:
         lastThreshAdjust = millis();
       }
     }
-
-    ctx.leds.fill_solid(CRGB::Black);
 
     bitsFillerOut.update(ctx);
     bitsFillerIn.update(ctx);
