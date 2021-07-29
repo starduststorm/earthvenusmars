@@ -337,13 +337,7 @@ public:
 
   template<typename BufferType>
   void loop(BufferType &pixelBuffer) {
-    if (sleeping) {
-      FastLED.setBrightness(10);
-      wakeBlink(pixelBuffer.leds);
-      USBDevice.attach();
-      logf("Just woke up");
-      sleeping = 0;
-    } else if (sleepPending) {
+    if (sleepPending) {
       pixelBuffer.leds.fill_solid(CRGB::Black);
       FastLED.setBrightness(10);
       sleepBlink(pixelBuffer.leds);
@@ -351,6 +345,15 @@ public:
         FastLED.setBrightness(0);
         FastLED.show();
         listen_for_adc_interrupt();
+
+        assert(sleeping, "should have just been asleep");
+        if (sleeping) {
+          FastLED.setBrightness(10);
+          wakeBlink(pixelBuffer.leds);
+          USBDevice.attach();
+          logf("Just woke up");
+          sleeping = 0;
+        }
       }
     } else if (handleADC) {
       handleADC = 0;
@@ -391,6 +394,8 @@ public:
   }
 
   void setBrightness(uint8_t brightness) {
+    if (sleeping) return; // don't allow brightness to change (via interrupt) before the sleep/wake handlers get to it
+    
     brightness = lerp8by8(0, maxBrightness, brightness);
     if (FastLED.getBrightness() != brightness) {
       logf("Brightness -> %u", brightness);
