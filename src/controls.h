@@ -15,7 +15,7 @@ public:
   virtual ~HardwareControl() {};
 };
 
-/* ------------------ s*/
+/* ------------------ */
 
 typedef std::function<void(uint32_t)> DialHandler;
 
@@ -68,23 +68,40 @@ public:
 typedef std::function<void(void)> ButtonHandler;
 
 class SPSTButton : public HardwareControl {
+  typedef enum {
+    singlePress,
+    doublePress,
+    longPress,
+    doubleLongPress,
+    buttonDown,
+    buttonUp,
+    handlerTypeCount,
+  } HandlerType;
+
   long buttonDownTime = -1;
   long buttonUpTime = -1;
   long singlePressTime = -1;
   bool waitForButtonUp = false;
   
-  bool hasDoublePressHandler = false;
-  
-  std::function<void(void)> singlePressHandler = []{};
-  std::function<void(void)> doublePressHandler = []{};
-  std::function<void(void)> longPressHandler = []{};
-  std::function<void(void)> doubleLongPressHandler = []{};
-  std::function<void(void)> buttonUpHandler = []{}; // called on button-up only after longPress or doubleLongPress
-
   bool didInit = false;
+  
+  ButtonHandler *handlers[handlerTypeCount] = {0};
 
   virtual void initPin(int pin) {
     pinMode(pin, INPUT_PULLUP);
+  }
+
+  void onHandler(HandlerType type, ButtonHandler handler) {
+    // we go through this handlers dance in order to not spend memory on expensive std::functions for handlers not in use.
+    if (handlers[type]) {
+      delete handlers[type];
+    }
+    handlers[type] = new ButtonHandler(handler);
+  }
+
+  void doHandler(HandlerType type) {
+    if (handlers[type])
+      (*(handlers[type]))();
   }
 
   void update() {
@@ -95,36 +112,41 @@ class SPSTButton : public HardwareControl {
     bool buttonPressed = isButtonPressed();
     long readTime = millis();
 
+    if (!buttonPressed && buttonDownTime != -1) {
+      doHandler(buttonUp);
+    }
+
     if (waitForButtonUp) {
       if (!buttonPressed) {
         waitForButtonUp = false;
-        buttonUpHandler();
       }
     } else {
       if (!buttonPressed && singlePressTime != -1) {
-        if (!hasDoublePressHandler || readTime - singlePressTime > doublePressInterval) {
+        if ((!handlers[doublePress] && !handlers[doubleLongPress]) || readTime - singlePressTime > doublePressInterval) {
           // double-press timeout
-          singlePressHandler();
+          doHandler(singlePress);
           singlePressTime = -1;
         }
       }
       if (!buttonPressed && buttonDownTime != -1) {
         if (singlePressTime != -1) {
           // button-up from second press
-          doublePressHandler();
+          doHandler(doublePress);
           singlePressTime = -1;
         } else {
             singlePressTime = readTime;
         }
       } else if (buttonPressed && buttonDownTime == -1) {
         buttonDownTime = readTime;
+        doHandler(buttonDown);
       } else if (buttonPressed && readTime - buttonDownTime > longPressInterval) {
         if (singlePressTime != -1) {
-          doubleLongPressHandler();
+          doHandler(doubleLongPress);
           singlePressTime = -1;
         } else {
-          longPressHandler();
+          doHandler(longPress);
         }
+        // waiting for button up prevents duplicate calling of the longpress handler
         waitForButtonUp = true;
       }
     }
@@ -141,6 +163,13 @@ public:
   long doublePressInterval = 400;
 
   SPSTButton(int pin) : HardwareControl(pin) { }
+  ~SPSTButton() {
+    for (int i = 0; i < handlerTypeCount; ++i) {
+      if (handlers[i]) {
+        delete handlers[i];
+      }
+    }
+  }
 
   virtual bool isButtonPressed() {
     // HACK: on EVM hardware 2, the Colors button is wired to Arduino Zero's TX LED pin, which causes sporatic HIGH reads
@@ -155,26 +184,30 @@ public:
     return read;
   }
 
+  // guestural handlers that handle all timeouts/delays, i.e. singlePress handler will only be called if doublePress is not triggered.
   void onSinglePress(ButtonHandler handler) {
-    singlePressHandler = handler;
+    onHandler(singlePress, handler);
   }
  
   void onDoublePress(ButtonHandler handler) {
-    doublePressHandler = handler;
-    hasDoublePressHandler = true;
+    onHandler(doublePress, handler);
   }
 
   void onLongPress(ButtonHandler handler) {
-    longPressHandler = handler;
+    onHandler(longPress, handler);
   }
 
   void onDoubleLongPress(ButtonHandler handler) {
-    doubleLongPressHandler = handler;
-    hasDoublePressHandler = true;
+    onHandler(doubleLongPress, handler);
+  }
+
+  // simple handlers. onButtonUp may be called in addition to the e.g. longPress handler if both are set. onButtonUp will be called twice during doublePress.
+  void onButtonDown(ButtonHandler handler) {
+    onHandler(buttonDown, handler);
   }
 
   void onButtonUp(ButtonHandler handler) {
-    buttonUpHandler = handler;
+    onHandler(buttonUp, handler);
   }
 };
 
