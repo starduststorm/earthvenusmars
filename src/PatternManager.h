@@ -18,7 +18,7 @@ class PatternManager {
 
   std::vector<Pattern * (*)(void)> patternConstructors;
 
-  BufferType &pixelBuffer;
+  BufferType &ctx;
 
   HardwareControls controls;
 
@@ -43,14 +43,14 @@ class PatternManager {
 
   void paletteAutorotateWelcome() {
     DrawModal(120, 100, [this](unsigned long elapsed) {
-      this->pixelBuffer.leds.fadeToBlackBy(15);
+      this->ctx.leds.fadeToBlackBy(15);
     });
     DrawModal(120, 1200, [this](unsigned long elapsed) {
-      this->pixelBuffer.leds.fadeToBlackBy(15);
+      this->ctx.leds.fadeToBlackBy(15);
       for (unsigned c = 0; c < circleleds.size(); ++c) {
         uint8_t fadeUp = min(0xFFu, 0xFF * elapsed / 250);
         uint8_t fadeDown = 0xFF - 0xFF * max(0, (long)elapsed - 1000) / 200;
-        this->pixelBuffer.leds[circleleds[c]] = CHSV(0xFF * (c+elapsed/30) / circleleds.size(), 0xFF, scale8(fadeUp, fadeDown));
+        this->ctx.leds[circleleds[c]] = CHSV(0xFF * (c+elapsed/30) / circleleds.size(), 0xFF, scale8(fadeUp, fadeDown));
       }
     });
   }
@@ -150,8 +150,9 @@ class PatternManager {
 public:
   EVMColorManager *colorManager;
 
-  PatternManager(BufferType &pixelBuffer) : pixelBuffer(pixelBuffer) {
+  PatternManager(BufferType &ctx) : ctx(ctx) {
     patternConstructors.push_back(&(construct<DownstreamPattern>));
+    patternConstructors.push_back(&(construct<DownstreamFilledPattern>));
     patternConstructors.push_back(&(construct<CouplingPattern>));
     patternConstructors.push_back(&(construct<IntersexFlagPattern>));
     patternConstructors.push_back(&(construct<SoundBits>));
@@ -272,7 +273,7 @@ public:
   }
 
   void loop() {
-    pixelBuffer.leds.fill_solid(CRGB::Black);
+    ctx.leds.fill_solid(CRGB::Black);
 
     if (!chargePattern->isRunning()) {
       chargePattern->colorModeChanged();
@@ -280,10 +281,12 @@ public:
     }
 
     if (activePattern) {
-      activePattern->loop(pixelBuffer.ctx);
+      activePattern->loop();
+      activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
     }
     if (chargePattern) {
-      chargePattern->loop(pixelBuffer.ctx);
+      chargePattern->loop();
+      chargePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
     }
 
     // time out idle patterns

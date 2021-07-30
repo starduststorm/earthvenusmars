@@ -43,10 +43,10 @@ static const uint8_t brightnessDialPin = 9;
 
 #define WAIT_FOR_SERIAL 1
 
-EVMPixelBuffer pixelBuffer;
+EVMDrawingContext ctx;
 
 FrameCounter fc;
-PatternManager<EVMPixelBuffer> patternManager(pixelBuffer);
+PatternManager<EVMDrawingContext> patternManager(ctx);
 PowerManager powerManager;
 
 static bool serialTimeout = false;
@@ -79,13 +79,20 @@ void setup() {
   Serial.println("Done waiting at boot.");
 #endif
   logf("stack grow direction: %s", (stackGrowsUp() ? "up" : "down"));
+  int *a, *b;
+  a = new int(1);
+  b = new int(1);
+  logf("heap grow direction: %s", (b > a ? "up" : "down"));
+  delete a;
+  delete b;
+
 
   std::set<int> testset = {CIRCLE_LEDS};
   logf("sizeof(testset) = %u", sizeof(testset));
 
   logf("sizeof(Bit) = %u", sizeof(BitsFiller::Bit));
   logf("sizeof(BitsFiller) = %u", sizeof(BitsFiller));
-  logf("sizeof(EVMPixelBuffer) = %u", sizeof(EVMPixelBuffer));
+  logf("sizeof(EVMDrawingContext) = %u", sizeof(EVMDrawingContext));
 
   
 
@@ -109,7 +116,7 @@ void setup() {
   // Make sure we're not running the SPI while in standby
   SERCOM3->SPI.CTRLA.bit.RUNSTDBY = 0;
 
-  FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(pixelBuffer.leds, pixelBuffer.leds.size());
+  FastLED.addLeds<APA102, LEDS_MOSI, LEDS_SCK, BGR>(ctx.leds, ctx.leds.size());
   FastLED.setBrightness(0);
 
   fc.tick();
@@ -124,9 +131,9 @@ void setup() {
 
 void serialTimeoutIndicator() {
   FastLED.setBrightness(50);
-  pixelBuffer.leds.fill_solid(CRGB::Black);
+  ctx.leds.fill_solid(CRGB::Black);
   if ((millis() - setupDoneTime) % 250 < 100) {
-    pixelBuffer.leds.fill_solid(CRGB::Red);
+    ctx.leds.fill_solid(CRGB::Red);
   }
   FastLED.show();
   delay(20);
@@ -134,7 +141,7 @@ void serialTimeoutIndicator() {
 
 void testPalette(CRGBPalette256 &palette) {
   for (unsigned i = 0; i < circleleds.size(); ++i) {
-    pixelBuffer.leds[circleleds[i]] = ColorFromPalette(palette, 0xFF * i / circleleds.size());
+    ctx.leds[circleleds[i]] = ColorFromPalette(palette, 0xFF * i / circleleds.size());
   }
 }
 
@@ -144,7 +151,7 @@ void loop() {
     return;
   }
 
-  powerManager.loop(pixelBuffer);
+  powerManager.loop(ctx);
 
   patternManager.loop();
 

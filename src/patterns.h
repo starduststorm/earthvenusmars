@@ -20,6 +20,7 @@ private:
   long lastUpdateTime = -1;
 public:
   EVMColorManager *colorManager;
+  EVMDrawingContext ctx;
   virtual ~Pattern() { }
 
   void start() {
@@ -29,8 +30,8 @@ public:
     setup();
   }
 
-  void loop(EVMDrawingContext &ctx) {
-    update(ctx);
+  void loop() {
+    update();
     lastUpdateTime = millis();
   }
 
@@ -50,7 +51,7 @@ public:
     startTime = -1;
   }
 
-  virtual void update(EVMDrawingContext &ctx) { }
+  virtual void update() { }
   
   virtual const char *description() = 0;
 
@@ -123,7 +124,7 @@ public:
 
 private:
 
-  EVMPixelBuffer buffer;
+  EVMDrawingContext &ctx;
 
   unsigned long lastTick = 0;
   unsigned long lastMove = 0;
@@ -273,11 +274,10 @@ public:
   function<void(Bit &)> handleNewBit = [](Bit &bit){};
   function<void(Bit &)> handleUpdateBit = [](Bit &bit){};
 
-  BitsFiller(uint8_t maxSpawnBits, uint8_t speed, unsigned long lifespan, vector<EdgeTypes> bitDirections)
-    : maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan) {
+  BitsFiller(EVMDrawingContext &ctx, uint8_t maxSpawnBits, uint8_t speed, unsigned long lifespan, vector<EdgeTypes> bitDirections)
+    : ctx(ctx), maxSpawnBits(maxSpawnBits), speed(speed), lifespan(lifespan) {
       this->bitDirections = MakeEdgeTypesPair(bitDirections);
     bits.reserve(maxSpawnBits);
-    buffer.leds.fill_solid(CRGB::Black);
   };
 
   void fadeUpForBit(Bit &bit, int px, int distanceAway, int distanceRemaining, unsigned long lastMove) {
@@ -289,10 +289,10 @@ public:
       unsigned long fadeTimeSoFar = mils - lastMove + distanceRemaining * 1000/speed;
       uint8_t progress = 0xFF * fadeTimeSoFar / fadeUpDuration;
 
-      CRGB existing = buffer.leds[n];
+      CRGB existing = ctx.leds[n];
       CRGB blended = blend(existing, bit.color, dim8_raw(progress));
       blended.nscale8(bit.brightness);
-      buffer.leds[n] = blended;
+      ctx.leds[n] = blended;
       
       if (distanceRemaining > 0) {
         fadeUpForBit(bit, n, distanceAway+1, distanceRemaining-1, lastMove);
@@ -301,10 +301,10 @@ public:
   }
 
   int fadeDown = 4; // fadeToBlackBy units per millisecond
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     unsigned long mils = millis();
 
-    buffer.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
+    ctx.leds.fadeToBlackBy(fadeDown * (mils - lastTick));
     
     if (spawnRule == maintainPopulation) {
       for (unsigned b = bits.size(); b < maxSpawnBits; ++b) {
@@ -341,7 +341,7 @@ public:
     for (Bit &bit : bits) {
       CRGB color = bit.color;
       color.nscale8(bit.brightness);
-      buffer.leds[bit.px] = color;
+      ctx.leds[bit.px] = color;
     }
     
     if (fadeUpDistance > 0) {
@@ -356,7 +356,6 @@ public:
       }
     }
 
-    buffer.ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
     lastTick = mils;
 
     for (Bit &bit : bits) {
@@ -386,13 +385,14 @@ public:
 /* ------------------------------------------------------------------------------- */
 
 class DownstreamPattern : public Pattern {
+protected:
   BitsFiller *bitsFiller;
   unsigned circleBits = 0;
 public:
   DownstreamPattern() {
     EdgeType circledirection = (random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise);
     vector<EdgeTypes> directions = {circledirection, EdgeType::outbound};
-    bitsFiller = new BitsFiller(0, 24, 0, directions);
+    bitsFiller = new BitsFiller(ctx, 0, 24, 0, directions);
     bitsFiller->flowRule = BitsFiller::split;
   }
   ~DownstreamPattern() {
@@ -400,8 +400,8 @@ public:
     delete bitsFiller;
   }
 
-  void update(EVMDrawingContext &ctx) {
-    bitsFiller->update(ctx);
+  void update() {
+    bitsFiller->update();
 
     // shiftTrackedColors
     if (!colorManager->pauseRotation) {
@@ -445,6 +445,20 @@ public:
   }
 };
 
+class DownstreamFilledPattern : public DownstreamPattern {
+public:
+  DownstreamFilledPattern() {
+    bitsFiller->fadeDown = 0;
+  }
+  void colorModeChanged() {
+    DownstreamPattern::colorModeChanged();
+    bitsFiller->fadeDown = 0;
+  }
+  const char *description() {
+    return "downstream-filled";
+  }
+};
+
 /* ------------------------------------------------------------------------------- */
 
 // FIXME: WIP
@@ -453,7 +467,7 @@ class UpstreamPattern : public Pattern {
   // typedef enum {trans, bi, rainbow, modeCount} ColorMode;
   // ColorMode colorMode;
 public:
-  UpstreamPattern() : bitsFiller(100, 40, 600, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  UpstreamPattern() : bitsFiller(ctx, 100, 40, 600, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFiller.flowRule = BitsFiller::priority;
     bitsFiller.fadeUpDistance = 3;
     bitsFiller.spawnPixels = &leafleds;
@@ -468,9 +482,9 @@ public:
     };
   }
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     bitsFiller.maxBitsPerSecond = beatsin8(2, 16-4, 16+4);
-    bitsFiller.update(ctx);
+    bitsFiller.update();
   }
 
   const char *description() {
@@ -481,7 +495,7 @@ public:
 /* ------------------------------------------------------------------------------- */
 
 class LitPattern : public Pattern, public PaletteRotation<CRGBPalette256> {
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     for (int i = 0; i < ctx.leds.size(); ++i) {
       uint8_t hue=0, brightness=0;
 
@@ -511,7 +525,7 @@ class HeartBeatPattern : public Pattern, public FFTProcessing {
 
   BitsFiller pumpFiller;
 public:
-  HeartBeatPattern() : pumpFiller(0, 30, 1200, {EdgeType::outbound}) {
+  HeartBeatPattern() : pumpFiller(ctx, 0, 30, 1200, {EdgeType::outbound}) {
     pumpFiller.flowRule = BitsFiller::split;
     pumpFiller.fadeDown = fadeDown;
     pumpFiller.splitDirections = EdgeType::outbound;
@@ -552,7 +566,7 @@ public:
     }
   }
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     unsigned long mils = millis();
 
     unsigned milsPerBeat = 1000 * 60 / bpm;
@@ -565,7 +579,7 @@ public:
       beat(ctx, false, 0x8F);
       diastoleAt = 0;
     }
-    pumpFiller.update(ctx);
+    pumpFiller.update();
 
     // louder -> get yo blood pumpin
     const unsigned ampSamples = 1200;
@@ -591,12 +605,12 @@ class CouplingPattern : public Pattern {
 public:
   CouplingPattern() {
     for (int i = 0; i < 2; ++i) {
-      spokesFillers[i] = new BitsFiller(8, 50, 3000, {Edge::outbound, Edge::clockwise | Edge::counterclockwise});
+      spokesFillers[i] = new BitsFiller(ctx, 8, 50, 3000, {Edge::outbound, Edge::clockwise | Edge::counterclockwise});
       spokesFillers[i]->spawnPixels = &circleleds;
       spokesFillers[i]->allowedPixels = &allowedPixels[i];
       spokesFillers[i]->spawnRule = BitsFiller::maintainPopulation;
       spokesFillers[i]->maxBitsPerSecond = 10;
-      spokesFillers[i]->fadeDown = 3;
+      spokesFillers[i]->fadeDown = 0;
       spokesFillers[i]->flowRule = BitsFiller::split;
       spokesFillers[i]->splitDirections = EdgeType::outbound;
     }
@@ -613,11 +627,13 @@ public:
     }
   }
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     static const unsigned relationshipDuration = 1400; // maybe consider therapy if your relationships only last 1400ms
     static const unsigned lookingDuration = 150; // dang, standards++
 
     unsigned long mils = millis();
+    ctx.leds.fadeToBlackBy(3 * frameTime());
+
     if (state == looking && mils - lastStateChange > lookingDuration) {
       const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
       const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
@@ -672,8 +688,8 @@ public:
       state = looking;
       lastStateChange = mils;
     }
-    spokesFillers[0]->update(ctx);
-    spokesFillers[1]->update(ctx);
+    spokesFillers[0]->update();
+    spokesFillers[1]->update();
   }
 
   const char *description() {
@@ -688,13 +704,12 @@ class ChargePattern : public Pattern {
   uint32_t spokeActivation[3] = {0};
 
   void initSpoke(int spoke) {
-    logf("init spoke %i, currently %p", spoke, bitsFillers[spoke]);
     if (bitsFillers[spoke] == NULL) {
-      bitsFillers[spoke] = new BitsFiller(30, 50, 0, {EdgeType::outbound});
+      bitsFillers[spoke] = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
       bitsFillers[spoke]->flowRule = BitsFiller::split;
       bitsFillers[spoke]->splitDirections = EdgeType::outbound;
       bitsFillers[spoke]->fadeUpDistance = 2;
-      bitsFillers[spoke]->fadeDown = 5;
+      bitsFillers[spoke]->fadeDown = 0;
       bitsFillers[spoke]->maxBitsPerSecond = 25;
       
       static const set<int> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
@@ -706,7 +721,6 @@ class ChargePattern : public Pattern {
   }
 
   void teardownSpoke(int spoke) {
-    logf("teardownspoke %i", spoke);
     if (bitsFillers[spoke] != NULL) {
       delete bitsFillers[spoke];
       bitsFillers[spoke] = NULL;
@@ -738,10 +752,6 @@ class ChargePattern : public Pattern {
   }
 
 public:
-  
-  ChargePattern() {
-  }
-
   ~ChargePattern() {
     for (int i = 0; i < 3; ++i) {
       if (bitsFillers[i]) {
@@ -754,12 +764,13 @@ public:
     resetBitHandlers();
   }
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
+    ctx.leds.fadeToBlackBy(5 * frameTime());
+
     for (int spoke = 0; spoke < 3; ++spoke) {
       if (bitsFillers[spoke]) {
-        bitsFillers[spoke]->update(ctx);
+        bitsFillers[spoke]->update();
         if (bitsFillers[spoke]->bits.size() == 0) {
-          // FIXME: this is wrong too, since fadedown won't have completed yet.
           teardownSpoke(spoke);
         }
       }
@@ -803,7 +814,8 @@ class IntersexFlagPattern : public Pattern {
   BitsFiller innerBits;
   std::set<int> spokePixels;
 public:
-  IntersexFlagPattern() : outerBits(20, 40, 4000, {EdgeType::inbound}), innerBits(8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
+  IntersexFlagPattern() : outerBits(ctx, 20, 40, 4000, {EdgeType::inbound}), 
+                          innerBits(ctx, 8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
     logf("intersex flag init");
     spokePixels.insert(earthleds.begin(), earthleds.end());
     spokePixels.insert(venusleds.begin(), venusleds.end());
@@ -812,6 +824,7 @@ public:
     outerBits.allowedPixels = &spokePixels; // keeps pixels from following the last inbound edge onto the circle
     outerBits.spawnPixels = &leafleds;
     outerBits.fadeUpDistance = 2;
+    outerBits.fadeDown = 0;
     outerBits.maxBitsPerSecond = 30;
     outerBits.handleNewBit = [](BitsFiller::Bit &bit) {
       bit.color = CRGB::Yellow;
@@ -819,15 +832,18 @@ public:
 
     innerBits.spawnPixels = &circleleds;
     innerBits.fadeUpDistance = 2;
+    innerBits.fadeDown = 0;
     innerBits.maxBitsPerSecond = 8;
     innerBits.handleNewBit = [](BitsFiller::Bit &bit) {
       bit.color = CRGB(0x6E, 0x07, 0xD7);
     };
   }
 
-  void update(EVMDrawingContext &ctx) {
-    outerBits.update(ctx);
-    innerBits.update(ctx);
+  void update() {
+    ctx.leds.fadeToBlackBy(4 * frameTime());
+
+    outerBits.update();
+    innerBits.update();
   }
 
   const char *description() {
@@ -841,12 +857,12 @@ class SoundBits : public Pattern, public FFTProcessing {
   BitsFiller bitsFillerOut;
   BitsFiller bitsFillerIn;
 public:
-  SoundBits() : bitsFillerOut(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}),
-                bitsFillerIn(0, 60, 1200, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  SoundBits() : bitsFillerOut(ctx, 0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}),
+                bitsFillerIn(ctx, 0, 60, 1200, {EdgeType::inbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFillerOut.flowRule = BitsFiller::random;
     bitsFillerOut.fadeUpDistance = 3;
     bitsFillerOut.spawnPixels = &circleleds;
-    bitsFillerOut.fadeDown = 6;
+    bitsFillerOut.fadeDown = 0;
     bitsFillerOut.handleUpdateBit = [](BitsFiller::Bit &bit) {
       int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
       bit.brightness = raw;
@@ -855,7 +871,7 @@ public:
     bitsFillerIn.flowRule = BitsFiller::random;
     bitsFillerIn.fadeUpDistance = 3;
     bitsFillerIn.spawnPixels = &leafleds;
-    bitsFillerOut.fadeDown = 6;
+    bitsFillerOut.fadeDown = 0;
     bitsFillerIn.handleUpdateBit = [](BitsFiller::Bit &bit) {
       int raw = min(0xFF, max(0, (int)(0xFF - 0xFF * bit.age() / bit.lifespan)));
       bit.brightness = raw;
@@ -873,7 +889,9 @@ public:
   int soundThreshold = soundMinThreshold;
   unsigned long lastThreshAdjust = 0;
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
+    ctx.leds.fadeToBlackBy(4 * frameTime());
+
     vector<int> spectrum = fftUpdate().spectrum;
     // fftLog(spectrum);
 
@@ -910,8 +928,8 @@ public:
       }
     }
 
-    bitsFillerOut.update(ctx);
-    bitsFillerIn.update(ctx);
+    bitsFillerOut.update();
+    bitsFillerIn.update();
   }
 
   const char *description() {
@@ -922,7 +940,7 @@ public:
 class SoundTest : public Pattern, public FFTProcessing {
   BitsFiller bitsFiller;
 public:
-  SoundTest() : bitsFiller(0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
+  SoundTest() : bitsFiller(ctx, 0, 60, 1200, {EdgeType::outbound, EdgeType::clockwise | EdgeType::counterclockwise}) {
     bitsFiller.flowRule = BitsFiller::random;
     bitsFiller.fadeUpDistance = 3;
     bitsFiller.spawnPixels = &circleleds;
@@ -932,11 +950,11 @@ public:
     };
   }
 
-  void update(EVMDrawingContext &ctx) {
+  void update() {
     vector<int> spectrum = fftUpdate().spectrum;
     fftLog(spectrum);
     
-    bitsFiller.update(ctx);
+    bitsFiller.update();
     ctx.leds.fadeToBlackBy(15);
     for (unsigned b = 0; b < spectrum.size(); ++b) {
       int thresh = 5;

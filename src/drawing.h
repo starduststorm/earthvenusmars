@@ -23,12 +23,10 @@ public:
   bool wrap = false;
 };
 
-template<class PixelType, class PixelSetType>
+template<unsigned WIDTH, unsigned HEIGHT, class PixelType, class PixelSetType>
 class CustomDrawingContext {
 private:
-  std::stack<DrawStyle> styleStack;
-
-  void set_px(CustomDrawingContext<PixelType, PixelSetType> &dstCtx, PixelType src, int index, BlendMode blendMode) {
+  void set_px(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &dstCtx, PixelType src, int index, BlendMode blendMode) {
     switch (blendMode) {
       case blendSourceOver:
         dstCtx.leds[index] = src;
@@ -45,30 +43,12 @@ private:
     }
   }
 public:
-  DrawStyle drawStyle;
-  int width, height;
-  PixelSetType &leds;
-  CustomDrawingContext(PixelSetType &leds, unsigned width, unsigned height) : leds(leds) {
-    this->width = width;
-    this->height = height;
+  PixelSetType leds;
+  CustomDrawingContext() {  
+    leds.fill_solid(CRGB::Black);
   }
   
-  void blendMode(BlendMode mode) {
-    drawStyle.blendMode = mode;
-  }
-  
-  void pushStyle() {
-    styleStack.push(drawStyle);
-    drawStyle = DrawStyle();
-  }
-  
-  void popStyle() {
-    assert(!styleStack.empty(), "No style to pop");
-    drawStyle = styleStack.top();
-    styleStack.pop();
-  }
-
-  void blendIntoContext(CustomDrawingContext<PixelType, PixelSetType> &otherContext, BlendMode blendMode) {
+  void blendIntoContext(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &otherContext, BlendMode blendMode) {
     assert(otherContext.leds.size() == this->leds.size(), "context blending requires same-size buffers");
     for (int i = 0; i < leds.size(); ++i) {
       set_px(otherContext, leds[i], i, blendMode);
@@ -112,15 +92,6 @@ public:
   inline FCRGB& operator[] (uint16_t x) __attribute__((always_inline)) {
     return entries[x];
   };
-};
-
-template<unsigned WIDTH, unsigned HEIGHT, class PixelType, class PixelSetType>
-struct CustomPixelBuffer {
-  CRGBArray<WIDTH*HEIGHT> leds;
-  CustomDrawingContext<PixelType, PixelSetType> ctx;
-  CustomPixelBuffer() : ctx(leds, WIDTH, HEIGHT) { 
-    leds.fill_solid(CRGB::Black);
-  }
 };
 
 #endif
