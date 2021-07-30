@@ -52,16 +52,6 @@ PowerManager powerManager;
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
 
-bool _stackGrowsUpHelper(char *prevTop) {
-  char top;
-  return &top > prevTop;
-}
-
-bool stackGrowsUp() {
-  char top;
-  return _stackGrowsUpHelper(&top);
-}
-
 void setup() {
   Serial.begin(57600);
   
@@ -78,31 +68,6 @@ void setup() {
   delay(2000);
   Serial.println("Done waiting at boot.");
 #endif
-  logf("stack grow direction: %s", (stackGrowsUp() ? "up" : "down"));
-  int *a, *b;
-  a = new int(1);
-  b = new int(1);
-  logf("heap grow direction: %s", (b > a ? "up" : "down"));
-  delete a;
-  delete b;
-
-
-  std::set<int> testset = {CIRCLE_LEDS};
-  logf("sizeof(testset) = %u", sizeof(testset));
-
-  logf("sizeof(Bit) = %u", sizeof(BitsFiller::Bit));
-  logf("sizeof(BitsFiller) = %u", sizeof(BitsFiller));
-  logf("sizeof(EVMDrawingContext) = %u", sizeof(EVMDrawingContext));
-
-  
-
-  function<void()> testfunc = [](){};
-
-  logf("sizeof(std::function) = %u", sizeof(testfunc));
-  logf("sizeof(SPSTButton) = %u", sizeof(SPSTButton));
-  logf("sizeof(TouchButton) = %u", sizeof(TouchButton));
-  
-  
   randomSeed(lsb_noise(UNCONNECTED_PIN_1, 8 * sizeof(uint32_t)));
   random16_add_entropy(lsb_noise(UNCONNECTED_PIN_2, 8 * sizeof(uint16_t)));
   

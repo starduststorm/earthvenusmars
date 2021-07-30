@@ -817,7 +817,6 @@ class IntersexFlagPattern : public Pattern {
 public:
   IntersexFlagPattern() : outerBits(ctx, 20, 40, 4000, {EdgeType::inbound}), 
                           innerBits(ctx, 8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
-    logf("intersex flag init");
     spokePixels.insert(earthleds.begin(), earthleds.end());
     spokePixels.insert(venusleds.begin(), venusleds.end());
     spokePixels.insert(marsleds.begin(), marsleds.end());

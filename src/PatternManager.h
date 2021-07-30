@@ -95,20 +95,20 @@ class PatternManager {
     for (int b = 0; b < 3; ++b) {
       unsigned long chargeDuration = touchPads[b]->longPressInterval;
       touchPads[b]->onButtonDown([b, this]() {
-        logf("touch down: %i", b);
+        logf("Touch down: %i", b);
         if (chargePattern) {
           chargePattern->chargeSpoke(b);
         }
         
       });
       touchPads[b]->onButtonUp([b, chargeDuration, this]() {
-        logf("touch up: %i", b);
+        logf("Touch up: %i", b);
         if (chargePattern) {
           chargePattern->stopChargingSpoke(b, chargeDuration);
         }
       });
       touchPads[b]->onLongPress([b, this]() {
-        logf("long press: %i", b);
+        logf("Long press: %i", b);
         if (chargePattern) {
           chargePattern->runSpoke(b);
         }
@@ -188,7 +188,6 @@ public:
   }
 
   void stopPattern() {
-    logf("stopPattern");
     if (activePattern) {
       activePattern->stop();
       delete activePattern;
@@ -232,13 +231,9 @@ public:
 
 private:
   bool startPatternAtIndex(int index) {
-    logf("startPatternAtIndex %i", index);
-    logf("calling stop pattern first");
     stopPattern();
     auto ctor = patternConstructors[index];
-    logf("got ctor");
     Pattern *nextPattern = ctor();
-    logf("called ctor");
     if (startPattern(nextPattern)) {
       patternIndex = index;
       return true;
