@@ -230,6 +230,7 @@ private:
     if (next.size() == 0) {
       // leaf behavior
       killBit(bitIndex);
+      return false;
     } else {
       bits[bitIndex].px = next.front();
       for (unsigned i = 1; i < next.size(); ++i) {
