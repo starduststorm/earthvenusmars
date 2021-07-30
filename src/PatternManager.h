@@ -139,7 +139,7 @@ class PatternManager {
     for (int b = 0; b < 3; ++b) {
       buttons[b]->onLongPress([b, this]() {
         ChargePattern *charge = new ChargePattern();
-        charge->spoke = b;
+        charge->runSpoke(b);
         this->startPattern(charge);
       });
     }
@@ -225,7 +225,9 @@ public:
     if (activePattern) {
       activePattern->colorModeChanged();
     }
-    chargePattern->colorModeChanged();
+    if (chargePattern) {
+      chargePattern->colorModeChanged();
+    }
   }
 
 private:
@@ -247,7 +249,6 @@ private:
   }
 public:
   bool startPattern(Pattern *pattern) {
-    logf("startPattern");
     stopPattern();
     if (pattern->wantsToRun()) {
       pattern->colorManager = colorManager;
@@ -267,15 +268,17 @@ public:
 
   void setup() {
     colorManager = new EVMColorManager();
+#if EVM_HARDWARE_VERSION > 1
     chargePattern = new ChargePattern();
     chargePattern->colorManager = colorManager;
+#endif
     setupButtons();
   }
 
   void loop() {
     ctx.leds.fill_solid(CRGB::Black);
 
-    if (!chargePattern->isRunning()) {
+    if (chargePattern && !chargePattern->isRunning()) {
       chargePattern->colorModeChanged();
       chargePattern->start();
     }

@@ -152,20 +152,7 @@ void loop() {
   }
 
   powerManager.loop(ctx);
-
   patternManager.loop();
-
-    // unsigned long mils = millis();
-    // int mod = mils % 30000;
-    // CRGBPalette256 palette;
-    // if (mod < 10000) {
-    //   palette = Bi_Flag_gp;
-    // } else if (mod < 20000) {
-    //   palette = Lesbian_Flag_gp;
-    // } else {
-    //   palette = Pride_Flag_gp;
-    // }
-    // testPalette(palette);
   
   FastLED.show();
 
