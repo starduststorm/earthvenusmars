@@ -98,25 +98,13 @@ public:
     Bit(int px, EdgeTypesPair directions, unsigned long lifespan) 
       : px(px), directions(directions), lifespan(lifespan) {
       reset();
-      // logf("bit constructor for this = %p, px = %i, directions = %i, lifespan = %i", this, px, directions, lifespan);
     }
-    // Bit(const Bit &other) {
-    //   reset_to(other);
-    // }
+
     void reset() {
       birthmilli = millis();
       color = CHSV(random8(), 0xFF, 0xFF);
     }
-    // commented unless we need a custom copy constructor
-    // void reset_to(const Bit &other) {
-    //   // logf("RESET BIT TO OTHER %p px = %i, directions = %i, lifespan = %i", &other, other.px, other.directions, other.lifespan);
-    //   px = other.px;
-    //   directions = other.directions;
-    //   lifespan = other.lifespan;
-    //   birthmilli = other.birthmilli;
-    //   color = other.color;
-    //   colorIndex = other.colorIndex;
-    // }
+
     unsigned long age() {
       return millis() - birthmilli;
     }
@@ -137,7 +125,7 @@ private:
     return random16()%NUM_LEDS;
   }
 
-  Bit makeBit(Bit *fromBit=NULL) {
+  Bit &makeBit(Bit *fromBit=NULL) {
     // the bit directions at the BitsFiller level may contain multiple options, choose one at random for this bit
     EdgeTypesPair directionsForBit = {0};
 
@@ -156,10 +144,11 @@ private:
     }
 
     if (fromBit) {
-      return Bit(*fromBit);
+      bits.emplace_back(*fromBit);
     } else {
-      return Bit(spawnLocation(), directionsForBit, lifespan);
+      bits.emplace_back(spawnLocation(), directionsForBit, lifespan);
     }
+    return bits.back();
   }
 
   void killBit(int bitIndex) {
@@ -167,9 +156,8 @@ private:
   }
 
   void splitBit(Bit &bit, int toIndex) {
-    Bit split = makeBit(&bit);
+    Bit &split = makeBit(&bit);
     split.px = toIndex;
-    bits.push_back(split);
   }
 
   bool isIndexAllowed(int index) {
@@ -365,10 +353,9 @@ public:
   };
 
   Bit &addBit() {
-    Bit newbit = makeBit();
+    Bit &newbit = makeBit();
     handleNewBit(newbit);
-    bits.push_back(newbit);
-    return bits.back();
+    return newbit;
   }
 
   void removeAllBits() {
