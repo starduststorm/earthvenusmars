@@ -879,23 +879,23 @@ public:
   void update() {
     ctx.leds.fadeToBlackBy(4 * frameTime());
 
-    vector<int> spectrum = fftUpdate().spectrum;
+    FFTFrame fftFrame = fftUpdate();
     // fftLog(spectrum);
 
-    for (unsigned freqBucket = 0; freqBucket < spectrum.size(); ++freqBucket) {
-      if (spectrum[freqBucket] > soundThreshold) {
+    for (unsigned freqBucket = 0; freqBucket < fftFrame.size; ++freqBucket) {
+      if (fftFrame.spectrum[freqBucket] > soundThreshold) {
         
         if (bitsFillerOut.bits.size() + bitsFillerIn.bits.size() < maxbits) {
           // loglf("levels[%i]: %i; making a bit; out bits = %u, in bits = %u...", b, spectrum[b], bitsFillerOut.bits.size(), bitsFillerIn.bits.size());
-          bool spawnoutbound = freqBucket < spectrum.size() / 5;
+          bool spawnoutbound = freqBucket < fftFrame.size / 5;
           unsigned maxlifespan = spawnoutbound ? 2000 : 1000;
           BitsFiller::Bit &bit = (spawnoutbound ? bitsFillerOut : bitsFillerIn).addBit();
-          bit.lifespan = min(maxlifespan, maxlifespan * (spectrum[freqBucket]-soundThreshold)/20);
+          bit.lifespan = min(maxlifespan, maxlifespan * (fftFrame.spectrum[freqBucket]-soundThreshold)/20);
           // logf("done");                                                  
 
           uint8_t colorIndex = millis() / 100 + 0xFF * freqBucket / 13;
           CRGB color = colorManager->getPaletteColor(colorIndex);
-          color.nscale8(min(0xFF, 0xFF * (spectrum[freqBucket]-soundThreshold)/10));
+          color.nscale8(min(0xFF, 0xFF * (fftFrame.spectrum[freqBucket]-soundThreshold)/10));
           bit.color = color;
           bit.colorIndex = colorIndex;
         }
@@ -938,16 +938,16 @@ public:
   }
 
   void update() {
-    vector<int> spectrum = fftUpdate().spectrum;
-    fftLog(spectrum);
+    FFTFrame fftFrame = fftUpdate();
+    fftLog();
     
     bitsFiller.update();
     ctx.leds.fadeToBlackBy(15);
-    for (unsigned b = 0; b < spectrum.size(); ++b) {
+    for (unsigned b = 0; b < fftFrame.size; ++b) {
       int thresh = 5;
-      if (spectrum[b] > thresh) {
+      if (fftFrame.spectrum[b] > thresh) {
         for (unsigned i = 0; i < circleleds.size(); ++i) {
-          ctx.leds[circleleds[i]] += CHSV(0xFF*(b-2)/8, 0xFF, min(0xFF, 0xFF * (spectrum[b]-thresh) / 10));
+          ctx.leds[circleleds[i]] += CHSV(0xFF*(b-2)/8, 0xFF, min(0xFF, 0xFF * (fftFrame.spectrum[b]-thresh) / 10));
         }
       }
     }

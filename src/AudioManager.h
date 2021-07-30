@@ -9,7 +9,9 @@
 #include "util.h"
 
 struct FFTFrame {
-  vector<int> spectrum;
+  FFTFrame(int size) : size(size) {}
+  unsigned size;
+  int16_t *spectrum;
   unsigned int amplitude;
 };
 
@@ -27,7 +29,7 @@ public:
   static const int ignoreBins = 2; // ignore the first n bins of the fft
 
 private:
-  vector<int> spectrum;
+  int16_t spectrum[spectrumSize-ignoreBins];
   
 public:
   FFTProcessing() {
@@ -95,18 +97,19 @@ public:
       data[i] = max(0, data[i] - noise[i]);
     }
 
-    spectrum.clear();
     for(int i=ignoreBins; i<spectrumSize; i++) {
-      spectrum.push_back(data[i]);
+      spectrum[i-ignoreBins] = data[i];
     }
-    FFTFrame frame;
+    FFTFrame frame(spectrumSize-ignoreBins);
     frame.spectrum = spectrum;
     frame.amplitude = data[0];
     return frame;
   }
 
-  void fftLog(vector<int> &spec) {
-    for (int level : spectrum) {
+  void fftLog() {
+    fftUpdate();
+    for (int i=ignoreBins; i < spectrumSize; ++i) {
+      int level = spectrum[i];
       if (level > 0) {
         loglf("%5i ", level);
       } else {
@@ -114,11 +117,6 @@ public:
       }
     }
     Serial.println();
-  }
-
-  void fftLog() {
-    vector<int> spec = fftUpdate().spectrum;
-    fftLog(spec);
   }
 
   void fftBinsLog() {
