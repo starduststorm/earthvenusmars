@@ -45,6 +45,7 @@ class PatternManager {
     DrawModal(120, 100, [this](unsigned long elapsed) {
       this->ctx.leds.fadeToBlackBy(15);
     });
+
     DrawModal(120, 1200, [this](unsigned long elapsed) {
       this->ctx.leds.fadeToBlackBy(15);
       for (unsigned c = 0; c < circleleds.size(); ++c) {
@@ -53,6 +54,44 @@ class PatternManager {
         this->ctx.leds[circleleds[c]] = CHSV(0xFF * (c+elapsed/30) / circleleds.size(), 0xFF, scale8(fadeUp, fadeDown));
       }
     });
+  }
+
+  void patternAutorotateWelcome() {
+    DrawModal(120, 100, [this](unsigned long elapsed) {
+      this->ctx.leds.fadeToBlackBy(15);
+    });
+
+    const int eachFadeUpDuration = 800;
+    const int enterDuration = 500;
+    
+    ctx.leds.fill_solid(CRGB::Black);
+
+    DrawModal(120, enterDuration + eachFadeUpDuration, [this](unsigned elapsed) {
+      FlagColorManager<CRGBPalette32> flag(3); // pride flag
+      const int flagSegments = flag.getNumFlagBands();
+
+      int maxSegment = min(flagSegments, flagSegments * (int)elapsed / enterDuration);
+      for (int segment = 0; segment < maxSegment; ++segment) {
+        CRGB color = flag.getFlagBand(segment);
+        unsigned long start = segment * enterDuration / flagSegments;
+        if (elapsed > start && elapsed < start + eachFadeUpDuration) {
+          // set segment brightness based on sin [0,pi]
+          uint8_t brightness = sin16((elapsed - start) * 0x7FFF / eachFadeUpDuration) >> 8;
+          color.nscale8(dim8_raw(brightness));
+        } else {
+          color = CRGB::Black;
+        }
+
+        // light the segment
+        unsigned segmentStart = segment * circleleds.size() / flagSegments;
+        unsigned segmentEnd = (segment+1) * circleleds.size() / flagSegments;
+        for (unsigned i = segmentStart; i < segmentEnd; ++i) {
+          this->ctx.leds[circleleds[(i + circleIndexOppositeVenus) % circleleds.size()]] = color;
+        }
+      }
+    });
+    ctx.leds.fill_solid(CRGB::Black);
+    FastLED.show();
   }
 
   void setupButtons() {
@@ -69,7 +108,7 @@ class PatternManager {
       this->previousPattern();
     });
     buttons[0]->onLongPress([this]() {
-      this->togglePatternAutoRotate();
+      this->enablePatternAutoRotate();
     });
 
     // Colors Button
@@ -80,10 +119,7 @@ class PatternManager {
       this->previousPalette();
     });
     buttons[1]->onLongPress([this]() {
-      this->togglePaletteAutoRotate();
-      if (!this->colorManager->pauseRotation) {
-        paletteAutorotateWelcome();
-      }
+      this->enablePaletteAutoRotate();
     });
     
     // EVM Touch Pads
@@ -127,10 +163,7 @@ class PatternManager {
       this->nextPalette();
     });
     buttons[1]->onDoubleLongPress([this]() {
-      this->togglePaletteAutoRotate();
-      if (!this->colorManager->pauseRotation) {
-        paletteAutorotateWelcome();
-      }
+      this->enablePaletteAutoRotate();
     });
     buttons[2]->onSinglePress([this]() {
       this->nextPattern();
@@ -182,9 +215,11 @@ public:
     }
   }
 
-  void togglePatternAutoRotate() {
-    logf("Toggle pattern autorotate");
-    patternAutoRotate = !patternAutoRotate;
+  void enablePatternAutoRotate() {
+    logf("Enable pattern autorotate");
+    patternAutoRotate = true;
+    patternAutorotateWelcome();
+    stopPattern();
   }
 
   void stopPattern() {
@@ -219,8 +254,11 @@ public:
     }
   }
 
-  void togglePaletteAutoRotate() {
-    colorManager->togglePaletteAutoRotate();
+  void enablePaletteAutoRotate() {
+    logf("Enable palette autorotate");
+    colorManager->pauseRotation = false;
+    paletteAutorotateWelcome();
+    colorManager->randomizePalette();
     if (activePattern) {
       activePattern->colorModeChanged();
     }

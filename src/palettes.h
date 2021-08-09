@@ -804,7 +804,7 @@ public:
     assignPalette(&targetPalette);
   }
 
-  ~PaletteRotation() {
+  virtual ~PaletteRotation() {
     delete [] colorIndexes;
   }
   
@@ -825,7 +825,7 @@ public:
   }
 
   // unblended override
-  void setPalette(PaletteType palette) {
+  virtual void setPalette(PaletteType palette) {
     currentPalette = palette;
   }
 
@@ -896,9 +896,14 @@ private:
 
 public:
   FlagColorManager() {
+    this->pauseRotation = true;
     this->minBrightness = 0x10;
     updatePalette();
+  }
+
+  FlagColorManager(unsigned paletteIndex) : paletteIndex(paletteIndex) {
     this->pauseRotation = true;
+    updatePalette();
   }
 
   void nextPalette() {
@@ -911,14 +916,6 @@ public:
     paletteIndex = mod_wrap(paletteIndex-1, gPridePaletteCount);
     logf("Previous palette to %i", paletteIndex);
     updatePalette();
-  }
-
-  void togglePaletteAutoRotate() {
-    this->pauseRotation = !this->pauseRotation;
-    logf("Toggle palette autorotate");
-    if (this->pauseRotation) {
-      updatePalette();
-    }
   }
 
   CRGB getFlagBand(int bandIndex) {

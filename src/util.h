@@ -135,6 +135,17 @@ class FrameCounter {
     }
 };
 
+template <uint8_t SIZE>
+void shuffle(int arr[SIZE]) {
+  for (unsigned i = 0; i < SIZE; ++i) {
+    uint8_t swap = random8(SIZE);
+    uint8_t tmp;
+    tmp = arr[i];
+    arr[i] = arr[swap];
+    arr[swap] = tmp;
+  }
+}
+
 int lsb_noise(int pin, int numbits) {
   // TODO: Use Entropy.h? Probs not needed just to randomize pattern.
   int noise = 0;

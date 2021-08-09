@@ -52,6 +52,42 @@ PowerManager powerManager;
 static bool serialTimeout = false;
 static unsigned long setupDoneTime;
 
+void startupWelcome() {
+  int pixelIndices[NUM_LEDS];
+  for (int i = 0; i < NUM_LEDS; ++i) {
+    pixelIndices[i] = i;
+  }
+  shuffle<NUM_LEDS>(pixelIndices);
+
+  const uint8_t colorShift = random8(2, 0xFF); // exclude 0,1 to avoid low color distribution
+  const int sprinkleDuration = 500;
+  const int eachPxDuration = 800;
+
+  ctx.leds.fill_solid(CRGB::Black);
+
+  DrawModal(120, sprinkleDuration + eachPxDuration, [pixelIndices, colorShift](unsigned long elapsed) {
+    int maxPx = min(NUM_LEDS, NUM_LEDS * (int)elapsed / sprinkleDuration);
+    
+    for (int i = 0; i < maxPx; ++i) {
+      int px = pixelIndices[i];
+      CRGB color = ColorFromPalette((CRGBPalette32)Trans_Flag_gp, i * colorShift);
+      unsigned long start = i * sprinkleDuration / NUM_LEDS;
+      if (elapsed > start && elapsed < start + eachPxDuration) {
+        // set segment brightness based on sin [0,pi]
+        uint8_t brightness = sin16((elapsed - start) * 0x7FFF / eachPxDuration) >> 8;
+        color.nscale8(dim8_raw(brightness));
+      } else {
+        color = CRGB::Black;
+      }
+      
+      ctx.leds[px] = color;
+      powerManager.loop(ctx);
+    }
+  });
+  ctx.leds.fill_solid(CRGB::Black);
+  FastLED.show();
+}
+
 void setup() {
   Serial.begin(57600);
   
@@ -117,6 +153,13 @@ void loop() {
   }
 
   powerManager.loop(ctx);
+
+  static bool firstLoop = true;
+  if (firstLoop) {
+    startupWelcome();
+    firstLoop = false;
+  }
+
   patternManager.loop();
   
   FastLED.show();
