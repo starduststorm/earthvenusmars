@@ -364,8 +364,7 @@ public:
 
   void resetBitColors(EVMColorManager *colorManager) {
     for (Bit &bit : bits) {
-      CRGB origColor = colorManager->getPaletteColor(bit.colorIndex);
-      bit.color = origColor.scale8(min(0xFF, 0xFF * bit.color.getAverageLight() / origColor.getAverageLight()));
+      bit.color = colorManager->getPaletteColor(bit.colorIndex, bit.color.getAverageLight());
     }
   }
 };
@@ -384,33 +383,29 @@ public:
     bitsFiller->flowRule = BitsFiller::split;
   }
   ~DownstreamPattern() {
-    colorManager->releaseTrackedColors();
     delete bitsFiller;
   }
 
   void update() {
     bitsFiller->update();
 
-    // shiftTrackedColors
-    if (!colorManager->pauseRotation) {
-      for (int i = 0; i < colorManager->trackedColorsCount(); ++i) {
-        bitsFiller->bits[i].color = colorManager->getTrackedColor(i);
-      }
-      colorManager->paletteRotationTick();
+    for (int i = 0; i < colorManager->trackedColorsCount(); ++i) {
+      bitsFiller->bits[i].color = colorManager->getTrackedColor(i);
     }
+    colorManager->paletteRotationTick();
   }
 
   void colorModeChanged() {
     unsigned oldCircleBits = circleBits;
     if (colorManager->pauseRotation) {
-      circleBits = colorManager->getNumFlagBands();
-      colorManager->releaseTrackedColors();
+      // color manager will track flag bands
+      circleBits = colorManager->trackedColorsCount();
     } else {
       // keep it simple with 3 bits with doing full palette rotation
       colorManager->prepareTrackedColors(3);
       circleBits = 3;
     }
-
+     
     if (circleBits != oldCircleBits) {
       bitsFiller->removeAllBits();
       for (unsigned i = 0; i < circleBits; ++i) {
@@ -418,12 +413,7 @@ public:
         bit.px = circleleds[i * circleleds.size() / circleBits];
       }
     }
-    if (colorManager->pauseRotation) {
-      for (unsigned i = 0; i < circleBits; ++i) {
-        bitsFiller->bits[i].color = colorManager->getFlagBand(i);
-      }
-    }
-
+    
     bitsFiller->fadeDown = circleBits+1;
     bitsFiller->fadeUpDistance = max(2, 6-(int)circleBits);
   }
@@ -813,24 +803,66 @@ public:
     outerBits.fadeUpDistance = 2;
     outerBits.fadeDown = 0;
     outerBits.maxBitsPerSecond = 30;
-    outerBits.handleNewBit = [](BitsFiller::Bit &bit) {
-      bit.color = CRGB::Yellow;
-    };
 
     innerBits.spawnPixels = &circleleds;
     innerBits.fadeUpDistance = 2;
     innerBits.fadeDown = 0;
     innerBits.maxBitsPerSecond = 8;
-    innerBits.handleNewBit = [](BitsFiller::Bit &bit) {
-      bit.color = CRGB(0x6E, 0x07, 0xD7);
-    };
   }
+
+  unsigned long lastColorShift = 0;
 
   void update() {
     ctx.leds.fadeToBlackBy(4 * frameTime());
 
     outerBits.update();
     innerBits.update();
+    
+    if (colorManager->getFlagIndex() != 3 && millis() - lastColorShift > 40) {
+      colorManager->shiftTrackedColors(1);
+      lastColorShift = millis();
+    }
+  }
+
+  CRGB colorForBit(BitsFiller::Bit &bit, BitsFiller *filler) {
+    uint8_t colorCount = colorManager->trackedColorsCount();
+    assert(colorCount > 1, "not tracking colors?");
+    uint8_t tracked = 0;
+    if (colorManager->getFlagIndex() == 3) {
+      // hack for intersex flag palette which is what this pattern was originally written for
+      tracked = (filler == &outerBits ? 1 : 0);
+    } else {
+      if (colorCount > 3) {
+        if (onEarth(bit.px)) tracked = 1;
+        else if (onVenus(bit.px)) tracked = 2;
+        else if (onMars(bit.px)) tracked = 3;
+      } else {
+        bool onCircle = (filler == &innerBits);
+        tracked = (onCircle ? 0 : random8(colorCount-1) + 1);
+      }
+    }
+    return this->colorManager->getTrackedColor(tracked);
+  }
+
+  void colorModeChanged() {
+    if (!colorManager->pauseRotation) {
+      // 4 lets us track the ring & spokes separately
+      colorManager->prepareTrackedColors(4);
+    }
+    innerBits.handleNewBit = [this](BitsFiller::Bit &bit) {
+      bit.color = this->colorForBit(bit, &innerBits);
+    };
+    outerBits.handleNewBit = [this](BitsFiller::Bit &bit) {
+      bit.color = this->colorForBit(bit, &outerBits);
+    };
+
+    // change bit colors for the new palette immediately for better feedback
+    for (BitsFiller::Bit &bit : outerBits.bits) {
+      bit.color = colorForBit(bit, &outerBits);
+    }
+    for (BitsFiller::Bit &bit : innerBits.bits) {
+      bit.color = colorForBit(bit, &innerBits);
+    }
   }
 
   const char *description() {

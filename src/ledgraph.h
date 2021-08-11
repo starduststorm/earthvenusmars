@@ -136,6 +136,19 @@ const int circleIndexOppositeEarth = 29;
 const int circleIndexOppositeVenus = 16;
 const int circleIndexOppositeMars = 3;
 
+// shortcuts for quickly determined if a pixel is in a given spoke
+bool onEarth(int px) {
+    return px >= 12 && px <= 29;
+}
+
+bool onVenus(int px) {
+    return px >= 66 && px <= 77;
+}
+
+bool onMars(int px) {
+    return px >= 39 && px <= 52;
+}
+
 void initLEDGraph() {
     vector<Edge> edges = {
         // spoke connections

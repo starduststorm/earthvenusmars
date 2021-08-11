@@ -599,6 +599,25 @@ DEFINE_GRADIENT_PALETTE( Genderqueer_Flag_gp ) {
   255, 0x28, 0x82, 0x10,
 };
 
+DEFINE_GRADIENT_PALETTE( Intersex_Flag_gp ) {
+  0,   0x6E, 0x07, 0xD7,
+  63,  0x6E, 0x07, 0xD7,
+  64,  0xFF, 0xFF, 0x00,
+  127, 0xFF, 0xFF, 0x00,
+  128, 0x6E, 0x07, 0xD7,
+  191, 0x6E, 0x07, 0xD7,
+  192, 0xFF, 0xFF, 0x00,
+  255, 0xFF, 0xFF, 0x00,
+};
+
+// 2-band variant
+// DEFINE_GRADIENT_PALETTE( Intersex_Flag_gp ) {
+//   0,   0x6E, 0x07, 0xD7,
+//   127,  0x6E, 0x07, 0xD7,
+//   128, 0xFF, 0xFF, 0x00,
+//   255, 0xFF, 0xFF, 0x00,
+// };
+
 DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
   0,   0xFF, 0x1B, 0x8D,
   85,  0xFF, 0x1B, 0x8D,
@@ -612,7 +631,8 @@ const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
   Trans_Flag_gp,
   Enby_Flag_gp,
   Genderqueer_Flag_gp,
-  Pride_Flag_gp,
+  Intersex_Flag_gp,  // note: index is hard coded
+  Pride_Flag_gp,     // note: index is hard coded
   Bi_Flag_gp,
   Lesbian_Flag_gp,
   // Ace_Flag_gp,
@@ -785,7 +805,9 @@ private:
   PaletteManager<PaletteType> manager;
   PaletteType currentPalette;
   PaletteType targetPalette;
+protected:
   uint8_t *colorIndexes = NULL;
+private:
   uint8_t colorIndexCount = 0;
 
   void assignPalette(PaletteType* palettePr) {
@@ -837,8 +859,8 @@ public:
     return ColorFromPalette(getPalette(), n, brightness);
   }
 
-  CRGB getTrackedColor(uint8_t n) {
-    assert(n < colorIndexCount, "getTrackedColor: n must be less than tracked color count");
+  CRGB getTrackedColor(uint8_t n, uint8_t *colorIndex=NULL) {
+    assert(n < colorIndexCount, "getTrackedColor: index (%u) must be less than tracked color count (%u)", n, colorIndexCount);
     if (n >= colorIndexCount) {
       return CRGB::Black;
     }
@@ -847,6 +869,9 @@ public:
     while (linearBrightness(color) < minBrightness) {
       colorIndexes[n] = addmod8(colorIndexes[n], 1, 0xFF);
       color = ColorFromPalette(palette, colorIndexes[n]);
+    }
+    if (colorIndex) {
+      *colorIndex = colorIndexes[n];
     }
     return color;
   }
@@ -886,12 +911,23 @@ public:
 template <typename PaletteType>
 class FlagColorManager : public PaletteRotation<PaletteType> {
 private:
-  unsigned numFlagBands = 0;
-  unsigned paletteIndex = 0;
+  unsigned flagIndex = 0;
 
   void updatePalette() {
-    this->setPalette(gPrideFlagPalettes[paletteIndex]);
-    numFlagBands = pridePaletteColorCount(gPrideFlagPalettes[paletteIndex]);
+    this->setPalette(gPrideFlagPalettes[flagIndex]);
+
+    unsigned numFlagBands = pridePaletteColorCount(gPrideFlagPalettes[flagIndex]);
+    unsigned trackedBands = numFlagBands;
+    if (getFlagIndex() == 0) {
+      // hack for not showing redundant colors in trans flag
+      trackedBands = 3;
+    }
+    
+    // flag bands are tracked with PaletteRotation's tracked colors. if a pattern wants to track colors separately it will compete with this usage.
+    this->prepareTrackedColors((uint8_t)trackedBands);
+    for (unsigned i = 0; i < this->trackedColorsCount(); ++i) {
+      this->colorIndexes[i] = 0xFF * i / numFlagBands + 0xFF / (numFlagBands*2);
+    }
   }
 
 public:
@@ -901,35 +937,35 @@ public:
     updatePalette();
   }
 
-  FlagColorManager(unsigned paletteIndex) : paletteIndex(paletteIndex) {
+  FlagColorManager(unsigned flagIndex) : flagIndex(flagIndex) {
     this->pauseRotation = true;
+    this->minBrightness = 0x10;
     updatePalette();
   }
 
   void nextPalette() {
-    paletteIndex = addmod8(paletteIndex, 1, gPridePaletteCount);
-    logf("Next palette to %i", paletteIndex);
+    flagIndex = addmod8(flagIndex, 1, gPridePaletteCount);
+    logf("Next palette to %i", flagIndex);
     updatePalette();
   }
 
   void previousPalette() {
-    paletteIndex = mod_wrap(paletteIndex-1, gPridePaletteCount);
-    logf("Previous palette to %i", paletteIndex);
+    flagIndex = mod_wrap(flagIndex-1, gPridePaletteCount);
+    logf("Previous palette to %i", flagIndex);
     updatePalette();
   }
 
-  CRGB getFlagBand(int bandIndex) {
-    assert(numFlagBands != 0, "tried to get flag bands when not displaying a flag");
-    if (numFlagBands == 0) {
-      return CRGB::Black;
+  int getFlagIndex() {
+    if (this->pauseRotation) {
+      return flagIndex;
     }
-    return this->getPaletteColor(0xFF * bandIndex / numFlagBands + 0xFF / (numFlagBands*2));
+    return -1;
   }
 
   CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL) {
     uint8_t index;
     if (linearPalette) {
-      index = millis() / (500 / 0xFF * numFlagBands);
+      index = millis() / (500 / 0xFF * this->trackedColorsCount());
     } else {
       index = random8();
     }
@@ -937,13 +973,5 @@ public:
       *colorIndex = index;
     }
     return this->getPaletteColor(index);
-  }
-
-  unsigned getNumFlagBands() {
-    if (paletteIndex == 0) {
-      // hack for not showing redundant colors in trans flag
-      return 3;
-    }
-    return numFlagBands;
   }
 };

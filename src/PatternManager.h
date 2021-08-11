@@ -67,12 +67,12 @@ class PatternManager {
     ctx.leds.fill_solid(CRGB::Black);
 
     DrawModal(120, enterDuration + eachFadeUpDuration, [this](unsigned elapsed) {
-      FlagColorManager<CRGBPalette32> flag(3); // pride flag
-      const int flagSegments = flag.getNumFlagBands();
+      FlagColorManager<CRGBPalette32> flag(4); // pride flag
+      const int flagSegments = flag.trackedColorsCount();
 
       int maxSegment = min(flagSegments, flagSegments * (int)elapsed / enterDuration);
       for (int segment = 0; segment < maxSegment; ++segment) {
-        CRGB color = flag.getFlagBand(segment);
+        CRGB color = flag.getTrackedColor(segment);
         unsigned long start = segment * enterDuration / flagSegments;
         if (elapsed > start && elapsed < start + eachFadeUpDuration) {
           // set segment brightness based on sin [0,pi]
