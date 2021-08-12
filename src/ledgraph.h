@@ -83,25 +83,22 @@ public:
     }
 
     vector<Edge> adjacencies(int vertex, EdgeTypesPair pair) {
-        auto adj = adjacencies(vertex, pair.edgeTypes.first);
-        auto adj2 = adjacencies(vertex, pair.edgeTypes.second);
-        adj.insert(adj.end(), adj2.begin(), adj2.end());
-        return adj;
+        vector<Edge> adjList;
+        getAdjacencies(vertex, pair.edgeTypes.first, adjList);
+        getAdjacencies(vertex, pair.edgeTypes.second, adjList);
+        return adjList;
     }
 
-    vector<Edge> adjacencies(int vertex, EdgeTypes matching) {
+    void getAdjacencies(int vertex, EdgeTypes matching, std::vector<Edge> &insertInto) {
         if (matching == 0) {
-            return vector<Edge>();
+            return;
         }
-        vector<Edge> adjacencies = vector<Edge>(adjList[vertex]);
-        for (auto it = adjacencies.begin(); it != adjacencies.end();) {
-            if (!(matching & it->type)) {
-                adjacencies.erase(it);
-            } else {
-                ++it;
+        vector<Edge> &adj = adjList[vertex];
+        for (Edge &edge : adj) {
+            if (edge.type & matching) {
+                insertInto.push_back(edge);
             }
         }
-        return adjacencies;
     }
 };
 

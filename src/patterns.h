@@ -269,7 +269,7 @@ public:
     bits.reserve(maxSpawnBits);
   };
 
-  void fadeUpForBit(Bit &bit, int px, int distanceAway, int distanceRemaining, unsigned long lastMove) {
+  void fadeUpForBit(Bit &bit, int px, int distanceRemaining, unsigned long lastMove) {
     vector<int> next = nextIndexes(px, bit.directions);
 
     unsigned long mils = millis();
@@ -284,7 +284,7 @@ public:
       ctx.leds[n] = blended;
       
       if (distanceRemaining > 0) {
-        fadeUpForBit(bit, n, distanceAway+1, distanceRemaining-1, lastMove);
+        fadeUpForBit(bit, n, distanceRemaining-1, lastMove);
       }
     }
   }
@@ -340,7 +340,7 @@ public:
         int bitFadeUpDistance = min((unsigned long)fadeUpDistance, speed * bit.age() / 1000);
         if (bitFadeUpDistance > 0) {
           // TODO: can fade-up take into account color advancement?
-          fadeUpForBit(bit, bit.px, 1, bitFadeUpDistance - 1, lastMove);
+          fadeUpForBit(bit, bit.px, bitFadeUpDistance - 1, lastMove);
         }
       }
     }
