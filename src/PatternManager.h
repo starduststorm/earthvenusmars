@@ -12,6 +12,7 @@ template <typename BufferType>
 class PatternManager {
   int patternIndex = -1;
   Pattern *activePattern = NULL;
+  uint8_t activePatternBrightness = 0xFF;
 
   bool patternAutoRotate = false;
   unsigned long patternTimeout = 40*1000;
@@ -143,12 +144,6 @@ class PatternManager {
           chargePattern->stopChargingSpoke(b, chargeDuration);
         }
       });
-      touchPads[b]->onLongPress([b, this]() {
-        logf("Long press: %i", b);
-        if (chargePattern) {
-          chargePattern->runSpoke(b);
-        }
-      });
     }
 #else
     SPSTButton *buttons[3];
@@ -168,7 +163,6 @@ class PatternManager {
     buttons[2]->onSinglePress([this]() {
       this->nextPattern();
     });
-
     for (int b = 0; b < 3; ++b) {
       buttons[b]->onLongPress([b, this]() {
         ChargePattern *charge = new ChargePattern();
@@ -318,8 +312,17 @@ public:
 
     if (activePattern) {
       activePattern->loop();
-      activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
+
+      // fade out the active pattern somewhat while the spoke is running
+      bool chargeActive = chargePattern->hasActiveSpoke();
+      if (chargeActive && activePatternBrightness > 0x6F) {
+        activePatternBrightness-=2;
+      } else if (!chargeActive) {
+        activePatternBrightness = qadd8(activePatternBrightness, 4);
+      }
+      activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten, dim8_raw(activePatternBrightness));
     }
+
     if (chargePattern) {
       chargePattern->loop();
       chargePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);

@@ -413,7 +413,7 @@ public:
         bit.px = circleleds[i * circleleds.size() / circleBits];
       }
     }
-    
+
     bitsFiller->fadeDown = circleBits+1;
     bitsFiller->fadeUpDistance = max(2, 6-(int)circleBits);
   }
@@ -703,6 +703,7 @@ class ChargePattern : public Pattern {
       delete bitsFillers[spoke];
       bitsFillers[spoke] = NULL;
     }
+    spokeActivation[spoke] = UINT32_MAX;
   }
   
   void resetBitHandlers() {
@@ -763,7 +764,7 @@ public:
 
   void runSpoke(int spoke) {
     initSpoke(spoke);
-    spokeActivation[spoke] = UINT32_MAX;
+    spokeActivation[spoke] = 0;
   }
 
   void stopChargingSpoke(int spoke, unsigned long chargeDuration) {
@@ -771,6 +772,7 @@ public:
       if (bitsFillers[spoke]) {
         bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
       }
+      spokeActivation[spoke] = UINT32_MAX;
     }
   }
 
@@ -778,6 +780,15 @@ public:
     for (int i = 0; i < 3; ++i) {
       teardownSpoke(i);
     }
+  }
+
+  bool hasActiveSpoke() {
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (spokeActivation[spoke] != UINT32_MAX) {
+        return true;
+      }
+    }
+    return false;
   }
 
   const char *description() {

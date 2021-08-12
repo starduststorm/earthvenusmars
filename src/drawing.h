@@ -26,7 +26,8 @@ public:
 template<unsigned WIDTH, unsigned HEIGHT, class PixelType, class PixelSetType>
 class CustomDrawingContext {
 private:
-  void set_px(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &dstCtx, PixelType src, int index, BlendMode blendMode) {
+  void set_px(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &dstCtx, PixelType src, int index, BlendMode blendMode, uint8_t brightness) {
+    src.nscale8(brightness);
     switch (blendMode) {
       case blendSourceOver:
         dstCtx.leds[index] = src;
@@ -48,10 +49,10 @@ public:
     leds.fill_solid(CRGB::Black);
   }
   
-  void blendIntoContext(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &otherContext, BlendMode blendMode) {
+  void blendIntoContext(CustomDrawingContext<WIDTH, HEIGHT, PixelType, PixelSetType> &otherContext, BlendMode blendMode, uint8_t brightness=0xFF) {
     assert(otherContext.leds.size() == this->leds.size(), "context blending requires same-size buffers");
     for (int i = 0; i < leds.size(); ++i) {
-      set_px(otherContext, leds[i], i, blendMode);
+      set_px(otherContext, leds[i], i, blendMode, brightness);
     }
   }
 };
