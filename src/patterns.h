@@ -375,6 +375,8 @@ class DownstreamPattern : public Pattern {
 protected:
   BitsFiller *bitsFiller;
   unsigned circleBits = 0;
+  unsigned numAutoRotateColors = 3;
+  unsigned numAutoRotatePaletteCycles = 1;
 public:
   DownstreamPattern() {
     EdgeType circledirection = (random8()%2 ? EdgeType::clockwise : EdgeType::counterclockwise);
@@ -395,15 +397,15 @@ public:
     colorManager->paletteRotationTick();
   }
 
-  void colorModeChanged() {
+  virtual void colorModeChanged() {
     unsigned oldCircleBits = circleBits;
     if (colorManager->pauseRotation) {
       // color manager will track flag bands
       circleBits = colorManager->trackedColorsCount();
     } else {
       // keep it simple with 3 bits with doing full palette rotation
-      colorManager->prepareTrackedColors(3);
-      circleBits = 3;
+      colorManager->prepareTrackedColors(numAutoRotateColors, numAutoRotatePaletteCycles);
+      circleBits = numAutoRotateColors;
     }
      
     if (circleBits != oldCircleBits) {
@@ -426,11 +428,15 @@ public:
 class DownstreamFilledPattern : public DownstreamPattern {
 public:
   DownstreamFilledPattern() {
-    bitsFiller->fadeDown = 0;
   }
   void colorModeChanged() {
+    numAutoRotateColors = 17;
+    numAutoRotatePaletteCycles = 3;
+
     DownstreamPattern::colorModeChanged();
+
     bitsFiller->fadeDown = 0;
+    bitsFiller->fadeUpDistance = 1;
   }
   const char *description() {
     return "downstream-filled";

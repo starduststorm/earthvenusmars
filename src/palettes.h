@@ -882,14 +882,14 @@ public:
     }
   }
 
-  void prepareTrackedColors(uint8_t count) {
+  void prepareTrackedColors(uint8_t count, int paletteCyles=1) {
     if (colorIndexes) {
       delete [] colorIndexes;
     }
     colorIndexCount = count;
     colorIndexes = new uint8_t[colorIndexCount];
     for (unsigned i = 0; i < colorIndexCount; ++i) {
-      colorIndexes[i] = 0xFF * i / colorIndexCount;
+      colorIndexes[i] = paletteCyles * 0xFF * i / colorIndexCount;
     }
   }
 
