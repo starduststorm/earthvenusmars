@@ -278,6 +278,7 @@ public:
   bool startPattern(Pattern *pattern) {
     stopPattern();
     if (pattern->wantsToRun()) {
+      colorManager->resetFlagColors();
       pattern->colorManager = colorManager;
       pattern->colorModeChanged();
       pattern->start();

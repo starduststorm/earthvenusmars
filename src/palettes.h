@@ -962,6 +962,13 @@ public:
     return -1;
   }
 
+  void resetFlagColors() {
+    if (this->pauseRotation) {
+      // reset tracked colors to the selected flag in case they've been shifted
+      updatePalette();
+    }
+  }
+
   CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL) {
     uint8_t index;
     if (linearPalette) {
