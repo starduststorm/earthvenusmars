@@ -371,7 +371,7 @@ public:
       // unsigned long logstop = millis();
       // logf("thermistor read took %ims", logstop-logstart); // this is taking 11-12ms??
 
-      const int tempThresh = 55;
+      const int tempThresh = 45;
       const int tempRange = 90 - tempThresh;
       if (temp > 150 || temp < -100) {
         // assume faulty read
