@@ -31,7 +31,7 @@ struct Edge {
         all              = 0xFF,
     } EdgeType;
     
-    int from, to;
+    uint8_t from, to;
     EdgeType type;
     Edge(int from, int to, EdgeType type) : from(from), to(to), type(type) {};
     Edge transpose() {
