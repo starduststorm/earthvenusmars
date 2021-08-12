@@ -47,6 +47,8 @@ class PatternManager {
       this->ctx.leds.fadeToBlackBy(15);
     });
 
+    ctx.leds.fill_solid(CRGB::Black);
+
     DrawModal(120, 1200, [this](unsigned long elapsed) {
       this->ctx.leds.fadeToBlackBy(15);
       for (unsigned c = 0; c < circleleds.size(); ++c) {
@@ -67,13 +69,17 @@ class PatternManager {
     
     ctx.leds.fill_solid(CRGB::Black);
 
-    DrawModal(120, enterDuration + eachFadeUpDuration, [this](unsigned elapsed) {
-      FlagColorManager<CRGBPalette32> flag(4); // pride flag
-      const int flagSegments = flag.trackedColorsCount();
+    FlagColorManager<CRGBPalette32> flag(4); // pride flag
+    const int flagSegments = flag.trackedColorsCount();
+    std::vector<CRGB> flagColors;
+    for (int s = 0; s < flagSegments; ++s) {
+      flagColors.push_back(flag.getTrackedColor(s));
+    }
 
+    DrawModal(120, enterDuration + eachFadeUpDuration, [this, flagSegments, flagColors](unsigned elapsed) {
       int maxSegment = min(flagSegments, flagSegments * (int)elapsed / enterDuration);
       for (int segment = 0; segment < maxSegment; ++segment) {
-        CRGB color = flag.getTrackedColor(segment);
+        CRGB color = flagColors[segment];
         unsigned long start = segment * enterDuration / flagSegments;
         if (elapsed > start && elapsed < start + eachFadeUpDuration) {
           // set segment brightness based on sin [0,pi]
