@@ -17,7 +17,7 @@
 
 ### Features: 
 * 78 blindingly-bright LEDs
-* Three capacitive touch pads designed into the aesthetic interactivity/customizability
+* Three capacitive touch pads designed into the aesthetic for interactivity/customizability
 * Two SPST buttons for selecting patterns & colors
 * Onboard I2S microphone for sound responsiveness
 * Onboard thermistor for temperature management
@@ -99,7 +99,7 @@ Thank you for all the work you do for makers & hobbyists the world over.
 
 <!-- github no likey video tag -->
 <!-- <video height="646" src="doc/assets/seven.mp4" type="video/mp4" loop autoplay /> -->
-<img src="doc/assets/seven.webp" height=646>
+<img src="doc/assets/seven.webp" style="width: 861px, height: auto">
 
 [Arduino]: <https://arduino.cc>
 [Adafruit]: <https://www.adafruit.com>
