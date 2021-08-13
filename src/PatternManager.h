@@ -321,7 +321,7 @@ public:
       activePattern->loop();
 
       // fade out the active pattern somewhat while the spoke is running
-      bool chargeActive = chargePattern->hasActiveSpoke();
+      bool chargeActive = (chargePattern && chargePattern->hasActiveSpoke());
       if (chargeActive && activePatternBrightness > 0x6F) {
         activePatternBrightness-=2;
       } else if (!chargeActive) {
