@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Adjust this to where your toolchain is located
+GDB=/usr/local/bin/arm-none-eabi-gdb
+
+# Adjust this to your BlackMagic Probe device
+BLACKMAGIC_PROBE=/dev/cu.usbmodemXXXXXXXXX
+
+# Adjust this to your built bootloader path
+BOOTLOADER=$SCRIPT_DIR/../../ext/ArduinoCore-samd/bootloaders/zero/samd21_sam_ba.hex

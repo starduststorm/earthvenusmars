@@ -1,0 +1,6 @@
+monitor swdp_scan
+attach 1
+mon erase_mass
+mon hard_srst
+detach
+
