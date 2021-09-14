@@ -950,10 +950,6 @@ F4 "+5V" I T 2550 5000 50
 F5 "GND" I T 2450 5000 50 
 $EndSheet
 Wire Wire Line
-	3400 4050 3400 5300
-Wire Wire Line
-	3500 4150 3500 5300
-Wire Wire Line
 	3800 5600 3900 5600
 $Comp
 L Connector:USB_B_Micro J_USB_PORT1
@@ -980,10 +976,6 @@ F 3 "" H 3900 5600 50  0001 C CNN
 	1    3900 5600
 	-1   0    0    1   
 $EndComp
-Wire Wire Line
-	3400 4050 3950 4050
-Wire Wire Line
-	3500 4150 3950 4150
 Wire Wire Line
 	3200 5000 3200 5300
 $Comp
@@ -1034,4 +1026,12 @@ Wire Wire Line
 	2750 4400 2750 5000
 Text Label 3200 5300 1    50   ~ 0
 VBUS
+Wire Wire Line
+	3500 4050 3950 4050
+Wire Wire Line
+	3500 4050 3500 5300
+Wire Wire Line
+	3950 4150 3400 4150
+Wire Wire Line
+	3400 4150 3400 5300
 $EndSCHEMATC
