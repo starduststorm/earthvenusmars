@@ -11,6 +11,12 @@ tolerance = 0.2;  // 3D printing tolerance to fit around objects
 
 colors = ["#F15570", "white", "#2A9FFA"];
 
+module diffscale() {
+     for (i = [0 : $children-1]) {
+         translate([-epsilon/2,-epsilon/2,-epsilon/2]) scale([1+epsilon,1+epsilon,1+epsilon]) children(i);
+     }
+}
+
 function easeInOutQubic(t, b, c, d) = 
 	let (t = t / (d/2))
 	(t < 1
@@ -26,12 +32,38 @@ function angle (a,b)=atan2(norm(cross(a,b)),a*b);
 
 edge_cut_radius = 24 + tolerance;
 spoke_arclen = PI/3*RAD;
-encased_spoke_width = abs(circle_pt(spoke_arclen/2, edge_cut_radius)[1] - circle_pt(-spoke_arclen/2, edge_cut_radius)[1]);
 
-module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false) { 
-    spoke_length = 20+tolerance;
-    spokes = [PI/2*RAD, 5*PI/4*RAD, 7*PI/4*RAD];
-    
+outeroffset = 1.8;  // max distance outside of board edge
+inneroffset = -1.2; // max distance overlapping from board edge
+
+encased_spoke_width = abs(circle_pt(spoke_arclen/2, edge_cut_radius)[1] - circle_pt(-spoke_arclen/2, edge_cut_radius)[1]);
+max_outer_spoke_width = encased_spoke_width + 2 * outeroffset; 
+
+spoke_length = 20+tolerance;
+spokes = [PI/2*RAD, 5*PI/4*RAD, 7*PI/4*RAD];
+
+module arc(arcstart, arclen, height, r1, r2=0) {
+    rotate(arcstart, [0,0,1]) rotate_extrude(angle=arclen) polygon([[r1,0],[r2,0],[r2,height],[r1,height]]);
+}
+
+module rounded_rect(size, radius, epsilon=0.001) {
+    module fillet(r, h) {
+        translate([r/2, r/2, 0]) difference() {
+            cube([r + epsilon, r + epsilon, h], center = true);
+            translate([r/2, r/2, 0])
+                cylinder(r = r, h = h + 1, center = true);
+        }
+    }
+    difference() {
+        cube(size);
+        translate([0,0,size.z/2]) fillet(radius,size.z+0.001);
+        translate([size.x,0,size.z/2]) rotate(PI/2*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+        translate([0,size.y,size.z/2]) rotate(-PI/2*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+        translate([size.x,size.y,size.z/2]) rotate(PI*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+    }
+}
+
+module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false) {
     difference() {
         translate([0,0,zoffset])
         union() {
@@ -39,7 +71,7 @@ module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false
             cylinder(r = edge_cut_radius + outeroffset, h = thickness);
             for (s = [0:2]) {
                 color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) rotate(-90, [0,0,1])
-                    translate([-outeroffset,0,0])
+                    translate([-outeroffset,0, 0])
                     union() {
                         let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
                             cube([outer_spoke_width, spoke_length, thickness]);
@@ -67,47 +99,156 @@ module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false
     }
 };
 
-outeroffset = 1.8;  // max distance outside of board edge
-inneroffset = -1.2; // max distance overlapping from board edge
-
 boardthickness = 1.6 + tolerance;
-bevel_max_thickness = 3;
+bevel_max_thickness = 1.5;
 basethickness = 1.8;
 slicethickness = 0.15; // the likely minimum resolution of the printer is 0.1mm
 
 part_placement_offset = 34;
 
+clip_notch_rise = 1;
+clip_notch_arc = PI/8*RAD;
+clip_notch_overlap = 0.8;
+
+led_extra_thickness = 0.5;
+
+led_thickness = 0.8 + tolerance; // datasheet says 0.9mm but I measure 0.8??
+diffuser_outer_line_width = 3.8;
+diffuser_inner_line_width = 2.2;
+led_radius = 20;
+
+cross_start_radius = [37.5, 30.5, 0];
+cross_outer_length = 18.6;
+cross_inner_length = cross_outer_length - diffuser_outer_line_width + diffuser_inner_line_width;
+
+arrow_start_radius = [0, 49, 49];
+arrow_outer_side_width = 15.1;
+arrow_inner_side_width = arrow_outer_side_width - diffuser_outer_line_width + diffuser_inner_line_width;
+
+arrow_outer_point_adjustment = 1.9;
+arrow_inner_point_adjustment = 1.08;
+
+module led_outline(outer_radius, thickness, line_width, arrow_side_width, cross_length, arrow_point_adjustment, cross_length_adjustment) {
+    difference() {
+        union() {
+            cylinder(h = thickness, r=outer_radius);
+            for (s = [0:2]) {
+                dick_shortening_adjustment = arrow_start_radius[s] != 0 ? -5 : -2 + cross_length_adjustment;
+                rotate(-spokes[s], [0,0,1]) translate([0,-line_width/2,0])
+                    translate([led_radius, 0,0]) cube([spoke_length + max_outer_spoke_width/2 + dick_shortening_adjustment, line_width, thickness]);
+                
+                if (cross_start_radius[s] != 0) {
+                    rotate(-spokes[s], [0,0,1]) translate([cross_start_radius[s] - line_width/2, -cross_length/2,0])
+                        cube([line_width, cross_length, thickness]);
+                }
+                if (arrow_start_radius[s] != 0) {
+                    rotate(-spokes[s], [0,0,1]) translate([arrow_start_radius[s], 0, 0]) {
+                        rotate(45*DEG,[0,0,1]) translate([-line_width/2, -arrow_point_adjustment, 0])
+                            cube([line_width, arrow_side_width + arrow_point_adjustment, thickness]);
+                        rotate(135*DEG,[0,0,1]) translate([-line_width/2, -arrow_point_adjustment, 0])
+                            cube([line_width, arrow_side_width + arrow_point_adjustment, thickness]);
+                    }
+                }
+            }
+        }
+        diffscale() cylinder(h = thickness+epsilon, r=led_radius - line_width/2);
+    }
+}
+
 module draw_beveled_half(flip) {
     translate([flip * part_placement_offset, 0,0]) rotate(90 + flip * 90, [0,0,1]) {
-        // bevel
-        slices = bevel_max_thickness * 1/slicethickness;
-        for (t = [1:slices]) {
-            z = bevel_max_thickness*(1 - t/slices) - slicethickness*(slices - floor(slices)) - epsilon;
-            theshape(easeOutCubic(t, 0, outeroffset, slices), slicethickness, inneroffset, z);
+        difference() {
+            union() {
+                // bevel
+                slices = bevel_max_thickness * 1/slicethickness;
+                for (t = [1:slices]) {
+                    z = bevel_max_thickness*(1 - t/slices) - slicethickness*(slices - floor(slices)) - epsilon;
+                    theshape(easeOutCubic(t, 0, outeroffset, slices), slicethickness, inneroffset, z);
+                }
+                
+                // diffuser
+                led_outline(edge_cut_radius, bevel_max_thickness, diffuser_outer_line_width, arrow_outer_side_width, cross_outer_length, arrow_outer_point_adjustment, 0);
+                translate([0,0,bevel_max_thickness-epsilon]) 
+                    led_outline(led_radius + diffuser_inner_line_width/2, led_extra_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, -3.2);
+            }
+            union() {
+                // diffuser cutout
+                diffscale() led_outline(led_radius + diffuser_inner_line_width/2, led_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, 0);
+                
+                // notch cutout
+                diffscale() for (s = [0:2]) {
+                    color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) translate([0, outeroffset,0]) union() {
+                        let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
+                            translate([spoke_length, -outer_spoke_width/2, -epsilon]) {
+                                arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset);
+                                translate([0, 0, clip_notch_rise - epsilon]) 
+                                    arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset - clip_notch_overlap);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 };
 
-//cutouts
+module trans_symbol(radius, thickness) {
+    linewidth=0.12*radius;
+    linelength=2.4*radius;
+    corner=0.07*radius;
+    module arrowshape() {
+        translate([linelength, 0,0]) {
+            rotate(3*PI/4*RAD, [0,0,1]) translate([-linewidth/2,-linewidth/2,0]) rounded_rect([linelength/3,linewidth,thickness], corner);
+            rotate(5*PI/4*RAD, [0,0,1]) translate([-linewidth/2,-linewidth/2,0]) rounded_rect([linelength/3,linewidth,thickness], corner);
+        }
+    }
+    module crossshape(offset=0) {
+        translate([10*linelength/16+offset, -0.4*linelength/2, 0]) rotate(PI/2*RAD,[0,0,1]) rounded_rect([0.4*linelength,linewidth,thickness], corner);
+    }
+    difference() {
+        union() {
+            translate([0,0,thickness/2]) cylinder(h=thickness, r=radius, center=true);
+            rotate(-1*PI/2*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); crossshape(offset=0.15*radius); };
+            rotate(-5*PI/4*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); arrowshape(); };
+            rotate(-7*PI/4*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); arrowshape(); crossshape(); };
+        }
+        translate([0,0,thickness/2]) cylinder(h=thickness, r=radius-linewidth, center=true);
+    }
+}
 
-thumbdial_position = [-10.4, -28.6, 0]; // centered around circular dial
+thumbdial_position = [-10.4, -28, 0];
 thumbdial_radius = 4.6 + tolerance;
 thumbdial_center_to_part_cutout_edge_x  = 5.34;
 
+switch_size = [13.5, 10.2 + tolerance];
+switch_position = [7.2, -28, 0];
+switch_pos_offset = [5.8 - switch_position.x, -switch_size.y/2, 0];
+
+
 microphone_cutout_radius = 5.25 /* measured */ + 0.2 /* extra tolerance */;
-microphone_cutout_depth = 1.1 /* 423-1405-1-ND microphone datasheet */ + 0.2; /* extra tolerance */
+microphone_cutout_depth = 1.1 /* 423-1405-1-ND microphone datasheet */ + 0.1; /* extra tolerance */
 microphone_cutout_position = [-11, 0.84, basethickness - microphone_cutout_depth]; // from center of board
 
 thermistor_cutout_size = [3.2, 3, 0.9] /* measured */ + [0.2,0.2,0.2]; // extra tolerance
 thermistor_cutout_position = [-.57, 7.52, basethickness - thermistor_cutout_size[2]]; // from center of board
 
-usb_cutout_size = [8.6, 7.1 + outeroffset, basethickness+boardthickness]; // entire thickness
+usbCutoutFullThickness = false;
+usb_cutout_size = [8.6, 7.1 + outeroffset, basethickness + (usbCutoutFullThickness ? boardthickness : 0)];
 usb_cutout_position = [0, -46.9, 0]; // center of board to top of usb
 
 bar_pin_cutout_distance = 6;
 bar_pin_cutout_position = [0, 13, 0];
 bar_pin_cutout_radius = 1;
-bar_pin_cutout_depth = boardthickness;
+bar_pin_cutout_depth = basethickness;
+
+// large bar pin cutout
+bar_pin_cutout_size = [25.3 /*meas*/ + 2*1.75 /*asym*/ + 1.4/*tol*/,
+                        5.1 /*meas*/ + 0.6 /*tol*/,
+                        basethickness];
+//bar_pin_cutout_offset = [-1.75,0,0]; // bar pin is asymmetric
+
+necklace_point_cutouts = [[-11.5, 23.4, 0], [11.5, 23.4, 0]];
+necklace_point_radius = 1.5;
 
 base_cable_cutout_depth = 0.9; // my usb inner insulated strand is 0.76mm diameter
 base_cable_cutout_center_position = [0, -37 - outeroffset, basethickness - base_cable_cutout_depth];
@@ -120,45 +261,79 @@ base_cable_cutout_spoke_cap_radius = 2.1;
 
 base_cable_stabilizer_height = 0.3;
 
-// top case
-//draw_beveled_half(1);
-
-// bottom case
-translate([-1 * part_placement_offset, 0, 0]) {
-    difference() {
-        union() {
-            // back base
-            theshape(outeroffset, basethickness, inneroffset, 0, base_cutouts=true);
+module bottom_case() {
+    translate([-1 * part_placement_offset, 0, 0]) {
+        difference() {
+            union() {
+                // back base
+                theshape(outeroffset, basethickness, inneroffset, 0, base_cutouts=true);
+            
+                // board groove
+                theshape(outeroffset, boardthickness, 0, basethickness);
+                
+                // clip peg
+                for (s = [0:2]) {
+                    color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) translate([0, outeroffset,0]) union() {
+                        let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
+                            translate([spoke_length, -outer_spoke_width/2, basethickness + boardthickness-epsilon]) {
+                                arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset);
+                                notch_layer_size = 0.1;
+                                translate([0,0,clip_notch_rise]) for (b = [0:6]) {
+                                    translate([0,0,notch_layer_size*b]) arc(-clip_notch_arc/2, clip_notch_arc, notch_layer_size, max_outer_spoke_width/2-0.1*b, max_outer_spoke_width/2 - outeroffset - clip_notch_overlap+0.1*b);
+                                }
+                            }
+                        }
+                    }
+                }
         
-            // board groove
-            theshape(outeroffset, boardthickness, 0, basethickness);
-        }
-        translate([0,0,-epsilon]) scale([1,1,1+epsilon]) union() {
-            // microphone cutout
-            translate(microphone_cutout_position)
-                cylinder(r = microphone_cutout_radius, h = microphone_cutout_depth);
-            
-            // thermistor cutout
-            translate(thermistor_cutout_position) translate([0,0,thermistor_cutout_size[2]/2])
-                cube(thermistor_cutout_size, center=true);
-            
-            // usb cutout
-            translate(usb_cutout_position + [-usb_cutout_size[0]/2, -usb_cutout_size[1], 0])
-                cube(usb_cutout_size);
-
-            // thumbdial cutout
-            translate(thumbdial_position)  {
-                cylinder(r=thumbdial_radius, h=basethickness);
-                translate([0,  -thumbdial_radius, 0]) cube([thumbdial_center_to_part_cutout_edge_x, 2*thumbdial_radius, basethickness]);
+                
             }
-            
-            // pin cutouts
-            translate(bar_pin_cutout_position) {
-                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+            translate([0,0,-epsilon]) scale([1,1,1+epsilon]) union() {
+                // microphone cutout
+                translate(microphone_cutout_position)
+                    cylinder(r = microphone_cutout_radius, h = microphone_cutout_depth);
+                
+                // thermistor cutout
+                translate(thermistor_cutout_position) translate([0,0,thermistor_cutout_size[2]/2])
+                    cube(thermistor_cutout_size, center=true);
+                
+                // usb cutout
+                translate(usb_cutout_position + [-usb_cutout_size[0]/2, -usb_cutout_size[1], 0])
+                    cube(usb_cutout_size);
+        
+                // thumbdial cutout
+                translate(thumbdial_position)  {
+                    cylinder(r=thumbdial_radius, h=basethickness+boardthickness);
+                    translate([0,  -thumbdial_radius, 0]) cube([thumbdial_center_to_part_cutout_edge_x, 2*thumbdial_radius, basethickness]);
+                }
+                
+                // switch cutout
+                translate(switch_position + switch_pos_offset) {
+                    cube([switch_size.x, switch_size.y, basethickness + boardthickness]);
+                }
+                
+                // pin cutouts
+        //            translate(bar_pin_cutout_position) {
+        //                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+        //                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+        //                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+        //            }
+                translate(bar_pin_cutout_position - [bar_pin_cutout_size.x/2, bar_pin_cutout_size.y/2]) {
+                    rounded_rect(bar_pin_cutout_size, 2);
+                }
+                
+                // necklace cutouts
+                for (p = [0:1]) {
+                    translate(necklace_point_cutouts[p]) cylinder(r=necklace_point_radius, h=basethickness);
+                }
+        
+                trans_symbol(radius=4, thickness=0.2);
             }
-
         }
     }
 }
+
+bottom_case();
+
+// top case
+draw_beveled_half(1);
