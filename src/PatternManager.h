@@ -289,11 +289,6 @@ public:
       pattern->colorModeChanged();
       pattern->start();
       activePattern = pattern;
-
-      if (chargePattern) {
-        chargePattern->stopAllSpokes();
-      }
-
       return true;
     } else {
       return false;
