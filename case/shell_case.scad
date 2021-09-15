@@ -28,6 +28,23 @@ edge_cut_radius = 24 + tolerance;
 spoke_arclen = PI/3*RAD;
 encased_spoke_width = abs(circle_pt(spoke_arclen/2, edge_cut_radius)[1] - circle_pt(-spoke_arclen/2, edge_cut_radius)[1]);
 
+module rounded_rect(size, radius, epsilon=0.001) {
+    module fillet(r, h) {
+        translate([r/2, r/2, 0]) difference() {
+            cube([r + epsilon, r + epsilon, h], center = true);
+            translate([r/2, r/2, 0])
+                cylinder(r = r, h = h + 1, center = true);
+        }
+    }
+    difference() {
+        cube(size);
+        translate([0,0,size.z/2]) fillet(radius,size.z+0.001);
+        translate([size.x,0,size.z/2]) rotate(PI/2*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+        translate([0,size.y,size.z/2]) rotate(-PI/2*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+        translate([size.x,size.y,size.z/2]) rotate(PI*RAD, [0,0,1]) fillet(radius, size.z+epsilon);
+    }
+}
+
 module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false) { 
     spoke_length = 20+tolerance;
     spokes = [PI/2*RAD, 5*PI/4*RAD, 7*PI/4*RAD];
@@ -88,14 +105,39 @@ module draw_beveled_half(flip) {
     }
 };
 
+module trans_symbol(radius, thickness) {
+    linewidth=0.1*radius;
+    linelength=2*radius;
+    corner=0.05*radius;
+    module arrowshape() {
+        translate([linelength, 0,0]) {
+            rotate(3*PI/4*RAD, [0,0,1]) translate([-linewidth/2,-linewidth/2,0]) rounded_rect([linelength/3,linewidth,thickness], corner);
+            rotate(5*PI/4*RAD, [0,0,1]) translate([-linewidth/2,-linewidth/2,0]) rounded_rect([linelength/3,linewidth,thickness], corner);
+        }
+    }
+    module crossshape(offset=0) {
+        translate([11*linelength/16+offset, -0.4*linelength/2, 0]) rotate(PI/2*RAD,[0,0,1]) rounded_rect([0.4*linelength,linewidth,thickness], corner);
+    }
+    difference() {
+        union() {
+            translate([0,0,thickness/2]) cylinder(h=thickness, r=radius, center=true);
+            rotate(-1*PI/2*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); crossshape(offset=0.15*radius); };
+            rotate(-5*PI/4*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); arrowshape(); };
+            rotate(-7*PI/4*RAD, [0,0,1]) { translate([0,-linewidth/2,0]) rounded_rect([linelength, linewidth, thickness], corner); arrowshape(); crossshape(); };
+        }
+        translate([0,0,thickness/2]) cylinder(h=thickness, r=radius-linewidth, center=true);
+    }
+}
+
 //cutouts
 
-thumbdial_position = [-10.4, -28.6, 0]; // centered around circular dial
+thumbdial_position = [-10.19, -28.36, 0]; // fab-2 values FIXME: WRONG
+//thumbdial_position = [-10.4, -28, 0]; // centered around circular dial
 thumbdial_radius = 4.6 + tolerance;
 thumbdial_center_to_part_cutout_edge_x  = 5.34;
 
 microphone_cutout_radius = 5.25 /* measured */ + 0.2 /* extra tolerance */;
-microphone_cutout_depth = 1.1 /* 423-1405-1-ND microphone datasheet */ + 0.2; /* extra tolerance */
+microphone_cutout_depth = 1.1 /* 423-1405-1-ND microphone datasheet */ + 0.1; /* extra tolerance */
 microphone_cutout_position = [-11, 0.84, basethickness - microphone_cutout_depth]; // from center of board
 
 thermistor_cutout_size = [3.2, 3, 0.9] /* measured */ + [0.2,0.2,0.2]; // extra tolerance
@@ -107,7 +149,13 @@ usb_cutout_position = [0, -46.9, 0]; // center of board to top of usb
 bar_pin_cutout_distance = 6;
 bar_pin_cutout_position = [0, 13, 0];
 bar_pin_cutout_radius = 1;
-bar_pin_cutout_depth = boardthickness;
+bar_pin_cutout_depth = basethickness;
+
+// large bar pin cutout
+bar_pin_cutout_size = [25.3 /*meas*/ + 2*1.75 /*asym*/ + 1.4/*tol*/,
+                        5.1 /*meas*/ + 0.6 /*tol*/,
+                        basethickness];
+//bar_pin_cutout_offset = [-1.75,0,0]; // bar pin is asymmetric
 
 base_cable_cutout_depth = 0.9; // my usb inner insulated strand is 0.76mm diameter
 base_cable_cutout_center_position = [0, -37 - outeroffset, basethickness - base_cable_cutout_depth];
@@ -148,17 +196,21 @@ translate([-1 * part_placement_offset, 0, 0]) {
 
             // thumbdial cutout
             translate(thumbdial_position)  {
-                cylinder(r=thumbdial_radius, h=basethickness);
+                cylinder(r=thumbdial_radius, h=basethickness+boardthickness/2);
                 translate([0,  -thumbdial_radius, 0]) cube([thumbdial_center_to_part_cutout_edge_x, 2*thumbdial_radius, basethickness]);
             }
             
             // pin cutouts
-            translate(bar_pin_cutout_position) {
-                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+//            translate(bar_pin_cutout_position) {
+//                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+//                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+//                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
+//            }
+            translate(bar_pin_cutout_position - [bar_pin_cutout_size.x/2, bar_pin_cutout_size.y/2]) {
+                rounded_rect(bar_pin_cutout_size, 2);
             }
-
+            
+            trans_symbol(radius=5, thickness=0.2);
         }
     }
 }
