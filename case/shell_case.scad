@@ -106,9 +106,9 @@ module draw_beveled_half(flip) {
 };
 
 module trans_symbol(radius, thickness) {
-    linewidth=0.1*radius;
-    linelength=2*radius;
-    corner=0.05*radius;
+    linewidth=0.12*radius;
+    linelength=2.4*radius;
+    corner=0.07*radius;
     module arrowshape() {
         translate([linelength, 0,0]) {
             rotate(3*PI/4*RAD, [0,0,1]) translate([-linewidth/2,-linewidth/2,0]) rounded_rect([linelength/3,linewidth,thickness], corner);
@@ -116,7 +116,7 @@ module trans_symbol(radius, thickness) {
         }
     }
     module crossshape(offset=0) {
-        translate([11*linelength/16+offset, -0.4*linelength/2, 0]) rotate(PI/2*RAD,[0,0,1]) rounded_rect([0.4*linelength,linewidth,thickness], corner);
+        translate([10*linelength/16+offset, -0.4*linelength/2, 0]) rotate(PI/2*RAD,[0,0,1]) rounded_rect([0.4*linelength,linewidth,thickness], corner);
     }
     difference() {
         union() {
@@ -210,7 +210,7 @@ translate([-1 * part_placement_offset, 0, 0]) {
                 rounded_rect(bar_pin_cutout_size, 2);
             }
             
-            trans_symbol(radius=5, thickness=0.2);
+            trans_symbol(radius=4, thickness=0.2);
         }
     }
 }
