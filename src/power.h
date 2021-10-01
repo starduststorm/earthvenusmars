@@ -372,7 +372,7 @@ public:
       // logf("thermistor read took %ims", logstop-logstart); // this is taking 11-12ms??
 
       const int tempThresh = 45;
-      const int tempRange = 90 - tempThresh;
+      const int tempRange = 75 - tempThresh;
       if (temp > 150 || temp < -100) {
         // assume faulty read
         logf("temp read %i°C. faulty sensor?", temp);
