@@ -684,8 +684,10 @@ public:
 /* ------------------------------------------------------------------------------- */
 
 class ChargePattern : public Pattern {
+  static const uint32_t SpokeInactive = UINT32_MAX;
+
   BitsFiller *bitsFillers[3] = {0};
-  uint32_t spokeActivation[3] = {0};
+  uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
 
   void initSpoke(int spoke) {
     if (bitsFillers[spoke] == NULL) {
@@ -709,7 +711,7 @@ class ChargePattern : public Pattern {
       delete bitsFillers[spoke];
       bitsFillers[spoke] = NULL;
     }
-    spokeActivation[spoke] = UINT32_MAX;
+    spokeActivation[spoke] = SpokeInactive;
   }
   
   void resetBitHandlers() {
@@ -778,7 +780,7 @@ public:
       if (bitsFillers[spoke]) {
         bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
       }
-      spokeActivation[spoke] = UINT32_MAX;
+      spokeActivation[spoke] = SpokeInactive;
     }
   }
 
@@ -790,7 +792,7 @@ public:
 
   bool hasActiveSpoke() {
     for (int spoke = 0; spoke < 3; ++spoke) {
-      if (spokeActivation[spoke] != UINT32_MAX) {
+      if (spokeActivation[spoke] != SpokeInactive) {
         return true;
       }
     }
