@@ -306,6 +306,8 @@ public:
     chargePattern->colorManager = colorManager;
 #endif
     setupButtons();
+
+    startPatternAtIndex(0);
   }
 
   void loop() {
