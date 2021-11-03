@@ -5,7 +5,6 @@ RAD = 180 / PI;
 DEG = 1;
 
 epsilon = 0.001; // fudge to fix floating point rounding issues?
-tolerance = 0.2;  // 3D printing tolerance to fit around objects
 
 module diffscale() {
      for (i = [0 : $children-1]) {
@@ -41,8 +40,8 @@ module caddy() {
     };
     
     r0 = 20; // caddy circle
-    r1 = 24; // board diameter
-    r2 = 27+tolerance; // outer arms to cradle board
+    r1 = 24+0.3/*tolerance*/; // board diameter
+    r2 = 27; // outer radius of caddy arms
     
     arms_height = 6;
     base_height = 3;
@@ -79,7 +78,7 @@ module caddy() {
                         arc(r0, r2, arm_arclen, base_height, taper=0, center=true);
                         translate([0,0,base_height]) {
                             // arm
-                            arc(r1, r2, arm_arclen, arms_height, taper=2, center=true);
+                            arc(r1, r2, arm_arclen, arms_height, taper=1.6, center=true);
                             // rest
                             arc(r0-2-epsilon, r0, arm_arclen, rest_height, taper=1, center=true);
                         }
