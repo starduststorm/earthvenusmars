@@ -110,11 +110,12 @@ clip_notch_rise = 1;
 clip_notch_arc = PI/8*RAD;
 clip_notch_overlap = 0.8;
 
-led_extra_thickness = 0.5;
+diffuser_top_extra_thickness = 0.8;
+diffuser_top_line_width = 2.0;
 
 led_thickness = 0.8 + tolerance; // datasheet says 0.9mm but I measure 0.8??
-diffuser_outer_line_width = 3.8;
-diffuser_inner_line_width = 2.2;
+diffuser_outer_line_width = 5;
+diffuser_inner_line_width = 2.4;
 led_radius = 20;
 
 cross_start_radius = [37.5, 30.5, 0];
@@ -127,6 +128,9 @@ arrow_inner_side_width = arrow_outer_side_width - diffuser_outer_line_width + di
 
 arrow_outer_point_adjustment = 1.9;
 arrow_inner_point_adjustment = 1.08;
+
+cross_inner_adjustment = -3.2;
+cross_outer_adjustment = cross_inner_adjustment - (diffuser_inner_line_width - diffuser_outer_line_width) / 2;
 
 module led_outline(outer_radius, thickness, line_width, arrow_side_width, cross_length, arrow_point_adjustment, cross_length_adjustment) {
     difference() {
@@ -155,25 +159,25 @@ module led_outline(outer_radius, thickness, line_width, arrow_side_width, cross_
     }
 }
 
-module draw_beveled_half(flip) {
-    translate([flip * part_placement_offset, 0,0]) rotate(90 + flip * 90, [0,0,1]) {
+module top_case(flip) {
+    translate([part_placement_offset, 0,0]) rotate(PI*RAD, [0,0,1]) {
         difference() {
             union() {
                 // bevel
-                slices = bevel_max_thickness * 1/slicethickness;
-                for (t = [1:slices]) {
-                    z = bevel_max_thickness*(1 - t/slices) - slicethickness*(slices - floor(slices)) - epsilon;
-                    theshape(easeOutCubic(t, 0, outeroffset, slices), slicethickness, inneroffset, z);
-                }
+//                slices = bevel_max_thickness * 1/slicethickness;
+//                for (t = [1:slices]) {
+//                    z = bevel_max_thickness*(1 - t/slices) - slicethickness*(slices - floor(slices)) - epsilon;
+//                    theshape(easeOutCubic(t, 0, outeroffset, slices), slicethickness, inneroffset, z);
+//                }
                 
                 // diffuser
-                led_outline(edge_cut_radius, bevel_max_thickness, diffuser_outer_line_width, arrow_outer_side_width, cross_outer_length, arrow_outer_point_adjustment, 0);
+                led_outline(led_radius + diffuser_outer_line_width/2 /*edge_cut_radius*/, bevel_max_thickness, diffuser_outer_line_width, arrow_outer_side_width, cross_outer_length, arrow_outer_point_adjustment, cross_outer_adjustment);
                 translate([0,0,bevel_max_thickness-epsilon]) 
-                    led_outline(led_radius + diffuser_inner_line_width/2, led_extra_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, -3.2);
+                    led_outline(led_radius + diffuser_top_line_width/2, diffuser_top_extra_thickness, diffuser_top_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, cross_inner_adjustment);
             }
             union() {
                 // diffuser cutout
-                diffscale() led_outline(led_radius + diffuser_inner_line_width/2, led_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, 0);
+                diffscale() led_outline(led_radius + diffuser_inner_line_width/2, led_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, cross_inner_adjustment);
                 
                 // notch cutout
                 diffscale() for (s = [0:2]) {
@@ -334,6 +338,4 @@ module bottom_case() {
 }
 
 bottom_case();
-
-// top case
-draw_beveled_half(1);
+top_case();
