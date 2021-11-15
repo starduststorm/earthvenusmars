@@ -197,6 +197,9 @@ public:
   ~PatternManager() {
     delete activePattern;
     delete colorManager;
+  #if EVM_HARDWARE_VERSION > 1
+    delete chargePattern;
+  #endif
   }
 
   void nextPattern() {
@@ -296,6 +299,7 @@ public:
   }
 
   void setup() {
+    assert(colorManager == NULL, "colorManager is not null");
     colorManager = new EVMColorManager();
 #if EVM_HARDWARE_VERSION > 1
     chargePattern = new ChargePattern();
