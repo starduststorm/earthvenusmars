@@ -189,6 +189,9 @@ public:
   PowerManager() : thermistor(Thermistor(THERMISTOR_PIN, THERMISTOR_POWER_PIN)) { }
 
   void wakeBlink(CRGBArray<NUM_LEDS> &leds) {
+    // don't sleepwake blink to avoid confusion with the power switch
+    return;
+
     const int windInFrames = 50;
     for (int i = 0; i < windInFrames; ++i) {
       leds.fill_solid(CRGB::Black);
@@ -209,6 +212,9 @@ public:
   }
 
   void sleepBlink(CRGBArray<NUM_LEDS> &leds) {
+    // don't sleepwake blink to avoid confusion with the power switch
+    return;
+
     const int fadeUpFrames = 20;
     for (int i = 0; i < fadeUpFrames; ++i) {
       leds.fadeToBlackBy(0xFF / fadeUpFrames);
