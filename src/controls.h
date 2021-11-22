@@ -24,6 +24,7 @@ class AnalogDial : public HardwareControl {
 
   uint32_t lastValue = UINT32_MAX;
   unsigned long lastChange;
+  bool firstUpdate = true; // always call handler on first update to help set initial values
 
   void update() {
     uint32_t value;
@@ -38,7 +39,7 @@ class AnalogDial : public HardwareControl {
     bool recentSignificantChange = (millis() - lastChange < smoothUpdateDuration);
     bool endpointsChange = lastValue != value && (value == 0 || value == maxValue);
     
-    if (significantChange || recentSignificantChange || endpointsChange) {
+    if (significantChange || recentSignificantChange || endpointsChange || firstUpdate) {
       // logf("pot update: significantChange = %i [%u - %u > %u], recentSignificantChange = %i, endpointsChange = %i", significantChange, lastValue, value, updateThreshold, recentSignificantChange, endpointsChange);
       if (significantChange || endpointsChange) {
         lastChange = millis();
@@ -46,6 +47,7 @@ class AnalogDial : public HardwareControl {
       }
       changeHandler(value);
     }
+    firstUpdate = false;
   }
 
 public:

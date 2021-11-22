@@ -189,7 +189,7 @@ public:
   PowerManager() : thermistor(Thermistor(THERMISTOR_PIN, THERMISTOR_POWER_PIN)) { }
 
   void wakeBlink(CRGBArray<NUM_LEDS> &leds) {
-    // don't sleepwake blink to avoid confusion with the power switch
+    // don't wake blink to avoid confusion with the power switch
     return;
 
     const int windInFrames = 50;
@@ -212,9 +212,6 @@ public:
   }
 
   void sleepBlink(CRGBArray<NUM_LEDS> &leds) {
-    // don't sleepwake blink to avoid confusion with the power switch
-    return;
-
     const int fadeUpFrames = 20;
     for (int i = 0; i < fadeUpFrames; ++i) {
       leds.fadeToBlackBy(0xFF / fadeUpFrames);
@@ -343,10 +340,23 @@ public:
 
   template<typename BufferType>
   void loop(BufferType &pixelBuffer) {
+    static bool firstLoop = true;
+    if (handleADC) {
+      handleADC = 0;
+      if (discardNextADCRead) {
+        discardNextADCRead = false;
+      } else {
+        controls.update();
+      }
+    }
     if (sleepPending) {
       pixelBuffer.leds.fill_solid(CRGB::Black);
       FastLED.setBrightness(10);
-      sleepBlink(pixelBuffer.leds);
+      
+      if (firstLoop) {
+        // blink if we would sleep right at power-on
+        sleepBlink(pixelBuffer.leds);
+      }
       if (sleepPending) { // if sleep hasn't been cancelled
         FastLED.setBrightness(0);
         FastLED.show();
@@ -360,13 +370,6 @@ public:
           logf("Just woke up");
           sleeping = 0;
         }
-      }
-    } else if (handleADC) {
-      handleADC = 0;
-      if (discardNextADCRead) {
-        discardNextADCRead = false;
-      } else {
-        controls.update();
       }
     }
 #if EVM_HARDWARE_VERSION == 2
@@ -397,6 +400,7 @@ public:
       discardNextADCRead = true;
     }
 #endif
+    firstLoop = false;
   }
 
   void setBrightness(uint8_t brightness) {
