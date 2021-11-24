@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 // for memory logging
 #ifdef __arm__
@@ -41,7 +41,7 @@ static const uint8_t brightnessDialPin = 9;
 
 #include <functional>
 
-#define WAIT_FOR_SERIAL 1
+#define WAIT_FOR_SERIAL 0
 
 EVMDrawingContext ctx;
 
