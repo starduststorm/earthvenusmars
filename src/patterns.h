@@ -690,7 +690,7 @@ class ChargePattern : public Pattern {
   uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
 public:
   FlagPalette<CRGBPalette16> spokePalettes[3];
-  bool useSpokePalette[3] = {0};
+  bool useSpokePalette[3] = {0}; // per-spoke palettes enabled per-spoke on first use
 private:
   void initSpoke(int spoke) {
     if (bitsFillers[spoke] == NULL) {
@@ -788,7 +788,6 @@ public:
         bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
       }
       spokeActivation[spoke] = SpokeInactive;
-      useSpokePalette[spoke] = false; // spoke re-adopts global palette
     }
   }
 
