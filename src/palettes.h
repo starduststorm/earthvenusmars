@@ -908,6 +908,24 @@ public:
 
 /* -------------------------------------------------------------------- */
 
+// lightweight flag palette + index
+template <typename PaletteType>
+class FlagPalette {
+public:
+  PaletteType palette;
+  uint8_t flagIndex = 0;
+  void nextPalette() {
+    flagIndex = addmod8(flagIndex, 1, gPridePaletteCount);
+    palette = gPrideFlagPalettes[flagIndex];
+  }
+
+  void previousPalette() {
+    flagIndex = mod_wrap(flagIndex-1, gPridePaletteCount);
+    palette = gPrideFlagPalettes[flagIndex];
+  }
+};
+
+// full color-rotation-fade support
 template <typename PaletteType>
 class FlagColorManager : public PaletteRotation<PaletteType> {
 private:

@@ -22,6 +22,7 @@ class PatternManager {
   BufferType &ctx;
 
   HardwareControls controls;
+  TouchButton *touchPads[3] = {0};
 
   ChargePattern *chargePattern;
 
@@ -130,7 +131,6 @@ class PatternManager {
     });
     
     // EVM Touch Pads
-    TouchButton *touchPads[3];
     touchPads[0] = controls.addTouchButton(TOUCH_PIN_1);
     touchPads[1] = controls.addTouchButton(TOUCH_PIN_2);
     touchPads[2] = controls.addTouchButton(TOUCH_PIN_3);
@@ -236,10 +236,24 @@ public:
   // Palettes
 
   void nextPalette() {
-    colorManager->pauseRotation = true;
-    colorManager->nextPalette();
-    if (activePattern) {
-      activePattern->colorModeChanged();
+    bool spokeChange = false;
+    // for touched spokes, change only the palettes for those spokes
+    if (chargePattern) {
+      for (int s = 0; s < 3; ++s) {
+        if (touchPads[s] && touchPads[s]->isButtonPressed()) {
+          spokeChange = true;
+          chargePattern->spokePalettes[s].nextPalette();
+          chargePattern->useSpokePalette[s] = true;
+        }
+      }
+    }
+
+    if (!spokeChange) {
+      colorManager->pauseRotation = true;
+      colorManager->nextPalette();
+      if (activePattern) {
+        activePattern->colorModeChanged();
+      }
     }
     if (chargePattern) {
       chargePattern->colorModeChanged();
@@ -247,10 +261,24 @@ public:
   }
 
   void previousPalette() {
-    colorManager->pauseRotation = true;
-    colorManager->previousPalette();
-    if (activePattern) {
-      activePattern->colorModeChanged();
+    bool spokeChange = false;
+    // for touched spokes, change only the palettes for those spokes
+    if (chargePattern) {
+      for (int s = 0; s < 3; ++s) {
+        if (touchPads[s] && touchPads[s]->isButtonPressed()) {
+          spokeChange = true;
+          chargePattern->spokePalettes[s].previousPalette();
+          chargePattern->useSpokePalette[s] = true;
+        }
+      }
+    }
+    
+    if (!spokeChange) {
+      colorManager->pauseRotation = true;
+      colorManager->previousPalette();
+      if (activePattern) {
+        activePattern->colorModeChanged();
+      }
     }
     if (chargePattern) {
       chargePattern->colorModeChanged();

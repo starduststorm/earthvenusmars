@@ -61,7 +61,11 @@ The project is built with arm-none-eabi-g++ using [PlatformIO] in Visual Studio 
 
 There are two build environments, v1 & v2, referencing the hardware version of the pcb. Deployments of top-of-tree code should always use the highest build environment (v2).
 
-### Buttons
+### Controls
+
+* Power switch (lower right)
+
+* Brightness dial (lower left)
 
 * Colors
   - Single press - Next Palette
@@ -72,6 +76,10 @@ There are two build environments, v1 & v2, referencing the hardware version of t
   - Single Press - Next Pattern
   - Double Press - Previous Pattern
   - Long Press - Pattern Rotation
+
+* Circular metal touchpads control each spoke of the design
+  - Press and hold to keep spoke active
+  - Pressing the <i>Colors</i> button while holding a touch pad to change only the palette of that spoke
 
 ### Power
 

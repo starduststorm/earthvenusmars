@@ -688,7 +688,10 @@ class ChargePattern : public Pattern {
 
   BitsFiller *bitsFillers[3] = {0};
   uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
-
+public:
+  FlagPalette<CRGBPalette32> spokePalettes[3];
+  bool useSpokePalette[3] = {0};
+private:
   void initSpoke(int spoke) {
     if (bitsFillers[spoke] == NULL) {
       bitsFillers[spoke] = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
@@ -732,7 +735,11 @@ class ChargePattern : public Pattern {
           } else {
             bit.directions.edgeTypes.second = EdgeType::clockwise;
           }
-          bit.color = colorManager->flagSample(true);
+          if (useSpokePalette[spoke]) {
+            bit.color = ColorFromPalette(spokePalettes[spoke].palette, millis() / (500 / 0xFF * 3), 0xFF);
+          } else {
+            bit.color = colorManager->flagSample(true);
+          }
         };
       }
     }
@@ -781,6 +788,7 @@ public:
         bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
       }
       spokeActivation[spoke] = SpokeInactive;
+      useSpokePalette[spoke] = false; // spoke re-adopts global palette
     }
   }
 
