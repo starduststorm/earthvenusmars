@@ -689,7 +689,7 @@ class ChargePattern : public Pattern {
   BitsFiller *bitsFillers[3] = {0};
   uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
 public:
-  FlagPalette<CRGBPalette32> spokePalettes[3];
+  FlagPalette<CRGBPalette16> spokePalettes[3];
   bool useSpokePalette[3] = {0};
 private:
   void initSpoke(int spoke) {
