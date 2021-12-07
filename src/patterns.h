@@ -497,6 +497,16 @@ class LitPattern : public Pattern, public PaletteRotation<CRGBPalette256> {
 
 /* ------------------------------------------------------------------------------- */
 
+// optional feature to beat the heart in response to external timing pulse (RISING pulse on SDA pin)
+#define USE_PACEMAKER false
+
+volatile bool pumpPacemaker = false;
+#if USE_PACEMAKER
+void pacemakerBeat() {
+  pumpPacemaker = true;
+}
+#endif
+
 class HeartBeatPattern : public Pattern, public FFTProcessing {
   const uint8_t basebpm = 60;
   uint8_t bpm = 40;
@@ -507,15 +517,27 @@ class HeartBeatPattern : public Pattern, public FFTProcessing {
   int fadeDown = 3;
   float avgAmp = 0;
 
+  bool usingPacemaker = false;
+
   BitsFiller pumpFiller;
 public:
   HeartBeatPattern() : pumpFiller(ctx, 0, 30, 1200, {EdgeType::outbound}) {
     pumpFiller.flowRule = BitsFiller::split;
     pumpFiller.fadeDown = fadeDown;
     pumpFiller.splitDirections = EdgeType::outbound;
+#if USE_PACEMAKER
+    pinMode(SDA, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(SDA), pacemakerBeat, RISING);
+#endif
   }
 
-  void beat(EVMDrawingContext &ctx, bool parity, uint8_t intensity) {
+  ~HeartBeatPattern() {
+#if USE_PACEMAKER
+    detachInterrupt(SDA);
+#endif
+  }
+
+  void beat(bool parity, uint8_t intensity) {
     CRGB scaledColor = bloodColor;
     scaledColor.nscale8(intensity);
     
@@ -551,27 +573,34 @@ public:
   }
 
   void update() {
-    unsigned long mils = millis();
+    if (pumpPacemaker) {
+      pumpPacemaker = false;
+      usingPacemaker = true;
+      beat(false, 0x8F);
+    }
+    if (!usingPacemaker) {
+      unsigned long mils = millis();
+      unsigned milsPerBeat = 1000 * 60 / bpm;
+      if (mils - lastSystole > milsPerBeat) {
+        beat(true, 0xFF);
+        lastSystole = mils;
+        diastoleAt = lastSystole + milsPerBeat * 0.24;
+      }
+      if (diastoleAt != 0 && mils > diastoleAt) {
+        beat(false, 0x8F);
+        diastoleAt = 0;
+      }
 
-    unsigned milsPerBeat = 1000 * 60 / bpm;
-    if (mils - lastSystole > milsPerBeat) {
-      beat(ctx, true, 0xFF);
-      lastSystole = mils;
-      diastoleAt = lastSystole + milsPerBeat * 0.24;
+      // louder -> get yo blood pumpin
+      const unsigned ampSamples = 1200;
+      const unsigned int ampBaseline = 494;
+      unsigned long amplitude = min(1000u, fftUpdate().amplitude);
+      amplitude = max(0, (long)amplitude - (long)ampBaseline);
+      avgAmp = (avgAmp * (ampSamples-1) + amplitude) / ampSamples;
+      bpm = min(150, basebpm + 3 * avgAmp);
     }
-    if (diastoleAt != 0 && mils > diastoleAt) {
-      beat(ctx, false, 0x8F);
-      diastoleAt = 0;
-    }
+
     pumpFiller.update();
-
-    // louder -> get yo blood pumpin
-    const unsigned ampSamples = 1200;
-    const unsigned int ampBaseline = 494;
-    unsigned long amplitude = min(1000u, fftUpdate().amplitude);
-    amplitude = max(0, (long)amplitude - (long)ampBaseline);
-    avgAmp = (avgAmp * (ampSamples-1) + amplitude) / ampSamples;
-    bpm = min(150, basebpm + 3 * avgAmp);
   }
 
   const char *description() {
