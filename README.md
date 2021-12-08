@@ -25,7 +25,7 @@
 * Power switch for longer storage
 * Micro-USB for power & hacking, requires 5v input from wall or battery
 * SWD pads for low-level hacking
-* Exposed (but unused) I2C pads and SPI pads for you to hack with as you please
+* Exposed (but unused) I2C pads and SPI pads for you to hack with as you please (NOTE: SDA/SCL labels were swapped on the first large pcb print)
 * Mount points for bar pin or other attachment
 
 #
