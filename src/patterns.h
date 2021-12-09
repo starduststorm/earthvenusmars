@@ -712,131 +712,197 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
-class ChargePattern : public Pattern {
-  static const uint32_t SpokeInactive = UINT32_MAX;
+class SpokePatternManager;
 
-  BitsFiller *bitsFillers[3] = {0};
-  uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
+class SpokePattern {
+protected:
+  EVMDrawingContext &ctx;
 public:
-  FlagPalette<CRGBPalette16> spokePalettes[3];
-  bool useSpokePalette[3] = {0}; // per-spoke palettes enabled per-spoke on first use
-private:
-  void initSpoke(int spoke) {
-    if (bitsFillers[spoke] == NULL) {
-      bitsFillers[spoke] = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
-      bitsFillers[spoke]->flowRule = BitsFiller::split;
-      bitsFillers[spoke]->splitDirections = EdgeType::outbound;
-      bitsFillers[spoke]->fadeUpDistance = 2;
-      bitsFillers[spoke]->fadeDown = 0;
-      bitsFillers[spoke]->maxBitsPerSecond = 25;
+  FlagPalette<CRGBPalette16> flagPalette;
+  EVMColorManager &sharedColorManager;
+  uint8_t spoke = spoke;
+  bool useSharedPalette = true;
+
+  SpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : ctx(ctx), sharedColorManager(sharedColorManager), spoke(spoke) { }
+  virtual ~SpokePattern() { }
+  void colorModeChanged() { }
+  void nextPalette() {
+    flagPalette.nextPalette();
+    useSharedPalette = false;
+  }
+
+  void previousPalette() {
+    flagPalette.previousPalette();
+    useSharedPalette = false;
+  }
+
+  virtual void update() = 0;
+  virtual bool isIdle() = 0;
+  virtual void setActive(bool active) = 0;
+};
+
+class ChargeSpokePattern : public SpokePattern {
+  BitsFiller *bitsFiller;
+  void resetBitHandler() {
+    bitsFiller->handleNewBit = [=](BitsFiller::Bit &bit) {
+      static const int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
+      // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
+      // but add some fuzz to cause some bits fo travel around the point opposite the spoke too.
+      int cutoff = cutoffs[spoke];
+      int circleindex = mod_wrap(cutoff + random8()%6 - 3, circleleds.size());
+      int directionFuzz = random8()%8 - 4;
       
-      static const set<uint8_t> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
-      bitsFillers[spoke]->allowedPixels = allowedSets[spoke];
-
-      resetBitHandlers();
-    }
-    bitsFillers[spoke]->spawnRule = BitsFiller::maintainPopulation;
-  }
-
-  void teardownSpoke(int spoke) {
-    if (bitsFillers[spoke] != NULL) {
-      delete bitsFillers[spoke];
-      bitsFillers[spoke] = NULL;
-    }
-    spokeActivation[spoke] = SpokeInactive;
-  }
-  
-  void resetBitHandlers() {
-    for (int spoke = 0; spoke < 3; ++spoke) {
-      if (bitsFillers[spoke]) {
-        bitsFillers[spoke]->handleNewBit = [=](BitsFiller::Bit &bit) {
-          static const int cutoffs[] = {circleIndexOppositeEarth, circleIndexOppositeVenus, circleIndexOppositeMars};
-          // we pick a spawn point, then figure out which direction is the shortest path to the spoke using cutoffs
-          // but add some fuzz to cause some bits fo travel around the point opposite the spoke too.
-          int cutoff = cutoffs[spoke];
-          int circleindex = mod_wrap(cutoff + random8()%6 - 3, circleleds.size());
-          int directionFuzz = random8()%8 - 4;
-          
-          bit.px = circleleds[circleindex];
-          
-          if ((unsigned)mod_wrap(circleindex - cutoff + directionFuzz, circleleds.size()) > circleleds.size() / 2) {
-            bit.directions.edgeTypes.second = EdgeType::counterclockwise;
-          } else {
-            bit.directions.edgeTypes.second = EdgeType::clockwise;
-          }
-          if (useSpokePalette[spoke]) {
-            bit.color = ColorFromPalette(spokePalettes[spoke].palette, millis() / (500 / 0xFF * 3), 0xFF);
-          } else {
-            bit.color = colorManager->flagSample(true);
-          }
-        };
+      bit.px = circleleds[circleindex];
+      
+      if ((unsigned)mod_wrap(circleindex - cutoff + directionFuzz, circleleds.size()) > circleleds.size() / 2) {
+        bit.directions.edgeTypes.second = EdgeType::counterclockwise;
+      } else {
+        bit.directions.edgeTypes.second = EdgeType::clockwise;
       }
-    }
+      if (useSharedPalette) {
+        bit.color = sharedColorManager.flagSample(true);
+      } else {
+        bit.color = ColorFromPalette(flagPalette.palette, millis() / (500 / 0xFF * 3), 0xFF);
+      }
+    };
   }
-
 public:
-  ~ChargePattern() {
-    for (int i = 0; i < 3; ++i) {
-      if (bitsFillers[i]) {
-        delete bitsFillers[i];
-      }
-    }
+  ChargeSpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, sharedColorManager, spoke) {
+    static const set<int> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
+
+    bitsFiller = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
+    bitsFiller->flowRule = BitsFiller::split;
+    bitsFiller->splitDirections = EdgeType::outbound;
+    bitsFiller->fadeUpDistance = 2;
+    bitsFiller->fadeDown = 0;
+    bitsFiller->maxBitsPerSecond = 25;
+    bitsFiller->spawnRule = BitsFiller::maintainPopulation;
+    bitsFiller->allowedPixels = allowedSets[spoke];
+
+    resetBitHandler();
+  }
+
+  ~ChargeSpokePattern() {
+    delete bitsFiller;
   }
 
   void colorModeChanged() {
-    resetBitHandlers();
+    resetBitHandler();
   }
 
   void update() {
-    ctx.leds.fadeToBlackBy(5 * frameTime());
-
-    for (int spoke = 0; spoke < 3; ++spoke) {
-      if (bitsFillers[spoke]) {
-        bitsFillers[spoke]->update();
-        if (bitsFillers[spoke]->bits.size() == 0) {
-          teardownSpoke(spoke);
-        }
-      }
-    }
+    bitsFiller->update();
   }
 
-  // live responsiveness
-  void chargeSpoke(int spoke) {
-    initSpoke(spoke);
+  void setActive(bool active) {
+    bitsFiller->spawnRule = (active ? BitsFiller::maintainPopulation : BitsFiller::manualSpawn);
+  }
+
+  bool isIdle() {
+    return bitsFiller->bits.size() == 0;
+  }
+};
+
+class SpokePatternManager : public Pattern {
+  static const uint32_t SpokeInactive = UINT32_MAX;
+  uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
+
+  int spokePatternIndex[3] = {0};
+  SpokePattern *spokePatterns[3] = {0};
+
+  std::vector<SpokePattern * (*)(EVMDrawingContext&, EVMColorManager&, uint8_t)> patternConstructors;
+  template<class T>
+  static SpokePattern *construct(EVMDrawingContext &ctx, EVMColorManager &colorManager, uint8_t spoke) {
+    return new T(ctx, colorManager, spoke);
+  }
+
+private:
+  void initSpoke(uint8_t spoke) {
     spokeActivation[spoke] = millis();
+    if (!spokePatterns[spoke]) {
+      auto ctor = patternConstructors[spokePatternIndex[spoke]];
+      spokePatterns[spoke] = ctor(this->ctx, *colorManager, spoke);
+    }
   }
+public:
 
-  void runSpoke(int spoke) {
+  SpokePatternManager() {
+    patternConstructors.push_back(&(construct<ChargeSpokePattern>));
+  }
+  // live responsiveness
+  void spokeTapDown(uint8_t spoke) {
     initSpoke(spoke);
-    spokeActivation[spoke] = 0;
   }
 
-  void stopChargingSpoke(int spoke, unsigned long chargeDuration) {
+  void spokeTapUp(uint8_t spoke, unsigned long chargeDuration) {
     if (millis() - spokeActivation[spoke] < chargeDuration) {
-      if (bitsFillers[spoke]) {
-        bitsFillers[spoke]->spawnRule = BitsFiller::manualSpawn;
+      assert(spokePatterns[spoke] != NULL, "stop charging a non-existent spoke?");
+      if (spokePatterns[spoke]) {
+        spokePatterns[spoke]->setActive(false);
       }
-      spokeActivation[spoke] = SpokeInactive;
     }
   }
 
+#if EVM_HARDWARE_VERSION == 1
+  // legacy
+  void runSpoke(uint8_t spoke) {
+    initSpoke(spoke);
+  }
   void stopAllSpokes() {
-    for (int i = 0; i < 3; ++i) {
-      teardownSpoke(i);
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (spokePatterns[spoke]) {
+        spokePatterns[spoke]->setActive(false);
+      }
     }
+  }
+#endif
+
+  void teardownSpoke(uint8_t spoke) {
+    spokeActivation[spoke] = SpokeInactive;
+    delete spokePatterns[spoke];
+    spokePatterns[spoke] = NULL;
   }
 
   bool hasActiveSpoke() {
     for (int spoke = 0; spoke < 3; ++spoke) {
-      if (spokeActivation[spoke] != SpokeInactive) {
+      if (spokePatterns[spoke]) {
         return true;
       }
     }
     return false;
   }
 
+  void colorModeChanged() {
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (spokePatterns[spoke]) {
+        spokePatterns[spoke]->colorModeChanged();
+      }
+    }
+  }
+
+  void nextPalette(uint8_t spoke) {
+    spokePatterns[spoke]->nextPalette();
+  }
+
+  void previousPalette(uint8_t spoke) {
+    spokePatterns[spoke]->previousPalette();;
+  }
+
+  void update() {
+    ctx.leds.fadeToBlackBy(5 * frameTime());
+
+    for (int spoke = 0; spoke < 3; ++spoke) {
+      if (spokePatterns[spoke]) {
+        spokePatterns[spoke]->update();
+        if (spokePatterns[spoke]->isIdle()) {
+          teardownSpoke(spoke);
+        }
+      }
+    }
+  }
+
   const char *description() {
-    return "charge";
+    return "SpokeManager";
   }
 };
 

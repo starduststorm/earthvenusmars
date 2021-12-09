@@ -24,7 +24,7 @@ class PatternManager {
   HardwareControls controls;
   TouchButton *touchPads[3] = {0};
 
-  ChargePattern *chargePattern;
+  SpokePatternManager *spokeManager;
 
   template<class T>
   static Pattern *construct() {
@@ -139,15 +139,15 @@ class PatternManager {
       unsigned long chargeDuration = touchPads[b]->longPressInterval;
       touchPads[b]->onButtonDown([b, this]() {
         logf("Touch down: %i", b);
-        if (chargePattern) {
-          chargePattern->chargeSpoke(b);
+        if (spokeManager) {
+          spokeManager->spokeTapDown(b);
         }
         
       });
       touchPads[b]->onButtonUp([b, chargeDuration, this]() {
         logf("Touch up: %i", b);
-        if (chargePattern) {
-          chargePattern->stopChargingSpoke(b, chargeDuration);
+        if (spokeManager) {
+          spokeManager->spokeTapUp(b, chargeDuration);
         }
       });
     }
@@ -159,6 +159,7 @@ class PatternManager {
 
     buttons[0]->onSinglePress([this]() {
       this->previousPattern();
+      charge->stopAllSpokes();
     });
     buttons[1]->onSinglePress([this]() {
       this->nextPalette();
@@ -168,10 +169,10 @@ class PatternManager {
     });
     buttons[2]->onSinglePress([this]() {
       this->nextPattern();
+      charge->stopAllSpokes();
     });
     for (int b = 0; b < 3; ++b) {
       buttons[b]->onLongPress([b, this]() {
-        ChargePattern *charge = new ChargePattern();
         charge->runSpoke(b);
         this->startPattern(charge);
       });
@@ -198,7 +199,7 @@ public:
     delete activePattern;
     delete colorManager;
   #if EVM_HARDWARE_VERSION > 1
-    delete chargePattern;
+    delete spokeManager;
   #endif
   }
 
@@ -238,12 +239,11 @@ public:
   void nextPalette() {
     bool spokeChange = false;
     // for touched spokes, change only the palettes for those spokes
-    if (chargePattern) {
+    if (spokeManager) {
       for (int s = 0; s < 3; ++s) {
         if (touchPads[s] && touchPads[s]->isButtonPressed()) {
           spokeChange = true;
-          chargePattern->spokePalettes[s].nextPalette();
-          chargePattern->useSpokePalette[s] = true;
+          spokeManager->nextPalette(s);
         }
       }
     }
@@ -255,20 +255,19 @@ public:
         activePattern->colorModeChanged();
       }
     }
-    if (chargePattern) {
-      chargePattern->colorModeChanged();
+    if (spokeManager) {
+      spokeManager->colorModeChanged();
     }
   }
 
   void previousPalette() {
     bool spokeChange = false;
     // for touched spokes, change only the palettes for those spokes
-    if (chargePattern) {
+    if (spokeManager) {
       for (int s = 0; s < 3; ++s) {
         if (touchPads[s] && touchPads[s]->isButtonPressed()) {
           spokeChange = true;
-          chargePattern->spokePalettes[s].previousPalette();
-          chargePattern->useSpokePalette[s] = true;
+          spokeManager->previousPalette(s);
         }
       }
     }
@@ -280,8 +279,8 @@ public:
         activePattern->colorModeChanged();
       }
     }
-    if (chargePattern) {
-      chargePattern->colorModeChanged();
+    if (spokeManager) {
+      spokeManager->colorModeChanged();
     }
   }
 
@@ -293,8 +292,8 @@ public:
     if (activePattern) {
       activePattern->colorModeChanged();
     }
-    if (chargePattern) {
-      chargePattern->colorModeChanged();
+    if (spokeManager) {
+      spokeManager->colorModeChanged();
     }
   }
 
@@ -329,9 +328,9 @@ public:
   void setup() {
     assert(colorManager == NULL, "colorManager is not null");
     colorManager = new EVMColorManager();
+    spokeManager = new SpokePatternManager();
 #if EVM_HARDWARE_VERSION > 1
-    chargePattern = new ChargePattern();
-    chargePattern->colorManager = colorManager;
+    spokeManager->colorManager = colorManager;
 #endif
     setupButtons();
 
@@ -341,27 +340,29 @@ public:
   void loop() {
     ctx.leds.fill_solid(CRGB::Black);
 
-    if (chargePattern && !chargePattern->isRunning()) {
-      chargePattern->colorModeChanged();
-      chargePattern->start();
+    if (spokeManager && !spokeManager->isRunning()) {
+      spokeManager->colorModeChanged();
+      spokeManager->start();
     }
 
     if (activePattern) {
       activePattern->loop();
 
       // fade out the active pattern somewhat while the spoke is running
-      bool chargeActive = (chargePattern && chargePattern->hasActiveSpoke());
-      if (chargeActive && activePatternBrightness > 0x6F) {
+      bool hasActiveSpoke = (spokeManager && spokeManager->hasActiveSpoke());
+      if (hasActiveSpoke && activePatternBrightness > 0x6F) {
         activePatternBrightness-=2;
-      } else if (!chargeActive) {
+      } else if (!hasActiveSpoke) {
         activePatternBrightness = qadd8(activePatternBrightness, 4);
       }
       activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten, dim8_raw(activePatternBrightness));
     }
 
-    if (chargePattern) {
-      chargePattern->loop();
-      chargePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
+    if (spokeManager) {
+      spokeManager->loop();
+      if (spokeManager->hasActiveSpoke()) {
+        spokeManager->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
+      }
     }
 
     // time out idle patterns
