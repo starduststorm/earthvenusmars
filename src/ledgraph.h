@@ -124,6 +124,7 @@ const vector<uint8_t> earthleds = {EARTH_LEDS};
 const vector<uint8_t> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
 const vector<uint8_t> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
 
+// FIXME: make these vectors? I expect the asymptotic win from searching a ~50-element std::set is not enough to counter the constant from following pointers + the increased memory usage
 const set<uint8_t> circleEarthLeds = {CIRCLE_LEDS, EARTH_LEDS};
 const set<uint8_t> circleVenusLeds = {CIRCLE_LEDS, VENUS_LEDS};
 const set<uint8_t> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
@@ -132,6 +133,8 @@ const set<uint8_t> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
 const uint8_t circleIndexOppositeEarth = 29;
 const uint8_t circleIndexOppositeVenus = 16;
 const uint8_t circleIndexOppositeMars = 3;
+
+static const set<int> *const kSpokeLedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
 
 // shortcuts for quickly determined if a pixel is in a given spoke
 bool onEarth(uint8_t px) {

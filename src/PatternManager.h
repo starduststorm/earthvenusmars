@@ -204,18 +204,43 @@ public:
   }
 
   void nextPattern() {
-    patternAutoRotate = false;
-    patternIndex = addmod8(patternIndex, 1, patternConstructors.size());
-    if (!startPatternAtIndex(patternIndex)) {
-      nextPattern();
+    bool spokeChange = false;
+    // for touched spokes, change the pattern for those spokes only
+    if (spokeManager) {
+      for (int s = 0; s < 3; ++s) {
+        if (touchPads[s] && touchPads[s]->isButtonPressed()) {
+          spokeChange = true;
+          spokeManager->nextPattern(s);
+        }
+      }
+    }
+    if (!spokeChange) {
+      patternAutoRotate = false;
+      patternIndex = addmod8(patternIndex, 1, patternConstructors.size());
+      if (!startPatternAtIndex(patternIndex)) {
+        nextPattern();
+      }
     }
   }
 
   void previousPattern() {
-    patternAutoRotate = false;
-    patternIndex = mod_wrap(patternIndex - 1, patternConstructors.size());
-    if (!startPatternAtIndex(patternIndex)) {
-      previousPattern();
+    bool spokeChange = false;
+    // for touched spokes, change the pattern for those spokes only
+    // FIXME: factor this block out cause I have it repeated 4x
+    if (spokeManager) {
+      for (int s = 0; s < 3; ++s) {
+        if (touchPads[s] && touchPads[s]->isButtonPressed()) {
+          spokeChange = true;
+          spokeManager->previousPattern(s);
+        }
+      }
+    }
+    if (!spokeChange) {
+      patternAutoRotate = false;
+      patternIndex = mod_wrap(patternIndex - 1, patternConstructors.size());
+      if (!startPatternAtIndex(patternIndex)) {
+        previousPattern();
+      }
     }
   }
 
@@ -360,9 +385,7 @@ public:
 
     if (spokeManager) {
       spokeManager->loop();
-      if (spokeManager->hasActiveSpoke()) {
-        spokeManager->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
-      }
+      spokeManager->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
     }
 
     // time out idle patterns

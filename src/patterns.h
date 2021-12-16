@@ -4,6 +4,7 @@
 #include <FastLED.h>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 #include "util.h"
 #include "palettes.h"
@@ -663,6 +664,7 @@ public:
       } while (spokes[0] == spokes[1]);
 
       for (int i = 0; i < 2; ++i) {
+        // FIXME: replace with the new constants from ledgraph?
         allowedPixels[i].clear();
         allowedPixels[i].insert(spokes[i]->begin(), spokes[i]->end());
         allowedPixels[i].insert(circleleds.begin(), circleleds.end());
@@ -712,8 +714,6 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
-class SpokePatternManager;
-
 class SpokePattern {
 protected:
   EVMDrawingContext &ctx;
@@ -737,8 +737,15 @@ public:
   }
 
   virtual void update() = 0;
-  virtual bool isIdle() = 0;
-  virtual void setActive(bool active) = 0;
+  
+  virtual bool isIdle() {
+    return !baseActive;
+  }
+  virtual void setActive(bool active) {
+    baseActive = active;
+  }
+private:
+  bool baseActive;
 };
 
 class ChargeSpokePattern : public SpokePattern {
@@ -768,8 +775,6 @@ class ChargeSpokePattern : public SpokePattern {
   }
 public:
   ChargeSpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, sharedColorManager, spoke) {
-    static const set<int> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
-
     bitsFiller = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->splitDirections = EdgeType::outbound;
@@ -777,7 +782,7 @@ public:
     bitsFiller->fadeDown = 0;
     bitsFiller->maxBitsPerSecond = 25;
     bitsFiller->spawnRule = BitsFiller::maintainPopulation;
-    bitsFiller->allowedPixels = allowedSets[spoke];
+    bitsFiller->allowedPixels = kSpokeLedSets[spoke];
 
     resetBitHandler();
   }
@@ -803,6 +808,42 @@ public:
   }
 };
 
+class SparkleSpokePattern : public SpokePattern {
+  unsigned long lastSpark = 0;
+  std::vector<uint8_t> spawnIndexes;
+public:
+  SparkleSpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, sharedColorManager, spoke) {
+    for (auto item : *(kSpokeLedSets[spoke])) {
+      spawnIndexes.push_back(item);
+    }
+  }
+
+  ~SparkleSpokePattern() {
+  }
+
+  void colorModeChanged() {
+  }
+
+  void update() {
+    if (millis() - lastSpark > 10) {
+      for (int i = 0; i < 5; ++i) {
+        uint8_t index = spawnIndexes[random8(spawnIndexes.size())];
+        CRGB color;
+        // FIXME: factor out
+        if (useSharedPalette) {
+          color = sharedColorManager.flagSample(true);
+        } else {
+          color = ColorFromPalette(flagPalette.palette, millis() / (500 / 0xFF * 3) + random8(40), 0xFF);
+        }
+        ctx.leds[index] = color;
+        lastSpark = millis();
+      }
+    }
+  }
+};
+
+/* ----------------------------------------- */
+
 class SpokePatternManager : public Pattern {
   static const uint32_t SpokeInactive = UINT32_MAX;
   uint32_t spokeActivation[3] = {SpokeInactive, SpokeInactive, SpokeInactive};
@@ -822,12 +863,14 @@ private:
     if (!spokePatterns[spoke]) {
       auto ctor = patternConstructors[spokePatternIndex[spoke]];
       spokePatterns[spoke] = ctor(this->ctx, *colorManager, spoke);
+      spokePatterns[spoke]->setActive(true);
     }
   }
 public:
 
   SpokePatternManager() {
     patternConstructors.push_back(&(construct<ChargeSpokePattern>));
+    patternConstructors.push_back(&(construct<SparkleSpokePattern>));
   }
   // live responsiveness
   void spokeTapDown(uint8_t spoke) {
@@ -886,6 +929,18 @@ public:
 
   void previousPalette(uint8_t spoke) {
     spokePatterns[spoke]->previousPalette();;
+  }
+
+  void nextPattern(uint8_t spoke) {
+    teardownSpoke(spoke);
+    spokePatternIndex[spoke] = addmod8(spokePatternIndex[spoke], 1, patternConstructors.size());
+    initSpoke(spoke);
+  }
+
+  void previousPattern(uint8_t spoke) {
+    teardownSpoke(spoke);
+    spokePatternIndex[spoke] = mod_wrap(spokePatternIndex[spoke] - 1, patternConstructors.size());
+    initSpoke(spoke);
   }
 
   void update() {
