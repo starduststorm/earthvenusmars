@@ -33,7 +33,7 @@ struct Edge {
     
     uint8_t from, to;
     EdgeType type;
-    Edge(int from, int to, EdgeType type) : from(from), to(to), type(type) {};
+    Edge(uint8_t from, uint8_t to, EdgeType type) : from(from), to(to), type(type) {};
     Edge transpose() {
         EdgeType transposeType;
         switch (type) {
@@ -82,14 +82,14 @@ public:
         }
     }
 
-    vector<Edge> adjacencies(int vertex, EdgeTypesPair pair) {
+    vector<Edge> adjacencies(uint8_t vertex, EdgeTypesPair pair) {
         vector<Edge> adjList;
         getAdjacencies(vertex, pair.edgeTypes.first, adjList);
         getAdjacencies(vertex, pair.edgeTypes.second, adjList);
         return adjList;
     }
 
-    void getAdjacencies(int vertex, EdgeTypes matching, std::vector<Edge> &insertInto) {
+    void getAdjacencies(uint8_t vertex, EdgeTypes matching, std::vector<Edge> &insertInto) {
         if (matching == 0) {
             return;
         }
@@ -112,37 +112,37 @@ Graph ledgraph;
 #define VENUS_LEDS 66, 67, 68, 69, 70, 71, 72, 73, 77, 76, 74, 75 // 12
 #define MARS_LEDS 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 51, 50 // 14
 
-const vector<int> circleleds = {CIRCLE_LEDS};
-const vector<int> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
-const vector<int> spoke_tip_leds = {19, 46, 73};
-const vector<int> spoke_base_leds = {12, 39, 68};
+const vector<uint8_t> circleleds = {CIRCLE_LEDS};
+const vector<uint8_t> leafleds = {22, 23, 29, 26, 49, 50, 76, 75, 73};
+const vector<uint8_t> spoke_tip_leds = {19, 46, 73};
+const vector<uint8_t> spoke_base_leds = {12, 39, 68};
 
-const vector<int> venusleds = {VENUS_LEDS};
-const vector<int> marsleds = {MARS_LEDS};
+const vector<uint8_t> venusleds = {VENUS_LEDS};
+const vector<uint8_t> marsleds = {MARS_LEDS};
 
-const vector<int> earthleds = {EARTH_LEDS};
-const vector<int> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
-const vector<int> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
+const vector<uint8_t> earthleds = {EARTH_LEDS};
+const vector<uint8_t> earthasvenusleds = {12, 13, 14, 15, 16, 17, 18, 19, 28, 29, 27, 26}; // 12
+const vector<uint8_t> earthasmarsleds = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 24, 23}; // 14
 
-const set<int> circleEarthLeds = {CIRCLE_LEDS, EARTH_LEDS};
-const set<int> circleVenusLeds = {CIRCLE_LEDS, VENUS_LEDS};
-const set<int> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
+const set<uint8_t> circleEarthLeds = {CIRCLE_LEDS, EARTH_LEDS};
+const set<uint8_t> circleVenusLeds = {CIRCLE_LEDS, VENUS_LEDS};
+const set<uint8_t> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
 
 // indexes into circleleds vector opposite each spoke for use in pathing
-const int circleIndexOppositeEarth = 29;
-const int circleIndexOppositeVenus = 16;
-const int circleIndexOppositeMars = 3;
+const uint8_t circleIndexOppositeEarth = 29;
+const uint8_t circleIndexOppositeVenus = 16;
+const uint8_t circleIndexOppositeMars = 3;
 
 // shortcuts for quickly determined if a pixel is in a given spoke
-bool onEarth(int px) {
+bool onEarth(uint8_t px) {
     return px >= 12 && px <= 29;
 }
 
-bool onVenus(int px) {
+bool onVenus(uint8_t px) {
     return px >= 66 && px <= 77;
 }
 
-bool onMars(int px) {
+bool onMars(uint8_t px) {
     return px >= 39 && px <= 52;
 }
 
@@ -178,13 +178,13 @@ void initLEDGraph() {
 
     // spokes are D13-D20, D40-D47, D67-D74
     // e.g. leds[] 12-19, 39-46, 66-73
-    for (int i = 12; i < 19; ++i) {
+    for (uint8_t i = 12; i < 19; ++i) {
         ledgraph.addEdge(Edge(i, i+1, Edge::outbound));
     }
-    for (int i = 39; i < 46; ++i) {
+    for (uint8_t i = 39; i < 46; ++i) {
         ledgraph.addEdge(Edge(i, i+1, Edge::outbound));
     }
-    for (int i = 66; i < 73; ++i) {
+    for (uint8_t i = 66; i < 73; ++i) {
         ledgraph.addEdge(Edge(i, i+1, Edge::outbound));
     }
 }

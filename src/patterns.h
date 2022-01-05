@@ -118,7 +118,7 @@ private:
   unsigned long lastMove = 0;
   unsigned long lastBitSpawn = 0;
 
-  int spawnLocation() {
+  uint8_t spawnLocation() {
     if (spawnPixels) {
       return spawnPixels->at(random8()%spawnPixels->size());
     }
@@ -151,24 +151,24 @@ private:
     return bits.back();
   }
 
-  void killBit(int bitIndex) {
+  void killBit(uint8_t bitIndex) {
     bits.erase(bits.begin() + bitIndex);
   }
 
-  void splitBit(Bit &bit, int toIndex) {
+  void splitBit(Bit &bit, uint8_t toIndex) {
     Bit &split = makeBit(&bit);
     split.px = toIndex;
   }
 
-  bool isIndexAllowed(int index) {
+  bool isIndexAllowed(uint8_t index) {
     if (allowedPixels) {
       return allowedPixels->end() != allowedPixels->find(index);
     }
     return true;
   }
 
-  vector<int> nextIndexes(int index, EdgeTypesPair bitDirections) {
-    vector<int> next;
+  vector<uint8_t> nextIndexes(uint8_t index, EdgeTypesPair bitDirections) {
+    vector<uint8_t> next;
     switch (flowRule) {
       case priority: {
         auto adj = ledgraph.adjacencies(index, bitDirections);
@@ -213,8 +213,8 @@ private:
     return next;
   }
 
-  bool flowBit(int bitIndex) {
-    vector<int> next = nextIndexes(bits[bitIndex].px, bits[bitIndex].directions);
+  bool flowBit(uint8_t bitIndex) {
+    vector<uint8_t> next = nextIndexes(bits[bitIndex].px, bits[bitIndex].directions);
     if (next.size() == 0) {
       // leaf behavior
       killBit(bitIndex);
@@ -257,8 +257,8 @@ public:
   uint8_t fadeUpDistance = 0; // fade up n pixels ahead of bit motion
   EdgeTypes splitDirections = EdgeType::all; // if flowRule is split, which directions are allowed to split
   
-  const vector<int> *spawnPixels = NULL; // list of pixels to automatically spawn bits on
-  const set<int> *allowedPixels = NULL; // set of pixels that bits are allowed to travel to
+  const vector<uint8_t> *spawnPixels = NULL; // list of pixels to automatically spawn bits on
+  const set<uint8_t> *allowedPixels = NULL; // set of pixels that bits are allowed to travel to
 
   function<void(Bit &)> handleNewBit = [](Bit &bit){};
   function<void(Bit &)> handleUpdateBit = [](Bit &bit){};
@@ -269,12 +269,12 @@ public:
     bits.reserve(maxSpawnBits);
   };
 
-  void fadeUpForBit(Bit &bit, int px, int distanceRemaining, unsigned long lastMove) {
-    vector<int> next = nextIndexes(px, bit.directions);
+  void fadeUpForBit(Bit &bit, uint8_t px, int distanceRemaining, unsigned long lastMove) {
+    vector<uint8_t> next = nextIndexes(px, bit.directions);
 
     unsigned long mils = millis();
     unsigned long fadeUpDuration = 1000 * fadeUpDistance / speed;
-    for (int n : next) {
+    for (uint8_t n : next) {
       unsigned long fadeTimeSoFar = mils - lastMove + distanceRemaining * 1000/speed;
       uint8_t progress = 0xFF * fadeTimeSoFar / fadeUpDuration;
 
@@ -613,7 +613,7 @@ public:
 class CouplingPattern : public Pattern {
   enum { coupling, looking } state = looking;
   BitsFiller *spokesFillers[2];
-  set<int> allowedPixels[2];
+  set<uint8_t> allowedPixels[2];
   unsigned long lastStateChange = 0;
 public:
   CouplingPattern() {
@@ -648,9 +648,9 @@ public:
     ctx.leds.fadeToBlackBy(3 * frameTime());
 
     if (state == looking && mils - lastStateChange > lookingDuration) {
-      const vector<int> * const planetspokelists[] = {&venusleds, &marsleds};
-      const vector<int> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
-      const vector<int> *spokes[2] = {0};
+      const vector<uint8_t> * const planetspokelists[] = {&venusleds, &marsleds};
+      const vector<uint8_t> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
+      const vector<uint8_t> *spokes[2] = {0};
 
       // omg matchmaking time
       do {
@@ -730,7 +730,7 @@ private:
       bitsFillers[spoke]->fadeDown = 0;
       bitsFillers[spoke]->maxBitsPerSecond = 25;
       
-      static const set<int> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
+      static const set<uint8_t> *const allowedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
       bitsFillers[spoke]->allowedPixels = allowedSets[spoke];
 
       resetBitHandlers();
@@ -845,7 +845,7 @@ public:
 class IntersexFlagPattern : public Pattern {
   BitsFiller outerBits;
   BitsFiller innerBits;
-  std::set<int> spokePixels;
+  std::set<uint8_t> spokePixels;
 public:
   IntersexFlagPattern() : outerBits(ctx, 20, 40, 4000, {EdgeType::inbound}), 
                           innerBits(ctx, 8, 40, 4000, {EdgeType::clockwise | EdgeType::counterclockwise}) {
