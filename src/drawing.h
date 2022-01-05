@@ -14,7 +14,7 @@ extern "C"{
 //
 
 enum BlendMode {
-  blendSourceOver, blendBrighten, blendDarken, /* add blending? but how to encode alpha? need CRGBA buffers, probs not worth it with current resolution */
+  blendSourceOver, blendBrighten, blendDarken, blendSubtract, /* add blending? but how to encode alpha? need CRGBA buffers, probs not worth it with current resolution */
 };
 
 struct DrawStyle {
@@ -40,6 +40,10 @@ private:
       case blendDarken: {
         PixelType dst = dstCtx.leds[index];
         dstCtx.leds[index] = PixelType(std::min(src.r, dst.r), std::min(src.g, dst.g), std::min(src.b, dst.b));
+      }
+      case blendSubtract: {
+        PixelType dst = dstCtx.leds[index];
+        dstCtx.leds[index] = dst - src;
       }
     }
   }

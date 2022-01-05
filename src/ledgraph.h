@@ -134,7 +134,9 @@ const uint8_t circleIndexOppositeEarth = 29;
 const uint8_t circleIndexOppositeVenus = 16;
 const uint8_t circleIndexOppositeMars = 3;
 
-static const set<int> *const kSpokeLedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
+static const set<uint8_t> *const kSpokeCircleLedSets[] = {&circleEarthLeds, &circleVenusLeds, &circleMarsLeds};
+static const vector<uint8_t> * const kSpokeLedLists[] = {&earthleds, &venusleds, &marsleds};
+
 
 // shortcuts for quickly determined if a pixel is in a given spoke
 bool onEarth(uint8_t px) {

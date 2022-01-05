@@ -714,16 +714,19 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
+static int kSuppressSpokePatternIndex = -1;
+
 class SpokePattern {
 protected:
   EVMDrawingContext &ctx;
+  EVMDrawingContext &subtractCtx;
 public:
   FlagPalette<CRGBPalette16> flagPalette;
   EVMColorManager &sharedColorManager;
   uint8_t spoke = spoke;
   bool useSharedPalette = true;
 
-  SpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : ctx(ctx), sharedColorManager(sharedColorManager), spoke(spoke) { }
+  SpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : ctx(ctx), subtractCtx(subtractCtx), sharedColorManager(sharedColorManager), spoke(spoke) { }
   virtual ~SpokePattern() { }
   void colorModeChanged() { }
   void nextPalette() {
@@ -774,7 +777,7 @@ class ChargeSpokePattern : public SpokePattern {
     };
   }
 public:
-  ChargeSpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, sharedColorManager, spoke) {
+  ChargeSpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, subtractCtx, sharedColorManager, spoke) {
     bitsFiller = new BitsFiller(ctx, 30, 50, 0, {EdgeType::outbound});
     bitsFiller->flowRule = BitsFiller::split;
     bitsFiller->splitDirections = EdgeType::outbound;
@@ -782,7 +785,7 @@ public:
     bitsFiller->fadeDown = 0;
     bitsFiller->maxBitsPerSecond = 25;
     bitsFiller->spawnRule = BitsFiller::maintainPopulation;
-    bitsFiller->allowedPixels = kSpokeLedSets[spoke];
+    bitsFiller->allowedPixels = kSpokeCircleLedSets[spoke];
 
     resetBitHandler();
   }
@@ -812,8 +815,8 @@ class SparkleSpokePattern : public SpokePattern {
   unsigned long lastSpark = 0;
   std::vector<uint8_t> spawnIndexes;
 public:
-  SparkleSpokePattern(EVMDrawingContext &ctx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, sharedColorManager, spoke) {
-    for (auto item : *(kSpokeLedSets[spoke])) {
+  SparkleSpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, subtractCtx, sharedColorManager, spoke) {
+    for (auto item : *(kSpokeCircleLedSets[spoke])) {
       spawnIndexes.push_back(item);
     }
   }
@@ -842,6 +845,35 @@ public:
   }
 };
 
+// Used to turn off a spoke entirely
+class SuppressSpokePattern : public SpokePattern {
+  unsigned long start = 0;
+public:
+  SuppressSpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, subtractCtx, sharedColorManager, spoke) { }
+  void update() {
+    const unsigned long kFadeTime = 500; // matching long-press interval for now
+    if (start == 0) {
+      start = millis();
+    }
+    unsigned long runTime = millis() - start;
+    for (uint8_t index : *kSpokeLedLists[spoke]) {
+       ctx.leds[index] = CRGB::White;
+    }
+    for (uint8_t index : *kSpokeLedLists[spoke]) {
+      subtractCtx.leds[index] = CRGB::White;
+      subtractCtx.leds[index].nscale8(min(kFadeTime, runTime) * 0xFF / kFadeTime);
+    }
+  }
+  void setActive(bool active) {
+    SpokePattern::setActive(active);
+    if (!active) {
+      for (uint8_t index : *kSpokeLedLists[spoke]) {
+         ctx.leds[index] = CRGB::White;
+      }
+    }
+  }
+};
+
 /* ----------------------------------------- */
 
 class SpokePatternManager : public Pattern {
@@ -851,10 +883,10 @@ class SpokePatternManager : public Pattern {
   int spokePatternIndex[3] = {0};
   SpokePattern *spokePatterns[3] = {0};
 
-  std::vector<SpokePattern * (*)(EVMDrawingContext&, EVMColorManager&, uint8_t)> patternConstructors;
+  std::vector<SpokePattern * (*)(EVMDrawingContext&, EVMDrawingContext&, EVMColorManager&, uint8_t)> patternConstructors;
   template<class T>
-  static SpokePattern *construct(EVMDrawingContext &ctx, EVMColorManager &colorManager, uint8_t spoke) {
-    return new T(ctx, colorManager, spoke);
+  static SpokePattern *construct(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &colorManager, uint8_t spoke) {
+    return new T(ctx, subtractCtx, colorManager, spoke);
   }
 
 private:
@@ -862,16 +894,28 @@ private:
     spokeActivation[spoke] = millis();
     if (!spokePatterns[spoke]) {
       auto ctor = patternConstructors[spokePatternIndex[spoke]];
-      spokePatterns[spoke] = ctor(this->ctx, *colorManager, spoke);
+      spokePatterns[spoke] = ctor(this->ctx, this->subtractCtx, *colorManager, spoke);
       spokePatterns[spoke]->setActive(true);
     }
   }
 public:
 
+  EVMDrawingContext subtractCtx;
+
   SpokePatternManager() {
     patternConstructors.push_back(&(construct<ChargeSpokePattern>));
     patternConstructors.push_back(&(construct<SparkleSpokePattern>));
+    patternConstructors.push_back(&(construct<SuppressSpokePattern>)); kSuppressSpokePatternIndex = patternConstructors.size() - 1;
   }
+
+  void stopSpoke(uint8_t spoke) {
+    spokePatterns[spoke]->setActive(false);
+    if (spokePatterns[spoke]->isIdle()) {
+      // some spokes may be immediately idle and some may want to spin down
+      teardownSpoke(spoke);
+    }
+  }
+
   // live responsiveness
   void spokeTapDown(uint8_t spoke) {
     initSpoke(spoke);
@@ -881,7 +925,7 @@ public:
     if (millis() - spokeActivation[spoke] < chargeDuration) {
       assert(spokePatterns[spoke] != NULL, "stop charging a non-existent spoke?");
       if (spokePatterns[spoke]) {
-        spokePatterns[spoke]->setActive(false);
+        stopSpoke(spoke);
       }
     }
   }
@@ -894,7 +938,7 @@ public:
   void stopAllSpokes() {
     for (int spoke = 0; spoke < 3; ++spoke) {
       if (spokePatterns[spoke]) {
-        spokePatterns[spoke]->setActive(false);
+        stopSpoke(spoke);
       }
     }
   }
@@ -906,9 +950,9 @@ public:
     spokePatterns[spoke] = NULL;
   }
 
-  bool hasActiveSpoke() {
+  bool isDrawingSpoke() {
     for (int spoke = 0; spoke < 3; ++spoke) {
-      if (spokePatterns[spoke]) {
+      if (spokePatterns[spoke] && spokePatternIndex[spoke] != kSuppressSpokePatternIndex) {
         return true;
       }
     }
@@ -932,6 +976,9 @@ public:
   }
 
   void nextPattern(uint8_t spoke) {
+    if (spoke == 0 && spokePatternIndex[spoke] == kSuppressSpokePatternIndex) {
+      // FIXME: Earth modes
+    }
     teardownSpoke(spoke);
     spokePatternIndex[spoke] = addmod8(spokePatternIndex[spoke], 1, patternConstructors.size());
     initSpoke(spoke);
@@ -945,6 +992,7 @@ public:
 
   void update() {
     ctx.leds.fadeToBlackBy(5 * frameTime());
+    subtractCtx.leds.fadeToBlackBy(5 * frameTime());
 
     for (int spoke = 0; spoke < 3; ++spoke) {
       if (spokePatterns[spoke]) {

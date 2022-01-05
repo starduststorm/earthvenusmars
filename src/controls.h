@@ -161,7 +161,7 @@ class SPSTButton : public HardwareControl {
   }
 
 public:
-  long longPressInterval = 1000;
+  long longPressInterval = 500;
   long doublePressInterval = 400;
 
   SPSTButton(int pin) : HardwareControl(pin) { }

@@ -374,10 +374,10 @@ public:
       activePattern->loop();
 
       // fade out the active pattern somewhat while the spoke is running
-      bool hasActiveSpoke = (spokeManager && spokeManager->hasActiveSpoke());
-      if (hasActiveSpoke && activePatternBrightness > 0x6F) {
+      bool isDrawingSpoke = (spokeManager && spokeManager->isDrawingSpoke());
+      if (isDrawingSpoke && activePatternBrightness > 0x6F) {
         activePatternBrightness-=2;
-      } else if (!hasActiveSpoke) {
+      } else if (!isDrawingSpoke) {
         activePatternBrightness = qadd8(activePatternBrightness, 4);
       }
       activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten, dim8_raw(activePatternBrightness));
@@ -386,6 +386,7 @@ public:
     if (spokeManager) {
       spokeManager->loop();
       spokeManager->ctx.blendIntoContext(ctx, BlendMode::blendBrighten);
+      spokeManager->subtractCtx.blendIntoContext(ctx, BlendMode::blendSubtract);
     }
 
     // time out idle patterns
