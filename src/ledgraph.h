@@ -129,6 +129,10 @@ const set<uint8_t> circleEarthLeds = {CIRCLE_LEDS, EARTH_LEDS};
 const set<uint8_t> circleVenusLeds = {CIRCLE_LEDS, VENUS_LEDS};
 const set<uint8_t> circleMarsLeds = {CIRCLE_LEDS, MARS_LEDS};
 
+// just the pixels on the arrow or cross on the earth spoke
+const vector<uint8_t> earthVenusOnly = {28, 29, 27, 26};
+const vector<uint8_t> earthMarsOnly = {20, 21, 22, 25, 24, 23};
+
 // indexes into circleleds vector opposite each spoke for use in pathing
 const uint8_t circleIndexOppositeEarth = 29;
 const uint8_t circleIndexOppositeVenus = 16;

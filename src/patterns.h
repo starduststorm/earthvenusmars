@@ -611,6 +611,10 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
+// global state! these help the Coupling pattern not draw silly things like just the line of a spoke
+bool earthVenusSuppressed = false;
+bool earthMarsSuppressed = false;
+
 class CouplingPattern : public Pattern {
   enum { coupling, looking } state = looking;
   BitsFiller *spokesFillers[2];
@@ -650,7 +654,7 @@ public:
 
     if (state == looking && mils - lastStateChange > lookingDuration) {
       const vector<uint8_t> * const planetspokelists[] = {&venusleds, &marsleds};
-      const vector<uint8_t> * const earthspokelists[] = {&earthleds, &earthasmarsleds, &earthasvenusleds};
+      const vector<uint8_t> * const earthspokelists[] = {&earthleds, &earthasvenusleds, &earthasmarsleds};
       const vector<uint8_t> *spokes[2] = {0};
 
       // omg matchmaking time
@@ -661,7 +665,10 @@ public:
           spokes[0] = ARRAY_SAMPLE(planetspokelists);
         }
         spokes[1] = ARRAY_SAMPLE(planetspokelists);
-      } while (spokes[0] == spokes[1]);
+      } while (spokes[0] == spokes[1]
+              // don't show a single line on the spoke if part of it is suppressed
+              || (spokes[0] == &earthasvenusleds && earthVenusSuppressed)
+              || (spokes[0] == &earthasmarsleds && earthMarsSuppressed));
 
       for (int i = 0; i < 2; ++i) {
         // FIXME: replace with the new constants from ledgraph?
@@ -714,9 +721,8 @@ public:
 
 /* ------------------------------------------------------------------------------- */
 
-static int kSuppressSpokePatternIndex = -1;
-
 class SpokePattern {
+  bool baseActive;
 protected:
   EVMDrawingContext &ctx;
   EVMDrawingContext &subtractCtx;
@@ -747,8 +753,13 @@ public:
   virtual void setActive(bool active) {
     baseActive = active;
   }
-private:
-  bool baseActive;
+  // allows the Earth spoke to have more modes; returns false if no mode switch happened
+  virtual bool nextMode() { return false; }
+  virtual bool previousMode() { return false; }
+  virtual int8_t getMode() { return 0; }
+  virtual bool setMode(int8_t mode) { return false; };
+  // false if this spoke pattern doesn't draw anything and shouldn't dim the background
+  virtual bool isDrawing() { return true; }
 };
 
 class ChargeSpokePattern : public SpokePattern {
@@ -847,31 +858,89 @@ public:
 
 // Used to turn off a spoke entirely
 class SuppressSpokePattern : public SpokePattern {
+  enum : int8_t { earth = 0, venus = 1, mars = 2, };
+  int8_t earthAs = earth;
   unsigned long start = 0;
 public:
   SuppressSpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : SpokePattern(ctx, subtractCtx, sharedColorManager, spoke) { }
+  ~SuppressSpokePattern() {
+    if (spoke == earth) {
+      // inform global state that we're no longer hiding these partial spokes
+      earthMarsSuppressed = false;
+      earthVenusSuppressed = false;
+    }
+  }
+
+  const vector<uint8_t>& ledList() {
+    if (spoke == earth) {
+      earthMarsSuppressed = (earthAs == mars);
+      earthVenusSuppressed = (earthAs == venus);
+      const vector<uint8_t> * const earthspokelists[] = {&earthleds, &earthVenusOnly, &earthMarsOnly};
+      return *earthspokelists[earthAs];
+    } else {
+      return *kSpokeLedLists[spoke];
+    }
+  }
+
   void update() {
     const unsigned long kFadeTime = 500; // matching long-press interval for now
     if (start == 0) {
       start = millis();
     }
+    const vector<uint8_t>& leds = ledList();
     unsigned long runTime = millis() - start;
-    for (uint8_t index : *kSpokeLedLists[spoke]) {
+    for (uint8_t index : leds) {
        ctx.leds[index] = CRGB::White;
     }
-    for (uint8_t index : *kSpokeLedLists[spoke]) {
+    for (uint8_t index : leds) {
       subtractCtx.leds[index] = CRGB::White;
       subtractCtx.leds[index].nscale8(min(kFadeTime, runTime) * 0xFF / kFadeTime);
     }
   }
+
   void setActive(bool active) {
     SpokePattern::setActive(active);
     if (!active) {
-      for (uint8_t index : *kSpokeLedLists[spoke]) {
+      for (uint8_t index : ledList()) {
          ctx.leds[index] = CRGB::White;
       }
     }
   }
+
+  bool nextMode() {
+    if (spoke == earth && earthAs < mars) {
+      ++earthAs;
+      start = millis();
+      return true;
+    }
+    return false;
+  }
+
+  bool previousMode() {
+    if (spoke == earth && earthAs > earth) {
+      --earthAs;
+      start = millis();
+      return true;
+    }
+    return false;
+  }
+
+  int8_t getMode() {
+    if (spoke == earth) {
+      return earthAs;
+    }
+    return 0;
+  }
+
+  bool setMode(int8_t mode) {
+    if (spoke == earth) {
+      earthAs = mode;
+      return true;
+    }
+    return false;
+  }
+  
+  bool isDrawing() { return false; }
 };
 
 /* ----------------------------------------- */
@@ -882,6 +951,7 @@ class SpokePatternManager : public Pattern {
 
   int spokePatternIndex[3] = {0};
   SpokePattern *spokePatterns[3] = {0};
+  int8_t spokeMode[3] = {0};
 
   std::vector<SpokePattern * (*)(EVMDrawingContext&, EVMDrawingContext&, EVMColorManager&, uint8_t)> patternConstructors;
   template<class T>
@@ -895,6 +965,7 @@ private:
     if (!spokePatterns[spoke]) {
       auto ctor = patternConstructors[spokePatternIndex[spoke]];
       spokePatterns[spoke] = ctor(this->ctx, this->subtractCtx, *colorManager, spoke);
+      spokePatterns[spoke]->setMode(spokeMode[spoke]);
       spokePatterns[spoke]->setActive(true);
     }
   }
@@ -905,7 +976,7 @@ public:
   SpokePatternManager() {
     patternConstructors.push_back(&(construct<ChargeSpokePattern>));
     patternConstructors.push_back(&(construct<SparkleSpokePattern>));
-    patternConstructors.push_back(&(construct<SuppressSpokePattern>)); kSuppressSpokePatternIndex = patternConstructors.size() - 1;
+    patternConstructors.push_back(&(construct<SuppressSpokePattern>));
   }
 
   void stopSpoke(uint8_t spoke) {
@@ -945,6 +1016,7 @@ public:
 #endif
 
   void teardownSpoke(uint8_t spoke) {
+    spokeMode[spoke] = spokePatterns[spoke]->getMode();
     spokeActivation[spoke] = SpokeInactive;
     delete spokePatterns[spoke];
     spokePatterns[spoke] = NULL;
@@ -952,7 +1024,7 @@ public:
 
   bool isDrawingSpoke() {
     for (int spoke = 0; spoke < 3; ++spoke) {
-      if (spokePatterns[spoke] && spokePatternIndex[spoke] != kSuppressSpokePatternIndex) {
+      if (spokePatterns[spoke] && spokePatterns[spoke]->isDrawing()) {
         return true;
       }
     }
@@ -976,18 +1048,19 @@ public:
   }
 
   void nextPattern(uint8_t spoke) {
-    if (spoke == 0 && spokePatternIndex[spoke] == kSuppressSpokePatternIndex) {
-      // FIXME: Earth modes
+    if (!spokePatterns[spoke]->nextMode()) {
+      teardownSpoke(spoke);
+      spokePatternIndex[spoke] = addmod8(spokePatternIndex[spoke], 1, patternConstructors.size());
+      initSpoke(spoke);
     }
-    teardownSpoke(spoke);
-    spokePatternIndex[spoke] = addmod8(spokePatternIndex[spoke], 1, patternConstructors.size());
-    initSpoke(spoke);
   }
 
   void previousPattern(uint8_t spoke) {
-    teardownSpoke(spoke);
-    spokePatternIndex[spoke] = mod_wrap(spokePatternIndex[spoke] - 1, patternConstructors.size());
-    initSpoke(spoke);
+    if (!spokePatterns[spoke]->previousMode()) {
+      teardownSpoke(spoke);
+      spokePatternIndex[spoke] = mod_wrap(spokePatternIndex[spoke] - 1, patternConstructors.size());
+      initSpoke(spoke);
+    }
   }
 
   void update() {
