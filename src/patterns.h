@@ -939,7 +939,7 @@ public:
     }
     return false;
   }
-  
+
   bool isDrawing() { return false; }
 };
 
@@ -1022,13 +1022,14 @@ public:
     spokePatterns[spoke] = NULL;
   }
 
-  bool isDrawingSpoke() {
+  uint8_t drawingSpokeCount() {
+    uint8_t count = 0;
     for (int spoke = 0; spoke < 3; ++spoke) {
       if (spokePatterns[spoke] && spokePatterns[spoke]->isDrawing()) {
-        return true;
+        ++count;
       }
     }
-    return false;
+    return count;
   }
 
   void colorModeChanged() {

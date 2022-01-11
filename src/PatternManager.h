@@ -371,16 +371,23 @@ public:
     }
 
     if (activePattern) {
-      activePattern->loop();
-
-      // fade out the active pattern somewhat while the spoke is running
-      bool isDrawingSpoke = (spokeManager && spokeManager->isDrawingSpoke());
-      if (isDrawingSpoke && activePatternBrightness > 0x6F) {
-        activePatternBrightness-=2;
-      } else if (!isDrawingSpoke) {
+      // fade out the active pattern somewhat while a spoke is running, or entirely if all three spokes are running
+      uint8_t drawingSpokeCount = (spokeManager ? spokeManager->drawingSpokeCount() : 0);
+      const uint8_t minPartialBrightness = 0x6F;
+      if (drawingSpokeCount == 3) {
+        if (activePatternBrightness > 0) {
+          --activePatternBrightness;
+        }
+      } else if (drawingSpokeCount > 0 && activePatternBrightness > minPartialBrightness) {
+        activePatternBrightness -= 2;
+      } else if (drawingSpokeCount == 0 || activePatternBrightness < minPartialBrightness) {
         activePatternBrightness = qadd8(activePatternBrightness, 4);
       }
-      activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten, dim8_raw(activePatternBrightness));
+
+      if (activePatternBrightness > 0) {
+        activePattern->loop();
+        activePattern->ctx.blendIntoContext(ctx, BlendMode::blendBrighten, dim8_raw(activePatternBrightness));
+      }
     }
 
     if (spokeManager) {
