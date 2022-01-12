@@ -4,7 +4,6 @@
 #include <FastLED.h>
 #include <vector>
 #include <functional>
-#include <algorithm>
 
 #include "util.h"
 #include "palettes.h"
@@ -745,6 +744,14 @@ public:
     useSharedPalette = false;
   }
 
+  CRGB getAutoColor(unsigned long msPerCycle=500, uint8_t randomOffset=20) {
+    if (useSharedPalette) {
+      return sharedColorManager.flagSample(true, NULL, msPerCycle, randomOffset);
+    } else {
+      return flagPalette.flagSample(true, NULL, msPerCycle, randomOffset);
+    }
+  }
+
   virtual void update() = 0;
   
   virtual bool isIdle() {
@@ -761,6 +768,8 @@ public:
   // false if this spoke pattern doesn't draw anything and shouldn't dim the background
   virtual bool isDrawing() { return true; }
 };
+
+/* -------- */
 
 class ChargeSpokePattern : public SpokePattern {
   BitsFiller *bitsFiller;
@@ -780,11 +789,7 @@ class ChargeSpokePattern : public SpokePattern {
       } else {
         bit.directions.edgeTypes.second = EdgeType::clockwise;
       }
-      if (useSharedPalette) {
-        bit.color = sharedColorManager.flagSample(true);
-      } else {
-        bit.color = ColorFromPalette(flagPalette.palette, millis() / (500 / 0xFF * 3), 0xFF);
-      }
+      bit.color = getAutoColor(500, 0);
     };
   }
 public:
@@ -842,13 +847,7 @@ public:
     if (millis() - lastSpark > 10) {
       for (int i = 0; i < 5; ++i) {
         uint8_t index = spawnIndexes[random8(spawnIndexes.size())];
-        CRGB color;
-        // FIXME: factor out
-        if (useSharedPalette) {
-          color = sharedColorManager.flagSample(true);
-        } else {
-          color = ColorFromPalette(flagPalette.palette, millis() / (500 / 0xFF * 3) + random8(40), 0xFF);
-        }
+        CRGB color = getAutoColor(1000, 80);
         ctx.leds[index] = color;
         lastSpark = millis();
       }

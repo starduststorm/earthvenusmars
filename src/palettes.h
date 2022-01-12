@@ -628,7 +628,7 @@ DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
 };
 
 const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
-  Trans_Flag_gp,
+  Trans_Flag_gp,     // note: index is hard coded
   Enby_Flag_gp,
   Genderqueer_Flag_gp,
   Intersex_Flag_gp,  // note: index is hard coded
@@ -642,7 +642,7 @@ const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
 const uint8_t gPridePaletteCount =
   sizeof( gPrideFlagPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
 
-unsigned pridePaletteColorCount(TProgmemRGBGradientPalettePtr progpal) {
+uint8_t paletteBandCount(TProgmemRGBGradientPalettePtr progpal) {
   // cribbed from FastLED for counting entries in DEFINE_GRADIENT_PALETTE 
   TRGBGradientPaletteEntryUnion* progent = (TRGBGradientPaletteEntryUnion*)(progpal);
   TRGBGradientPaletteEntryUnion u;
@@ -908,7 +908,19 @@ public:
 
 /* -------------------------------------------------------------------- */
 
+uint8_t prideFlagBandCount(TProgmemRGBGradientPalettePtr progpal, int flagIndex, uint8_t *outUniqueColorCount) {
+  uint8_t bandCount = paletteBandCount(progpal);
+  if (flagIndex == 0) {
+    // hack for not showing redundant colors in trans flag
+    if (outUniqueColorCount) *outUniqueColorCount = 3;
+  } else {
+    if (outUniqueColorCount) *outUniqueColorCount = bandCount;
+  }
+  return bandCount;
+}
+
 // lightweight flag palette + index
+// I don't know how to factor out the flag-handling parts of palette management away from PaletteRotation to reduce redunancy while still supporting different palette widths. 
 template <typename PaletteType>
 class FlagPalette {
 public:
@@ -923,6 +935,20 @@ public:
     flagIndex = mod_wrap(flagIndex-1, gPridePaletteCount);
     palette = gPrideFlagPalettes[flagIndex];
   }
+  CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL, unsigned long msPerCycle=500, uint8_t randomOffset=0) {
+    uint8_t index;
+    if (linearPalette) {
+      uint8_t uniqueColors;
+      prideFlagBandCount(gPrideFlagPalettes[flagIndex], flagIndex, &uniqueColors);
+      index = millis() / (msPerCycle / 0xFF * uniqueColors) + random8(randomOffset);
+    } else {
+      index = random8();
+    }
+    if (colorIndex) {
+      *colorIndex = index;
+    }
+    return ColorFromPalette(palette, index);
+  }
 };
 
 // full color-rotation-fade support
@@ -931,18 +957,14 @@ class FlagColorManager : public PaletteRotation<PaletteType> {
 private:
   unsigned flagIndex = 0;
 
-  void updatePalette() {
+  void useFlagIndex() {
     this->setPalette(gPrideFlagPalettes[flagIndex]);
 
-    unsigned numFlagBands = pridePaletteColorCount(gPrideFlagPalettes[flagIndex]);
-    unsigned trackedBands = numFlagBands;
-    if (getFlagIndex() == 0) {
-      // hack for not showing redundant colors in trans flag
-      trackedBands = 3;
-    }
-    
+    uint8_t trackedBands = 0;
+    uint8_t numFlagBands = prideFlagBandCount(gPrideFlagPalettes[flagIndex], getFlagIndex(), &trackedBands);
+
     // flag bands are tracked with PaletteRotation's tracked colors. if a pattern wants to track colors separately it will compete with this usage.
-    this->prepareTrackedColors((uint8_t)trackedBands);
+    this->prepareTrackedColors(trackedBands);
     for (unsigned i = 0; i < this->trackedColorsCount(); ++i) {
       this->colorIndexes[i] = 0xFF * i / numFlagBands + 0xFF / (numFlagBands*2);
     }
@@ -952,25 +974,25 @@ public:
   FlagColorManager() {
     this->pauseRotation = true;
     this->minBrightness = 0x10;
-    updatePalette();
+    useFlagIndex();
   }
 
   FlagColorManager(unsigned flagIndex) : flagIndex(flagIndex) {
     this->pauseRotation = true;
     this->minBrightness = 0x10;
-    updatePalette();
+    useFlagIndex();
   }
 
   void nextPalette() {
     flagIndex = addmod8(flagIndex, 1, gPridePaletteCount);
     logf("Next palette to %i", flagIndex);
-    updatePalette();
+    useFlagIndex();
   }
 
   void previousPalette() {
     flagIndex = mod_wrap(flagIndex-1, gPridePaletteCount);
     logf("Previous palette to %i", flagIndex);
-    updatePalette();
+    useFlagIndex();
   }
 
   int getFlagIndex() {
@@ -983,14 +1005,14 @@ public:
   void resetFlagColors() {
     if (this->pauseRotation) {
       // reset tracked colors to the selected flag in case they've been shifted
-      updatePalette();
+      useFlagIndex();
     }
   }
 
-  CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL) {
+  CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL, unsigned long msPerCycle=500, uint8_t randomOffset=0) {
     uint8_t index;
     if (linearPalette) {
-      index = millis() / (500 / 0xFF * this->trackedColorsCount());
+      index = millis() / (msPerCycle / 0xFF * this->trackedColorsCount()) + random8(randomOffset);
     } else {
       index = random8();
     }
