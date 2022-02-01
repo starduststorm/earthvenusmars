@@ -735,11 +735,19 @@ public:
   virtual ~SpokePattern() { }
   void colorModeChanged() { }
   void nextPalette() {
+    if (useSharedPalette && sharedColorManager.pauseRotation) {
+      // start from the current shared palette
+      flagPalette.setFlagIndex(sharedColorManager.getFlagIndex());
+    }
     flagPalette.nextPalette();
     useSharedPalette = false;
   }
 
   void previousPalette() {
+    if (useSharedPalette && sharedColorManager.pauseRotation) {
+      // start from the current shared palette
+      flagPalette.setFlagIndex(sharedColorManager.getFlagIndex());
+    }
     flagPalette.previousPalette();
     useSharedPalette = false;
   }
@@ -952,6 +960,10 @@ class SpokePatternManager : public Pattern {
   SpokePattern *spokePatterns[3] = {0};
   int8_t spokeMode[3] = {0};
 
+  // slight redundancy - these values are also stored in the SpokePattern for convenience, but need to be persistantly stored here
+  uint8_t spokeFlagIndexes[3] = {0};
+  bool useSharedPalettes[3] = {true, true, true};
+
   std::vector<SpokePattern * (*)(EVMDrawingContext&, EVMDrawingContext&, EVMColorManager&, uint8_t)> patternConstructors;
   template<class T>
   static SpokePattern *construct(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &colorManager, uint8_t spoke) {
@@ -966,6 +978,9 @@ private:
       spokePatterns[spoke] = ctor(this->ctx, this->subtractCtx, *colorManager, spoke);
       spokePatterns[spoke]->setMode(spokeMode[spoke]);
       spokePatterns[spoke]->setActive(true);
+
+      spokePatterns[spoke]->useSharedPalette = useSharedPalettes[spoke];
+      spokePatterns[spoke]->flagPalette.setFlagIndex(spokeFlagIndexes[spoke]);
     }
   }
 public:
@@ -1041,10 +1056,14 @@ public:
 
   void nextPalette(uint8_t spoke) {
     spokePatterns[spoke]->nextPalette();
+    useSharedPalettes[spoke] = spokePatterns[spoke]->useSharedPalette;
+    spokeFlagIndexes[spoke] = spokePatterns[spoke]->flagPalette.getFlagIndex();
   }
 
   void previousPalette(uint8_t spoke) {
-    spokePatterns[spoke]->previousPalette();;
+    spokePatterns[spoke]->previousPalette();
+    useSharedPalettes[spoke] = spokePatterns[spoke]->useSharedPalette;
+    spokeFlagIndexes[spoke] = spokePatterns[spoke]->flagPalette.getFlagIndex();
   }
 
   void nextPattern(uint8_t spoke) {
@@ -1115,7 +1134,7 @@ public:
     outerBits.update();
     innerBits.update();
     
-    if (colorManager->getFlagIndex() != 3 && millis() - lastColorShift > 40) {
+    if ((!colorManager->pauseRotation || colorManager->getFlagIndex() != 3) && millis() - lastColorShift > 40) {
       colorManager->shiftTrackedColors(1);
       lastColorShift = millis();
     }
@@ -1125,7 +1144,7 @@ public:
     uint8_t colorCount = colorManager->trackedColorsCount();
     assert(colorCount > 1, "not tracking colors?");
     uint8_t tracked = 0;
-    if (colorManager->getFlagIndex() == 3) {
+    if (colorManager->pauseRotation && colorManager->getFlagIndex() == 3) {
       // hack for intersex flag palette which is what this pattern was originally written for
       tracked = (filler == &outerBits ? 1 : 0);
     } else {

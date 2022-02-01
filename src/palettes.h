@@ -923,18 +923,28 @@ uint8_t prideFlagBandCount(TProgmemRGBGradientPalettePtr progpal, int flagIndex,
 // I don't know how to factor out the flag-handling parts of palette management away from PaletteRotation to reduce redunancy while still supporting different palette widths. 
 template <typename PaletteType>
 class FlagPalette {
+private: 
+  uint8_t flagIndex = 0;
 public:
   PaletteType palette;
-  uint8_t flagIndex = 0;
-  void nextPalette() {
-    flagIndex = addmod8(flagIndex, 1, gPridePaletteCount);
+
+  uint8_t getFlagIndex() {
+    return flagIndex;
+  }
+
+  void setFlagIndex(uint8_t flagIndex) {
+    this->flagIndex = flagIndex;
     palette = gPrideFlagPalettes[flagIndex];
   }
 
-  void previousPalette() {
-    flagIndex = mod_wrap(flagIndex-1, gPridePaletteCount);
-    palette = gPrideFlagPalettes[flagIndex];
+  void nextPalette() {
+    setFlagIndex(addmod8(flagIndex, 1, gPridePaletteCount));
   }
+
+  void previousPalette() {
+    setFlagIndex(mod_wrap(flagIndex-1, gPridePaletteCount));
+  }
+
   CRGB flagSample(bool linearPalette, uint8_t *colorIndex=NULL, unsigned long msPerCycle=500, uint8_t randomOffset=0) {
     uint8_t index;
     if (linearPalette) {
@@ -958,6 +968,7 @@ private:
   unsigned flagIndex = 0;
 
   void useFlagIndex() {
+    this->pauseRotation = true;
     this->setPalette(gPrideFlagPalettes[flagIndex]);
 
     uint8_t trackedBands = 0;
@@ -972,13 +983,11 @@ private:
 
 public:
   FlagColorManager() {
-    this->pauseRotation = true;
     this->minBrightness = 0x10;
     useFlagIndex();
   }
 
   FlagColorManager(unsigned flagIndex) : flagIndex(flagIndex) {
-    this->pauseRotation = true;
     this->minBrightness = 0x10;
     useFlagIndex();
   }
@@ -996,10 +1005,11 @@ public:
   }
 
   int getFlagIndex() {
+    assert(this->pauseRotation, "cannot get flag index during paletterotation");
     if (this->pauseRotation) {
       return flagIndex;
     }
-    return -1;
+    return 0;
   }
 
   void resetFlagColors() {
