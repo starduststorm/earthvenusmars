@@ -1,7 +1,7 @@
 // earthvenusmars case design
 
-$fs = 0.01; // min angle for curved shapes
-$fa = 2; // min segment/fragment size
+$fs = 0.05; // min angle for curved shapes
+$fa = 3; // min segment/fragment size
 
 RAD = 180 / PI;
 DEG = 1;
@@ -102,13 +102,10 @@ module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false
 boardthickness = 1.6 + tolerance;
 bevel_max_thickness = 1.5;
 basethickness = 1.8;
+extra_edge_height = 4.4; // to line up with bolted-on diffuser
 slicethickness = 0.15; // the likely minimum resolution of the printer is 0.1mm
 
 part_placement_offset = 34;
-
-clip_notch_rise = 1;
-clip_notch_arc = PI/8*RAD;
-clip_notch_overlap = 0.8;
 
 diffuser_top_extra_thickness = 0.8;
 diffuser_top_line_width = 2.0;
@@ -163,13 +160,6 @@ module top_case(flip) {
     translate([part_placement_offset, 0,0]) rotate(PI*RAD, [0,0,1]) {
         difference() {
             union() {
-                // bevel
-//                slices = bevel_max_thickness * 1/slicethickness;
-//                for (t = [1:slices]) {
-//                    z = bevel_max_thickness*(1 - t/slices) - slicethickness*(slices - floor(slices)) - epsilon;
-//                    theshape(easeOutCubic(t, 0, outeroffset, slices), slicethickness, inneroffset, z);
-//                }
-                
                 // diffuser
                 led_outline(led_radius + diffuser_outer_line_width/2 /*edge_cut_radius*/, bevel_max_thickness, diffuser_outer_line_width, arrow_outer_side_width, cross_outer_length, arrow_outer_point_adjustment, cross_outer_adjustment);
                 translate([0,0,bevel_max_thickness-epsilon]) 
@@ -178,26 +168,13 @@ module top_case(flip) {
             union() {
                 // diffuser cutout
                 diffscale() led_outline(led_radius + diffuser_inner_line_width/2, led_thickness, diffuser_inner_line_width, arrow_inner_side_width, cross_inner_length, arrow_inner_point_adjustment, cross_inner_adjustment);
-                
-                // notch cutout
-                diffscale() for (s = [0:2]) {
-                    color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) translate([0, outeroffset,0]) union() {
-                        let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
-                            translate([spoke_length, -outer_spoke_width/2, -epsilon]) {
-                                arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset);
-                                translate([0, 0, clip_notch_rise - epsilon]) 
-                                    arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset - clip_notch_overlap);
-                            }
-                        }
-                    }
-                }
             }
         }
     }
 };
 
 module trans_symbol(radius, thickness) {
-    linewidth=0.12*radius;
+    linewidth=0.2*radius;
     linelength=2.4*radius;
     corner=0.07*radius;
     module arrowshape() {
@@ -251,8 +228,13 @@ bar_pin_cutout_size = [25.3 /*meas*/ + 2*1.75 /*asym*/ + 1.4/*tol*/,
                         basethickness];
 //bar_pin_cutout_offset = [-1.75,0,0]; // bar pin is asymmetric
 
-necklace_point_cutouts = [[-11.5, 23.4, 0], [11.5, 23.4, 0]];
-necklace_point_radius = 1.5;
+necklace_point_cutouts = [
+                            [-11.5, 23.4, 0], [11.5, 23.4, 0],
+//                            [-31.5, 19, 0], [-19, 31.5, 0],
+//                            [19, 31.5, 0], [31.5, 19, 0],
+                            [-8.8, -42.2, 0], [8.8, -42.2, 0],
+                         ];
+necklace_point_radius = 1.8;
 
 base_cable_cutout_depth = 0.9; // my usb inner insulated strand is 0.76mm diameter
 base_cable_cutout_center_position = [0, -37 - outeroffset, basethickness - base_cable_cutout_depth];
@@ -273,24 +255,7 @@ module bottom_case() {
                 theshape(outeroffset, basethickness, inneroffset, 0, base_cutouts=true);
             
                 // board groove
-                theshape(outeroffset, boardthickness, 0, basethickness);
-                
-                // clip peg
-                for (s = [0:2]) {
-                    color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) translate([0, outeroffset,0]) union() {
-                        let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
-                            translate([spoke_length, -outer_spoke_width/2, basethickness + boardthickness-epsilon]) {
-                                arc(-clip_notch_arc/2, clip_notch_arc, clip_notch_rise, max_outer_spoke_width/2, max_outer_spoke_width/2 - outeroffset);
-                                notch_layer_size = 0.1;
-                                translate([0,0,clip_notch_rise]) for (b = [0:6]) {
-                                    translate([0,0,notch_layer_size*b]) arc(-clip_notch_arc/2, clip_notch_arc, notch_layer_size, max_outer_spoke_width/2-0.1*b, max_outer_spoke_width/2 - outeroffset - clip_notch_overlap+0.1*b);
-                                }
-                            }
-                        }
-                    }
-                }
-        
-                
+                theshape(outeroffset, boardthickness+extra_edge_height, 0, basethickness);
             }
             translate([0,0,-epsilon]) scale([1,1,1+epsilon]) union() {
                 // microphone cutout
@@ -307,28 +272,23 @@ module bottom_case() {
         
                 // thumbdial cutout
                 translate(thumbdial_position)  {
-                    cylinder(r=thumbdial_radius, h=basethickness+boardthickness);
+                    cylinder(r=thumbdial_radius, h=basethickness+boardthickness + extra_edge_height);
                     translate([0,  -thumbdial_radius, 0]) cube([thumbdial_center_to_part_cutout_edge_x, 2*thumbdial_radius, basethickness]);
                 }
                 
                 // switch cutout
                 translate(switch_position + switch_pos_offset) {
-                    cube([switch_size.x, switch_size.y, basethickness + boardthickness]);
+                    cube([switch_size.x, switch_size.y, basethickness + boardthickness + extra_edge_height]);
                 }
                 
-                // pin cutouts
-        //            translate(bar_pin_cutout_position) {
-        //                translate([-bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-        //                translate([0,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-        //                translate([bar_pin_cutout_distance,0,0]) cylinder(r=bar_pin_cutout_radius, h=bar_pin_cutout_depth);
-        //            }
+                // bar pin cutout
                 translate(bar_pin_cutout_position - [bar_pin_cutout_size.x/2, bar_pin_cutout_size.y/2]) {
                     rounded_rect(bar_pin_cutout_size, 2);
                 }
                 
                 // necklace cutouts
-                for (p = [0:1]) {
-                    translate(necklace_point_cutouts[p]) cylinder(r=necklace_point_radius, h=basethickness);
+                for (p = necklace_point_cutouts) {
+                    translate(p) cylinder(r=necklace_point_radius, h=basethickness);
                 }
         
                 trans_symbol(radius=4, thickness=0.2);
@@ -338,4 +298,4 @@ module bottom_case() {
 }
 
 bottom_case();
-top_case();
+//top_case();
