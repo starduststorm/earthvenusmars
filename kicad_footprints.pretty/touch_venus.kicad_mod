@@ -1,12 +1,17 @@
-(module touch_venus (layer F.Cu) (tedit 60C7822A)
-  (fp_text reference REF** (at 0.2 0.5) (layer F.SilkS) hide
+(footprint "touch_venus" (version 20211014) (generator pcbnew)
+  (layer "F.Cu")
+  (tedit 60C7822A)
+  (attr through_hole)
+  (fp_text reference "REF**" (at 0.2 0.5) (layer "F.SilkS") hide
     (effects (font (size 0.4 0.4) (thickness 0.08)))
+    (tstamp b9328d10-c4c9-4edd-b102-b85cccef566b)
   )
-  (fp_text value venus (at 0 -0.7) (layer F.Fab) hide
+  (fp_text value "venus" (at 0 -0.7) (layer "F.Fab") hide
     (effects (font (size 0.4 0.4) (thickness 0.08)))
+    (tstamp ed02e804-f696-4c1f-9d69-a653fa2aca77)
   )
-  (fp_circle (center 0 0) (end 1.5 0) (layer F.SilkS) (width 0.4))
-  (fp_line (start 0 1.5) (end 0 3.2) (layer F.SilkS) (width 0.3))
-  (fp_line (start -0.6 2.4) (end 0.6 2.4) (layer F.SilkS) (width 0.3))
-  (pad 1 connect circle (at 0 0) (size 2.5 2.5) (layers F.Cu F.Mask))
+  (fp_line (start 0 4.928) (end 0 2.1) (layer "F.SilkS") (width 0.4) (tstamp 00adab4c-bf08-44a8-8f31-9151b0582ecc))
+  (fp_line (start -0.84855 3.55) (end 0.84855 3.55) (layer "F.SilkS") (width 0.38) (tstamp f967093d-64b8-401e-ad0b-2c7e86329fc8))
+  (fp_circle (center 0 0) (end 2.1 0) (layer "F.SilkS") (width 0.4) (fill none) (tstamp 424e66bb-0f76-4ada-9304-bb3476b41801))
+  (pad "1" connect circle (at 0 0) (size 3.5 3.5) (layers "F.Cu" "F.Mask") (tstamp f82b8b5c-486b-4029-951d-9dce4d72a44f))
 )

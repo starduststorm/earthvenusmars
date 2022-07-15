@@ -1,13 +1,18 @@
-(module touch_mars (layer F.Cu) (tedit 60C78220)
-  (fp_text reference REF** (at 0.1 -0.7) (layer F.SilkS) hide
+(footprint "touch_mars" (version 20211014) (generator pcbnew)
+  (layer "F.Cu")
+  (tedit 60C78220)
+  (attr through_hole)
+  (fp_text reference "REF**" (at 0.1 -0.7) (layer "F.SilkS") hide
     (effects (font (size 0.4 0.4) (thickness 0.08)))
+    (tstamp e40eec55-663b-4827-b589-d6acf282fff9)
   )
-  (fp_text value mars (at -0.1 0.4) (layer F.Fab) hide
+  (fp_text value "mars" (at -0.1 0.4) (layer "F.Fab") hide
     (effects (font (size 0.4 0.4) (thickness 0.08)))
+    (tstamp eaca6b23-90bb-43c2-9ed0-4dd9ab315178)
   )
-  (fp_line (start 2.4 -2.3) (end 2.4 -1.5) (layer F.SilkS) (width 0.3))
-  (fp_circle (center 0 0) (end 1.5 0) (layer F.SilkS) (width 0.4))
-  (fp_line (start 1.6 -2.3) (end 2.4 -2.3) (layer F.SilkS) (width 0.3))
-  (fp_line (start 1.2 -1.1) (end 2.4 -2.3) (layer F.SilkS) (width 0.3))
-  (pad 1 connect circle (at 0 0) (size 2.5 2.5) (layers F.Cu F.Mask))
+  (fp_line (start 3.5 -3.5) (end 3.5 -2) (layer "F.SilkS") (width 0.4) (tstamp 5d14d9f8-79a9-4c1f-8c09-726f0bc49db8))
+  (fp_line (start 2.05 -3.5) (end 3.5 -3.5) (layer "F.SilkS") (width 0.4) (tstamp 9230dbc6-232e-4d29-9139-336987b19cac))
+  (fp_line (start 3.5 -3.5) (end 1.5 -1.5) (layer "F.SilkS") (width 0.4) (tstamp fde9562c-33ca-4e3d-bad7-5eca2e3aeefa))
+  (fp_circle (center 0 0) (end 2.1 0) (layer "F.SilkS") (width 0.4) (fill none) (tstamp 475ba844-e382-4dcb-95ba-b3f735899081))
+  (pad "1" connect circle (at 0 0) (size 3.5 3.5) (layers "F.Cu" "F.Mask") (tstamp 43e0feec-fe78-4637-9af9-e9c0903e201d))
 )
