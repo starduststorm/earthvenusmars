@@ -7035,6 +7035,12 @@
   (gr_text "Colors" (at 99.5 94) (layer "F.SilkS") (tstamp 00000000-0000-0000-0000-000060b5bcd9)
     (effects (font (size 1.2 1.2) (thickness 0.15)))
   )
+  (gr_text "Brightness" (at 80.5 117.856 270) (layer "F.SilkS") (tstamp 45800634-f0b3-45e8-a081-a7406377df58)
+    (effects (font (size 1.2 1.2) (thickness 0.15)))
+  )
+  (gr_text "Power" (at 99.5 117.856 90) (layer "F.SilkS") (tstamp 49ed0e53-5019-41d8-83ae-00ced5bd5843)
+    (effects (font (size 1.2 1.2) (thickness 0.15)))
+  )
 
   (segment (start 99.264152 73.271271) (end 98.843006 73.951444) (width 0.25) (layer "F.Cu") (net 1) (tstamp 01775d4e-3d75-4974-81b0-5bc6459a59ec))
   (segment (start 94.1783 90.25) (end 95.818 90.25) (width 0.2) (layer "F.Cu") (net 1) (tstamp 0350f279-ad51-4299-a610-44e7760b4f6a))
