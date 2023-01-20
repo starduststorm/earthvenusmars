@@ -391,8 +391,7 @@
         "microvia_drill": 0.1,
         "name": "+5V",
         "nets": [
-          "+5V",
-          "/VBUS"
+          "+5V"
         ],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
