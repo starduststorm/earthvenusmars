@@ -7247,7 +7247,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-00005fbfda7e")
-    (attr smd)
+    (attr smd exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J1" (at 2.54 -0.0508) (layer "B.SilkS") hide
       (effects (font (size 0.8 0.8) (thickness 0.1)))
       (tstamp 394bae71-273f-4aad-97b4-e9f4a4fc026c)
@@ -7328,7 +7328,7 @@
   (footprint "earthvenusmars:BarPin_Attachment_3_hole_1_inch" (layer "F.Cu")
     (tedit 5FC99CF7) (tstamp 00000000-0000-0000-0000-000060b59ded)
     (at 90 77)
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF_IGNORE_1" (at 0.1 2.65) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp eac84648-e301-44e3-b7e2-78936f29c85e)
@@ -7348,7 +7348,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-000060bc2291")
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J_T2" (at 0.2 0.5) (layer "F.SilkS") hide
       (effects (font (size 0.4 0.4) (thickness 0.08)))
       (tstamp 32e86369-2d3c-4912-bc23-d14f32b8d8e3)
@@ -7370,7 +7370,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-000060bc3bd3")
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J_T3" (at 0.1 -0.7) (layer "F.SilkS") hide
       (effects (font (size 0.4 0.4) (thickness 0.08)))
       (tstamp f59687d4-7885-4e2f-bde9-987df4df08d3)
@@ -7390,7 +7390,7 @@
   (footprint "earthvenusmars:trans_symbol" (layer "F.Cu")
     (tedit 60B67018) (tstamp 00000000-0000-0000-0000-000060b73e09)
     (at 90 90)
-    (attr smd)
+    (attr board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at -0.1 -3.3) (layer "F.SilkS") hide
       (effects (font (size 0.4 0.4) (thickness 0.08)))
       (tstamp 4ffdb80e-c0ab-4d0c-89e7-38da58df37a6)
@@ -7456,7 +7456,7 @@
   (footprint "earthvenusmars:case_post_npth" (layer "F.Cu")
     (tedit 62CF710F) (tstamp 00000000-0000-0000-0000-000060fdda12)
     (at 78.5 66.6)
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at 0.3 2.56) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 8850bef7-f1c4-4843-a74c-38ce80877ef4)
@@ -7471,7 +7471,7 @@
   (footprint "earthvenusmars:case_post_npth" (layer "F.Cu")
     (tedit 62CF710F) (tstamp 00000000-0000-0000-0000-000060fdddba)
     (at 101.5 66.6)
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at 0.31 2.32) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d59ed166-1421-486a-9d44-1848d14fb7c6)
@@ -7529,7 +7529,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-000060bc9517")
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J_T1" (at 0.1 -0.7) (layer "F.SilkS") hide
       (effects (font (size 0.4 0.4) (thickness 0.08)))
       (tstamp 2748c635-2986-4ba1-b1ab-bac7c3ec8b4b)
@@ -7590,7 +7590,7 @@
   (footprint "earthvenusmars:case_post_npth" (layer "F.Cu")
     (tedit 62CF710F) (tstamp 00000000-0000-0000-0000-000062cf32c8)
     (at 98.8 132.6)
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at 0.31 2.32) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 16b80573-8667-4579-816e-e57575a0511e)
@@ -7605,7 +7605,7 @@
   (footprint "earthvenusmars:case_post_npth" (layer "F.Cu")
     (tedit 62CF710F) (tstamp 00000000-0000-0000-0000-000062cf32cc)
     (at 81.2 132.6)
-    (attr through_hole)
+    (attr through_hole board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at 0.31 2.32) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 0dc0f368-f5ba-46e7-8e9f-e24adb9ccbf8)
@@ -8143,7 +8143,7 @@
   (footprint "earthvenusmars:trans_symbol" (layer "B.Cu")
     (tedit 60B67018) (tstamp 00000000-0000-0000-0000-000060b73ea8)
     (at 90 90 180)
-    (attr smd)
+    (attr board_only exclude_from_pos_files exclude_from_bom)
     (fp_text reference "REF**" (at -0.1 3.3) (layer "B.SilkS") hide
       (effects (font (size 0.4 0.4) (thickness 0.08)) (justify mirror))
       (tstamp 99d0df81-fa04-43ed-b38a-97ad9d4b607e)
@@ -8170,7 +8170,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-000060ba94ac")
-    (attr through_hole)
+    (attr smd exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J_LED1" (at 0.508 1.27) (layer "B.SilkS") hide
       (effects (font (size 0.5 0.5) (thickness 0.08)) (justify mirror))
       (tstamp ba8b1670-acde-4ef5-9e76-3d77046aa28c)
@@ -8179,9 +8179,9 @@
       (effects (font (size 0.5 0.5) (thickness 0.08)) (justify mirror))
       (tstamp aa220712-b842-42df-8e17-1dde891218b0)
     )
-    (pad "1" smd oval locked (at -1.27 0.127) (size 1.524 2.54) (layers "B.Cu" "B.Paste" "B.Mask")
+    (pad "1" smd oval locked (at -1.27 0.127) (size 1.524 2.54) (layers "B.Cu" "B.Mask")
       (net 166 "/SK9822-EC20 LED Array/LED_SCK") (pinfunction "Pin_1") (pintype "passive") (tstamp 791c8387-7fd5-4037-af46-1374d9475fe1))
-    (pad "2" smd oval locked (at 1.27 0.127) (size 1.524 2.54) (layers "B.Cu" "B.Paste" "B.Mask")
+    (pad "2" smd oval locked (at 1.27 0.127) (size 1.524 2.54) (layers "B.Cu" "B.Mask")
       (net 165 "/SK9822-EC20 LED Array/LED_DATA") (pinfunction "Pin_2") (pintype "passive") (tstamp 76339e91-96fb-4d56-92b9-9cca6bf1b2a9))
   )
 
@@ -8191,7 +8191,7 @@
     (property "Sheetfile" "earthvenusmars.kicad_sch")
     (property "Sheetname" "")
     (path "/00000000-0000-0000-0000-000060bb2e0d")
-    (attr through_hole)
+    (attr smd exclude_from_pos_files exclude_from_bom)
     (fp_text reference "J_I2C1" (at 0.508 1.27) (layer "B.SilkS") hide
       (effects (font (size 0.5 0.5) (thickness 0.08)) (justify mirror))
       (tstamp 62e78ad8-68eb-4a82-834c-f6770ce58d5f)
@@ -8200,9 +8200,9 @@
       (effects (font (size 0.5 0.5) (thickness 0.08)) (justify mirror))
       (tstamp 14b0dda3-5cab-4341-b706-528d04a472f1)
     )
-    (pad "1" smd oval locked (at -1.27 0.127 180) (size 1.524 2.54) (layers "B.Cu" "B.Paste" "B.Mask")
+    (pad "1" smd oval locked (at -1.27 0.127 180) (size 1.524 2.54) (layers "B.Cu" "B.Mask")
       (net 186 "/SCL") (pinfunction "Pin_1") (pintype "passive") (tstamp 843dd978-9383-47e4-8bf9-2719965e712d))
-    (pad "2" smd oval locked (at 1.27 0.127 180) (size 1.524 2.54) (layers "B.Cu" "B.Paste" "B.Mask")
+    (pad "2" smd oval locked (at 1.27 0.127 180) (size 1.524 2.54) (layers "B.Cu" "B.Mask")
       (net 187 "/SDA") (pinfunction "Pin_2") (pintype "passive") (tstamp d1917c33-c091-495c-bd4e-6922ef08774c))
   )
 
