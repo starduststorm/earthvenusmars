@@ -6587,11 +6587,6 @@
       (net 1 "GND") (pinfunction "B") (pintype "passive") (tstamp 5cee31ca-221a-4589-9460-5d440d8ab7d3))
     (pad "2" smd rect locked (at -3.1 1.85) (size 1.8 1.1) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 1 "GND") (pinfunction "B") (pintype "passive") (tstamp 74a0f696-a219-4bc0-b610-258538c81ca2))
-    (model "${KISYS3DMOD}/Button_Switch_SMD.3dshapes/SW_SPST_B3S-1000.wrl"
-      (offset (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (footprint "earthvenusmars:LED-SK9822-EC20" (layer "F.Cu")
@@ -6786,11 +6781,6 @@
       (net 3 "Net-(C2-Pad1)") (pinfunction "1") (pintype "passive") (tstamp c5672aba-c3bb-4a47-a580-2badb9419cb1))
     (pad "2" smd rect locked (at -1.25 0) (size 1 1.8) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 2 "Net-(C1-Pad1)") (pinfunction "2") (pintype "passive") (tstamp 0cf897f1-6734-42e8-ae47-4ca7702b04bf))
-    (model "${KISYS3DMOD}/Crystal.3dshapes/Crystal_SMD_3215-2Pin_3.2x1.5mm.wrl"
-      (offset (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (footprint "Capacitor_SMD:C_0603_1608Metric" (layer "F.Cu")
@@ -7333,11 +7323,6 @@
       (net 1 "GND") (pinfunction "B") (pintype "passive") (tstamp 57e59dad-437d-437b-b1b8-adf622ca8dc9))
     (pad "2" smd rect locked (at -3.1 1.85) (size 1.8 1.1) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 1 "GND") (pinfunction "B") (pintype "passive") (tstamp fc5d9a61-2b2c-429c-89ec-64c910557f6f))
-    (model "${KISYS3DMOD}/Button_Switch_SMD.3dshapes/SW_SPST_B3S-1000.wrl"
-      (offset (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (footprint "earthvenusmars:BarPin_Attachment_3_hole_1_inch" (layer "F.Cu")
@@ -7487,7 +7472,7 @@
     (tedit 62CF710F) (tstamp 00000000-0000-0000-0000-000060fdddba)
     (at 101.5 66.6)
     (attr through_hole)
-    (fp_text reference "e" (at 0.31 2.32) (layer "F.SilkS") hide
+    (fp_text reference "REF**" (at 0.31 2.32) (layer "F.SilkS") hide
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp d59ed166-1421-486a-9d44-1848d14fb7c6)
     )
