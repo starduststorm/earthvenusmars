@@ -4,6 +4,7 @@
 *.prelayout
 *.kicad_pcb-bak
 *.sch-bak
+*.kicad_prl
 *.layoutbak
 .pio
 .vscode
