@@ -159,7 +159,7 @@ class PatternManager {
 
     buttons[0]->onSinglePress([this]() {
       this->previousPattern();
-      charge->stopAllSpokes();
+      spokeManager->stopAllSpokes();
     });
     buttons[1]->onSinglePress([this]() {
       this->nextPalette();
@@ -169,12 +169,11 @@ class PatternManager {
     });
     buttons[2]->onSinglePress([this]() {
       this->nextPattern();
-      charge->stopAllSpokes();
+      spokeManager->stopAllSpokes();
     });
     for (int b = 0; b < 3; ++b) {
       buttons[b]->onLongPress([b, this]() {
-        charge->runSpoke(b);
-        this->startPattern(charge);
+        spokeManager->runSpoke(b);
       });
     }
 #endif
