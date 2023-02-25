@@ -49,6 +49,12 @@ static void _logf(bool newline, const char *format, va_list argptr)
   free(buf);
 }
 
+#if DEBUG
+#define logdf(format, ...) logf(format, ## __VA_ARGS__)
+#else
+#define logdf(format, ...)
+#endif
+
 void logf(const char *format, ...)
 {
   va_list argptr;

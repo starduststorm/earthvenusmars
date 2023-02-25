@@ -972,16 +972,16 @@ class SpokePatternManager : public Pattern {
 
 private:
   void initSpoke(uint8_t spoke) {
+    logdf("initSpoke %i, exists? %p", spoke, spokePatterns[spoke]);
     spokeActivation[spoke] = millis();
     if (!spokePatterns[spoke]) {
       auto ctor = patternConstructors[spokePatternIndex[spoke]];
       spokePatterns[spoke] = ctor(this->ctx, this->subtractCtx, *colorManager, spoke);
       spokePatterns[spoke]->setMode(spokeMode[spoke]);
-      spokePatterns[spoke]->setActive(true);
-
       spokePatterns[spoke]->useSharedPalette = useSharedPalettes[spoke];
       spokePatterns[spoke]->flagPalette.setFlagIndex(spokeFlagIndexes[spoke]);
     }
+    spokePatterns[spoke]->setActive(true);
   }
 public:
 
@@ -994,6 +994,7 @@ public:
   }
 
   void stopSpoke(uint8_t spoke) {
+    logdf("stopSpoke %i at %p", spoke, spokePatterns[spoke]);
     spokePatterns[spoke]->setActive(false);
     if (spokePatterns[spoke]->isIdle()) {
       // some spokes may be immediately idle and some may want to spin down
@@ -1030,6 +1031,7 @@ public:
 #endif
 
   void teardownSpoke(uint8_t spoke) {
+    logdf("teardownSpoke %i, at %p", spoke, spokePatterns[spoke]);
     spokeMode[spoke] = spokePatterns[spoke]->getMode();
     spokeActivation[spoke] = SpokeInactive;
     delete spokePatterns[spoke];
@@ -1055,6 +1057,7 @@ public:
   }
 
   void nextPalette(uint8_t spoke) {
+    assert(spokePatterns[spoke], "spoke nextPalette NULL spokePattern");
     spokePatterns[spoke]->nextPalette();
     useSharedPalettes[spoke] = spokePatterns[spoke]->useSharedPalette;
     spokeFlagIndexes[spoke] = spokePatterns[spoke]->flagPalette.getFlagIndex();

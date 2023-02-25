@@ -102,6 +102,7 @@ class SPSTButton : public HardwareControl {
   }
 
   void doHandler(HandlerType type) {
+    logdf("Do button handler: %i", type);
     if (handlers[type])
       (*(handlers[type]))();
   }
