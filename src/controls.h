@@ -220,6 +220,8 @@ class TouchButton : public SPSTButton {
   Adafruit_FreeTouch *touchObj;
   void initPin(int pin) { } // no-op, skip SPSTButton init and do pin init in constructor
   bool touchRegistered = false;
+  uint16_t avgSample = 0;
+  const uint16_t avgSampleCount = 3;
 public:
   uint16_t touchThreshold = 700; // sample above (10-bit) threshold will be considered touch down
   uint16_t touchReleaseBuffer = 100; // sample must fall below threshold-buffer for touch release
@@ -237,12 +239,14 @@ public:
     uint16_t sample = touchObj->measure();
     if (sample == (uint16_t)-1) {
       logf("touch sample failed");
+      return touchRegistered;
     }
-
     assert(touchThreshold > touchReleaseBuffer, "touchThreshold must be > touchReleaseBuffer");
-    if (sample > touchThreshold) {
+
+    avgSample = ((avgSampleCount * avgSample) + sample) / (avgSampleCount + 1);
+    if (avgSample > touchThreshold) {
       touchRegistered = true;
-    } else if (sample < (uint32_t)(touchThreshold - touchReleaseBuffer)) {
+    } else if (avgSample < (uint32_t)(touchThreshold - touchReleaseBuffer)) {
       touchRegistered = false;
     }
     return touchRegistered;
