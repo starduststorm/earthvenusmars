@@ -65,19 +65,18 @@ module rounded_rect(size, radius, epsilon=0.001) {
 
 module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false) {
     difference() {
-        translate([0,0,zoffset])
-        union() {
+        translate([0,0,zoffset]) {
             //translate([0,0,5]) cylinder(r = 20, h = thickness);
             cylinder(r = edge_cut_radius + outeroffset, h = thickness);
             for (s = [0:2]) {
                 color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) rotate(-90, [0,0,1])
-                    translate([-outeroffset,0, 0])
-                    union() {
-                        let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
+                    difference() {
+                        translate([-outeroffset,0, 0]) let (outer_spoke_width = encased_spoke_width + 2 * outeroffset) {
                             cube([outer_spoke_width, spoke_length, thickness]);
                             translate([outer_spoke_width/2, spoke_length, 0])    
                                 cylinder(r = outer_spoke_width/2, h = thickness);
                         }
+                        diffscale() translate([encased_spoke_width/2,spoke_length*5/6,0]) cylinder(r=5.2, h=basethickness);
                     }
             } 
         };
@@ -85,15 +84,14 @@ module theshape(outeroffset, thickness, inneroffset, zoffset, base_cutouts=false
         if (!base_cutouts) translate([0,0,zoffset-epsilon]) union() {
             cylinder(r = edge_cut_radius + inneroffset, h = thickness+2*epsilon);
             for (s = [0:2]) {
-                color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) rotate(-90, [0,0,1])
-                    union() {
-                        translate([-inneroffset, inneroffset, 0])
+                color(colors[s]) rotate(-spokes[s], [0,0,1]) translate(circle_pt(spoke_arclen/2, edge_cut_radius)) rotate(-90, [0,0,1]) {
+                    translate([-inneroffset, inneroffset, 0])
                         cube([encased_spoke_width + 2 * inneroffset, spoke_length - inneroffset, thickness+2*epsilon]);
-                        translate([encased_spoke_width/2, spoke_length, 0]) let (radius = encased_spoke_width/2 + inneroffset) {
-                            // echo("$vpt = ", $vpt, ", bottom: ", $vpt.y + radius);
-                            cylinder(r = radius, h = thickness+2*epsilon);
-                        }
+                    translate([encased_spoke_width/2, spoke_length, 0]) let (radius = encased_spoke_width/2 + inneroffset) {
+                        // echo("$vpt = ", $vpt, ", bottom: ", $vpt.y + radius);
+                        cylinder(r = radius, h = thickness+2*epsilon);
                     }
+                }
             }
         };
     }
@@ -213,9 +211,9 @@ microphone_cutout_position = [-11, 0.84, basethickness - microphone_cutout_depth
 thermistor_cutout_size = [3.2, 3, 0.9] /* measured */ + [0.2,0.2,0.2]; // extra tolerance
 thermistor_cutout_position = [-.57, 7.52, basethickness - thermistor_cutout_size[2]]; // from center of board
 
-usbCutoutFullThickness = false;
-usb_cutout_size = [8.6, 7.1 + outeroffset, basethickness + (usbCutoutFullThickness ? boardthickness : 0)];
-usb_cutout_position = [0, -46.9, 0]; // center of board to top of usb
+usbCutoutFullThickness = true;
+usb_cutout_size = [9.8, 8.8 + outeroffset, basethickness + (usbCutoutFullThickness ? boardthickness : 0)];
+usb_cutout_position = [0, -45.2, 0]; // center of board to top of usb
 
 bar_pin_cutout_distance = 6;
 bar_pin_cutout_position = [0, 13, 0];
