@@ -183,8 +183,9 @@ private:
   }
 
 public:
-  uint16_t wakeThreshold = 0.06 * 4096; // 12-bit ADC
-  uint16_t sleepThreshold = 0.04 * 4096; // 12-bit ADC
+  uint16_t wakeThreshold = 0.063 * 4096; // 12-bit ADC
+  uint16_t sleepThreshold = 0.05 * 4096; // 12-bit ADC
+
 
   PowerManager() : thermistor(Thermistor(THERMISTOR_PIN, THERMISTOR_POWER_PIN)) { }
 
@@ -366,6 +367,7 @@ public:
         if (sleeping) {
           FastLED.setBrightness(10);
           wakeBlink(pixelBuffer.leds);
+          FastLED.setBrightness(1);
           USBDevice.attach();
           logf("Just woke up");
           sleeping = 0;
@@ -419,7 +421,9 @@ public:
       ADC->WINCTRL.bit.WINMODE = ADC_WINCTRL_WINMODE_MODE1; // interrupt when RESULT > WINLT. See Note on WINMODE.
       while (ADC->STATUS.bit.SYNCBUSY);
     } else {
-      targetBrightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
+      // targetBrightness = 0xFF * (value - sleepThreshold)/(4096. - sleepThreshold);
+      uint8_t tb = 0xFF * (value)/(4096.);
+      targetBrightness = scale8(tb, tb); // ease8InQuad
       setBrightness(targetBrightness);
     }
   }
