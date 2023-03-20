@@ -80,9 +80,8 @@ class SPSTButton : public HardwareControl {
     handlerTypeCount,
   } HandlerType;
 
-  long buttonDownTime = -1;
-  long buttonUpTime = -1;
-  long singlePressTime = -1;
+  uint32_t buttonDownTime = 0;
+  uint32_t singlePressTime = 0;
   bool waitForButtonUp = false;
   
   bool didInit = false;
@@ -115,7 +114,7 @@ class SPSTButton : public HardwareControl {
     bool buttonPressed = isButtonPressed();
     long readTime = millis();
 
-    if (!buttonPressed && buttonDownTime != -1) {
+    if (!buttonPressed && buttonDownTime != 0) {
       doHandler(buttonUp);
     }
 
@@ -124,28 +123,33 @@ class SPSTButton : public HardwareControl {
         waitForButtonUp = false;
       }
     } else {
-      if (!buttonPressed && singlePressTime != -1) {
+      if (!buttonPressed && singlePressTime != 0) {
         if ((!handlers[doublePress] && !handlers[doubleLongPress]) || readTime - singlePressTime > doublePressInterval) {
           // double-press timeout
           doHandler(singlePress);
-          singlePressTime = -1;
+          singlePressTime = 0;
         }
       }
-      if (!buttonPressed && buttonDownTime != -1) {
-        if (singlePressTime != -1) {
+      if (!buttonPressed && buttonDownTime != 0) {
+        if (singlePressTime != 0) {
           // button-up from second press
           doHandler(doublePress);
-          singlePressTime = -1;
+          singlePressTime = 0;
         } else {
-            singlePressTime = readTime;
+          singlePressTime = readTime;
         }
-      } else if (buttonPressed && buttonDownTime == -1) {
+      } else if (buttonPressed && buttonDownTime == 0) {
+        if (readTime - singlePressTime < 15) {
+          // The metal buttons sometimes have state jitter leading to a button down around ~10ms after button up. We'll ignore.
+          logf("Button jitter detected at %lums, ignoring", readTime - singlePressTime);
+          return;
+        }
         buttonDownTime = readTime;
         doHandler(buttonDown);
       } else if (buttonPressed && readTime - buttonDownTime > longPressInterval) {
-        if (singlePressTime != -1) {
+        if (singlePressTime != 0) {
           doHandler(doubleLongPress);
-          singlePressTime = -1;
+          singlePressTime = 0;
         } else {
           doHandler(longPress);
         }
@@ -154,16 +158,14 @@ class SPSTButton : public HardwareControl {
       }
     }
 
-    if (buttonPressed) {
-      buttonUpTime = -1;
-    } else {
-      buttonDownTime = -1;
+    if (!buttonPressed) {
+      buttonDownTime = 0;
     }
   }
 
 public:
-  long longPressInterval = 500;
-  long doublePressInterval = 400;
+  uint16_t longPressInterval = 500;
+  uint16_t doublePressInterval = 400;
 
   SPSTButton(int pin) : HardwareControl(pin) { }
   ~SPSTButton() {
