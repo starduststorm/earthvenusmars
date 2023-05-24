@@ -117,7 +117,7 @@ void setup() {
   // Make sure we're not running the SPI while in standby
   SERCOM3->SPI.CTRLA.bit.RUNSTDBY = 0;
 
-  const ESPIChipsets chipset = (EVM_HARDWARE_VERSION == 3 ? SK9822 : APA102);
+  const ESPIChipsets chipset = (EVM_HARDWARE_VERSION > 2 ? SK9822 : APA102);
   FastLED.addLeds<chipset, LEDS_MOSI, LEDS_SCK, BGR>(ctx.leds, ctx.leds.size());
   FastLED.setBrightness(0);
 
