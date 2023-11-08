@@ -178,12 +178,12 @@ public:
 
   virtual bool isButtonPressed() {
     // HACK: on EVM hardware 2+, the Colors button is wired to Arduino Zero's TX LED pin, which causes sporatic HIGH reads
-#if EVM_HARDWARE_VERSION > 2
+#if EVM_HARDWARE_VERSION >= 2
     noInterrupts();
     pinMode(pin, INPUT_PULLUP);
 #endif
     int read = (digitalRead(pin) == LOW);
-#if EVM_HARDWARE_VERSION > 2
+#if EVM_HARDWARE_VERSION >= 2
     interrupts();
 #endif
     return read;

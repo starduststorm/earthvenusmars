@@ -374,7 +374,7 @@ public:
         }
       }
     }
-#if EVM_HARDWARE_VERSION > 2
+#if EVM_HARDWARE_VERSION >= 2
     // thermal management
     if (millis() - lastThermalCheck > 5000) {
       // unsigned long logstart = millis();
