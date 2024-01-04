@@ -4,9 +4,12 @@
 ## A Wearable LED Transgender Symbol
 ##### *because I wanted this to exist*
 #
+### I made a small pile of these
+You can get them on [Tindie].
+#
 ## Hardware
 
-* LEDs: APA102c-2020, very tiny & very bright
+* LEDs: SK9822-EC20, very tiny & very bright
 * PCB: Designed with KiCad, design files are in ./board
 * Chip: SAMD21G18a, 32-bit ARM
 
@@ -23,17 +26,17 @@
 * Onboard thermistor for temperature management
 * Brightness dial to manage level of eye-lasering
 * Power switch for longer storage
-* Micro-USB for power & hacking, requires 5v input from wall or battery
+* USB-C for power & hacking, requires USB Power
 * SWD pads for low-level hacking
-* Exposed (but unused) I2C pads and SPI pads for you to hack with as you please (NOTE: SDA/SCL labels were swapped on the first large pcb print)
-* Mount points for bar pin or other attachment
+* Exposed (but unused) I2C pads and SPI pads for you to hack with as you please
+* Mount points for bar pin, chain, other attachments
 
 #
 ## Software
 
 Arduino-compatible, C++ code built to run against the Arduino Zero bootloader & stack on a SAMD21g mcu.
 
-<img src="doc/assets/lit.jpg" alt="This board is lit with trans flag colors" height=400>
+<img src="doc/assets/lit.jpg" alt="This board is brightly lit with trans flag colors" height=400>
 
 ### Features
 
@@ -56,10 +59,12 @@ The project is built with arm-none-eabi-g++ using [PlatformIO] in Visual Studio 
 * [Adafruit Zero I2S]
 * [Adafruit FreeTouch]
 
-
 ### Build Environments
 
-There are two build environments, v1 & v2, referencing the hardware version of the pcb. Deployments of top-of-tree code should always use the highest build environment (v2).
+There are multiple build environments, referencing the hardware version of the pcb. 
+* v1 - don't use
+* v2 - Plastic buttons, small number of these out in the wild
+* v3 - Metal buttons, Tindie version
 
 ### Controls
 
@@ -77,15 +82,17 @@ There are two build environments, v1 & v2, referencing the hardware version of t
   - Double Press - Previous Pattern
   - Long Press - Pattern Rotation
 
-* Circular metal touchpads control each spoke of the design
-  - Press and hold to keep spoke active
-  - Pressing the <i>Colors</i> button while holding a touch pad to change only the palette of that spoke
+* Circular metal touchpads control each "spoke", the earth, venus, and mars symbols, of the design
+  - Press and hold for half a second to keep spoke active
+  - Pressing the <i>Colors</i> or <i>Patterns</i> button while holding a touch pad will change the pattern or colors on that spoke only. Use this to mix and match.
+
+Note that the top-left "earth" spoke cycles through additional states when using the <i>Patterns</i>-button chord. You can use this to e.g. turn off the cross-bar or arrow shape pixels only, allowing that spoke to be used as a mars or venus symbol to give the device two mars or two venus symbols (gay).
 
 ### Power
 
-The board is designed to be portable & wearable and will run off of just about any USB battery pack. However, when running a fully-lit pattern at maximum brightness, the leds will draw upwards of 12W, making short work of pocket-sized batteries. Therefore it is recommended to set brightness well below the maximum for extended use, choose a pattern that does not light all the leds simultaneously, or expect to need a larger battery.
+The board is designed to be portable & wearable and will run off of just about any USB battery pack. However, when running at full brightness the LEDs may pull up to 15W and make short work of small batteries. 
 
-When the brightness dial is turned all the way down, the device will enter sleep mode. This draws much less power than when it is running, but it will still slowly drain batteries in this mode. 
+When the brightness dial is turned all the way down, the device will enter sleep mode but will still passively draw power if the power switch is on.
 
 ### Temperature
 
@@ -116,5 +123,5 @@ Thank you for all the work you do for makers & hobbyists the world over.
 [Adafruit Zero I2S]: <https://github.com/adafruit/Adafruit_ZeroI2S>
 [Adafruit FreeTouch]: <https://github.com/adafruit/Adafruit_FreeTouch>
 [PlatformIO]: <https://platformio.org>
-
+[Tindie]: <https://www.tindie.com/products/starduststorm/earthvenusmars>
 
