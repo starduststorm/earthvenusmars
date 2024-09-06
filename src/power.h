@@ -382,13 +382,13 @@ public:
       // unsigned long logstop = millis();
       // logf("thermistor read took %ims", logstop-logstart); // this is taking 11-12ms??
 
-      const int tempThresh = 45;
-      const int tempRange = 75 - tempThresh;
+      const int tempThresh = 42;
+      const int tempRange = 70 - tempThresh;
       if (temp > 150 || temp < -100) {
         // assume faulty read
         logf("temp read %i°C. faulty sensor?", temp);
       } else if (temp > tempThresh) {
-        maxBrightness = lerp8by8(0xFF, 0x33, min(0xFF, 0xFF * (temp - tempThresh) / tempRange));
+        maxBrightness = lerp8by8(0xFF, 0x20, min(0xFF, 0xFF * (temp - tempThresh) / tempRange));
         logf("temp read %i°C. scaling max brightness to %u", temp, maxBrightness);
       } else {
         logf("temp is fine: %i°C", temp);
