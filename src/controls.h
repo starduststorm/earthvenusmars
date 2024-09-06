@@ -223,7 +223,7 @@ class TouchButton : public SPSTButton {
   uint16_t avgSample = 0;
   const uint16_t avgSampleCount = 3;
 public:
-  uint16_t touchThreshold = 700; // sample above (10-bit) threshold will be considered touch down
+  uint16_t touchThreshold = 500; // sample above (10-bit) threshold will be considered touch down
   uint16_t touchReleaseBuffer = 100; // sample must fall below threshold-buffer for touch release
 
   TouchButton(int pin, oversample_t oversample, series_resistor_t seriesResistor, freq_mode_t freqMode) : SPSTButton(pin) {
@@ -242,6 +242,19 @@ public:
       return touchRegistered;
     }
     assert(touchThreshold > touchReleaseBuffer, "touchThreshold must be > touchReleaseBuffer");
+
+#if EVM_HARDWARE_VERSION==3
+  /*
+  I think the pin 17 touch pad has a higher baseline read perhaps because it routes through a via underneath the mcu. Let
+  Idle reads on pins 8, 17, and 19 across 3 different units:
+  Touch Samples: 181, 323, 147
+  Touch Samples: 175, 317, 142
+  Touch Samples: 179, 322, 145
+  */
+  if (pin == 17) {
+    sample = map(sample, 310, 1023, 150, 1023);
+  }
+#endif
 
     avgSample = ((avgSampleCount * avgSample) + sample) / (avgSampleCount + 1);
     if (avgSample > touchThreshold) {
