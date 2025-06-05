@@ -559,17 +559,16 @@ DEFINE_GRADIENT_PALETTE( Pride_Flag_gp ) {
   255, 0x75, 0x07, 0xB7,
 };
 
-// if anyone can find a way to make the ace flag look good on leds, lemee know
-// DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
-//   0,   0x00, 0x00, 0x00,
-//   63,  0x00, 0x00, 0x00,
-//   64,  0x40, 0x40, 0x40,
-//   127, 0xA4, 0xA4, 0xA4,
-//   128, 0xFF, 0xFF, 0xFF,
-//   195, 0xFF, 0xFF, 0xFF,
-//   196, 0x81, 0x00, 0x81,
-//   255, 0x81, 0x00, 0x81,
-// };
+DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
+  0,   0x40, 0x40, 0x40,
+  63,  0x40, 0x40, 0x40,
+  64,  0x71, 0x00, 0x81,
+  127, 0x71, 0x00, 0x81,
+  128, 0xFF, 0xFF, 0xFF,
+  195, 0xFF, 0xFF, 0xFF,
+  196, 0x71, 0x00, 0x81,
+  255, 0x71, 0x00, 0x81,
+};
 
 DEFINE_GRADIENT_PALETTE( Enby_Flag_gp ) {
   // 0,   0xFF, 0xF4, 0x30,
@@ -582,8 +581,8 @@ DEFINE_GRADIENT_PALETTE( Enby_Flag_gp ) {
   // 255, 0x00, 0x00, 0x00,
 
 // cutting out the black because we can't do anything with it
-  0,   0xFF, 0xF4, 0x30,
-  85,  0xFF, 0xF4, 0x30,
+  0,   0xFF, 0xF4, 0x20,
+  85,  0xFF, 0xF4, 0x20,
   86,  0xFF, 0xFF, 0xFF,
   170, 0xFF, 0xFF, 0xFF,
   171, 0x6E, 0x07, 0xD7,
@@ -627,7 +626,7 @@ DEFINE_GRADIENT_PALETTE( Pan_Flag_gp ) {
   255, 0x1B, 0xB3, 0xFF,
 };
 
-const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
+const TProgmemRGBGradientPaletteRef gPrideFlagPalettes[] = {
   Trans_Flag_gp,     // note: index is hard coded
   Enby_Flag_gp,
   Genderqueer_Flag_gp,
@@ -635,14 +634,14 @@ const TProgmemRGBGradientPalettePtr gPrideFlagPalettes[] = {
   Pride_Flag_gp,     // note: index is hard coded
   Bi_Flag_gp,
   Lesbian_Flag_gp,
-  // Ace_Flag_gp,
+  Ace_Flag_gp,
   Pan_Flag_gp,
 };
 
 const uint8_t gPridePaletteCount =
-  sizeof( gPrideFlagPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
+  sizeof( gPrideFlagPalettes) / sizeof( TProgmemRGBGradientPaletteRef );
 
-uint8_t paletteBandCount(TProgmemRGBGradientPalettePtr progpal) {
+uint8_t paletteBandCount(TProgmemRGBGradientPaletteRef progpal) {
   // cribbed from FastLED for counting entries in DEFINE_GRADIENT_PALETTE 
   TRGBGradientPaletteEntryUnion* progent = (TRGBGradientPaletteEntryUnion*)(progpal);
   TRGBGradientPaletteEntryUnion u;
@@ -657,7 +656,7 @@ uint8_t paletteBandCount(TProgmemRGBGradientPalettePtr progpal) {
 
 //
 
-const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
+const TProgmemRGBGradientPaletteRef gGradientPalettes[] = {
   Sunset_Real_gp,
   es_rivendell_15_gp,
   es_ocean_breeze_036_gp,
@@ -703,7 +702,7 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
 
 // Count of how many cpt-city gradients are defined:
 const uint8_t gGradientPaletteCount =
-  sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPalettePtr );
+  sizeof( gGradientPalettes) / sizeof( TProgmemRGBGradientPaletteRef );
 
 /* --- */
 
@@ -908,7 +907,7 @@ public:
 
 /* -------------------------------------------------------------------- */
 
-uint8_t prideFlagBandCount(TProgmemRGBGradientPalettePtr progpal, int flagIndex, uint8_t *outUniqueColorCount) {
+uint8_t prideFlagBandCount(TProgmemRGBGradientPaletteRef progpal, int flagIndex, uint8_t *outUniqueColorCount) {
   uint8_t bandCount = paletteBandCount(progpal);
   if (flagIndex == 0) {
     // hack for not showing redundant colors in trans flag
