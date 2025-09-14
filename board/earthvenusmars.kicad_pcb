@@ -35076,7 +35076,7 @@
 			)
 		)
 		(property "Value" "R_POT"
-			(at -0.1524 0.3556 -90)
+			(at -0.1524 0.3556 90)
 			(layer "B.Fab")
 			(uuid "f1d47bf4-b2a7-4f8e-a2c2-1356ba68ffdc")
 			(effects
@@ -35087,7 +35087,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "468c66be-01e6-4f9a-894d-0eae09b29372")
@@ -35099,7 +35099,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ed0a54f0-fb2a-4599-b77e-5bf2d46da49f")
@@ -35111,7 +35111,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 0 0 -90)
+			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "c0d995b0-b3ce-4699-b2c1-07081b73f7e1")
@@ -35315,6 +35315,17 @@
 			(pinfunction "3")
 			(pintype "passive")
 			(uuid "2172c104-75e3-49b1-ae66-842c0142a3bc")
+		)
+		(model "${KIPRJMOD}/../kicad_footprints.pretty/3352T-1-103LF.STEP"
+			(offset
+				(xyz 0 0 0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz -90 0 0)
+			)
 		)
 	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
