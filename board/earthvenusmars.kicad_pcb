@@ -106,7 +106,7 @@
 			(mirror no)
 			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "/Users/opal/Desktop/fab/")
+			(outputdirectory ".")
 		)
 	)
 	(net 0 "")
@@ -32942,7 +32942,7 @@
 			(effects
 				(font
 					(size 0.481966 0.481966)
-					(thickness 0.15)
+					(thickness 0.120492)
 				)
 				(justify mirror)
 			)
@@ -33360,7 +33360,7 @@
 			(pintype "output")
 			(uuid "ebc5ca00-0ed7-4468-9cca-9a02b6062f50")
 		)
-		(model "/Users/opal/src/earthvenusmars/kicad_footprints.pretty/SPH0645LM4H-B.step"
+		(model "${KIPRJMOD}/../kicad_footprints.pretty/SPH0645LM4H-B.step"
 			(offset
 				(xyz 0 0.762 0)
 			)
@@ -36402,7 +36402,7 @@
 			(pintype "power_in")
 			(uuid "8f844e38-c09d-4a78-bacc-6c18c1fcc4c5")
 		)
-		(model "/Users/opal/src/earthvenusmars/kicad_footprints.pretty/USB4105-GF-A.step"
+		(model "${KIPRJMOD}/../kicad_footprints.pretty/USB4105-GF-A.step"
 			(offset
 				(xyz 0 0 0)
 			)
