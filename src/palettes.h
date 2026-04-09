@@ -570,6 +570,19 @@ DEFINE_GRADIENT_PALETTE( Ace_Flag_gp ) {
   255, 0x71, 0x00, 0x81,
 };
 
+DEFINE_GRADIENT_PALETTE( Agender_Flag_gp ) {
+  0,   0x10, 0x10, 0x10,
+  50,  0x10, 0x10, 0x10,
+  51,  0xFF, 0xFF, 0xFF,
+  101, 0xFF, 0xFF, 0xFF,
+  102, 0x5D, 0xF4, 0x42,
+  152, 0x5D, 0xF4, 0x42,
+  153, 0xFF, 0xFF, 0xFF,
+  204, 0xFF, 0xFF, 0xFF,
+  205, 0x10, 0x10, 0x10,
+  255, 0x10, 0x10, 0x10,
+};
+
 DEFINE_GRADIENT_PALETTE( Enby_Flag_gp ) {
   // 0,   0xFF, 0xF4, 0x30,
   // 63,  0xFF, 0xF4, 0x30,
@@ -635,6 +648,7 @@ const TProgmemRGBGradientPaletteRef gPrideFlagPalettes[] = {
   Bi_Flag_gp,
   Lesbian_Flag_gp,
   Ace_Flag_gp,
+  Agender_Flag_gp,
   Pan_Flag_gp,
 };
 
@@ -696,6 +710,8 @@ const TProgmemRGBGradientPaletteRef gGradientPalettes[] = {
   Pride_Flag_gp,
   Bi_Flag_gp,
   Lesbian_Flag_gp,
+  Ace_Flag_gp,
+  Agender_Flag_gp,
   Pan_Flag_gp,
 };
 
