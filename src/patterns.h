@@ -734,6 +734,10 @@ public:
   SpokePattern(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &sharedColorManager, uint8_t spoke) : ctx(ctx), subtractCtx(subtractCtx), sharedColorManager(sharedColorManager), spoke(spoke) { }
   virtual ~SpokePattern() { }
   void colorModeChanged() { }
+  void randomizePalette() {
+    flagPalette.setFlagIndex(random8()%gPridePaletteCount);
+    useSharedPalette = false;
+  }
   void nextPalette() {
     if (useSharedPalette && sharedColorManager.pauseRotation) {
       // start from the current shared palette
@@ -896,8 +900,10 @@ public:
     }
     const vector<uint8_t>& leds = ledList();
     unsigned long runTime = millis() - start;
-    for (uint8_t index : leds) {
-       ctx.leds[index] = CRGB::White;
+    if (!fullRandom) { // visual indication that we're turning these pixels 'off', but only if manually triggered
+      for (uint8_t index : leds) {
+        ctx.leds[index] = CRGB::White;
+      }
     }
     for (uint8_t index : leds) {
       subtractCtx.leds[index] = CRGB::White;
@@ -969,8 +975,7 @@ class SpokePatternManager : public Pattern {
   static SpokePattern *construct(EVMDrawingContext &ctx, EVMDrawingContext &subtractCtx, EVMColorManager &colorManager, uint8_t spoke) {
     return new T(ctx, subtractCtx, colorManager, spoke);
   }
-
-private:
+public:
   void initSpoke(uint8_t spoke) {
     logdf("initSpoke %i, exists? %p", spoke, spokePatterns[spoke]);
     spokeActivation[spoke] = millis();
@@ -983,7 +988,6 @@ private:
     }
     spokePatterns[spoke]->setActive(true);
   }
-public:
 
   EVMDrawingContext subtractCtx;
 
@@ -1016,11 +1020,6 @@ public:
     }
   }
 
-#if EVM_HARDWARE_VERSION == 1
-  // legacy
-  void runSpoke(uint8_t spoke) {
-    initSpoke(spoke);
-  }
   void stopAllSpokes() {
     for (int spoke = 0; spoke < 3; ++spoke) {
       if (spokePatterns[spoke]) {
@@ -1028,7 +1027,6 @@ public:
       }
     }
   }
-#endif
 
   void teardownSpoke(uint8_t spoke) {
     logdf("teardownSpoke %i, at %p", spoke, spokePatterns[spoke]);
@@ -1054,6 +1052,12 @@ public:
         spokePatterns[spoke]->colorModeChanged();
       }
     }
+  }
+
+  void randomizePalette(uint8_t spoke) {
+    spokePatterns[spoke]->randomizePalette();
+    useSharedPalettes[spoke] = spokePatterns[spoke]->useSharedPalette;
+    spokeFlagIndexes[spoke] = spokePatterns[spoke]->flagPalette.getFlagIndex();
   }
 
   void nextPalette(uint8_t spoke) {

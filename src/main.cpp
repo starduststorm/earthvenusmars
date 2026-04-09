@@ -33,6 +33,9 @@ static const uint8_t brightnessDialPin = 9;
 #define FASTLED_USE_GLOBAL_BRIGHTNESS 1
 #include <FastLED.h>
 
+// starts device in random modes, plus cycles in auto spoke variations
+bool fullRandom = false;
+
 #include "util.h"
 #include "drawing.h"
 #include "PatternManager.h"

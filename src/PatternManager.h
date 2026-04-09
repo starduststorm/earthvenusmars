@@ -16,6 +16,7 @@ class PatternManager {
 
   bool patternAutoRotate = false;
   unsigned long patternTimeout = 40*1000;
+  unsigned long lastAutoSpokeChange = 0; // fullRandom only
 
   std::vector<Pattern * (*)(void)> patternConstructors;
 
@@ -173,7 +174,7 @@ class PatternManager {
     });
     for (int b = 0; b < 3; ++b) {
       buttons[b]->onLongPress([b, this]() {
-        spokeManager->runSpoke(b);
+        spokeManager->initSpoke(b);
       });
     }
 #endif
@@ -358,7 +359,12 @@ public:
 #endif
     setupButtons();
 
-    startPatternAtIndex(0);
+    if (fullRandom) {
+      colorManager->pauseRotation = false;
+      patternAutoRotate = true;
+    } else {
+      startPatternAtIndex(0);
+    }
   }
 
   void loop() {
@@ -415,6 +421,23 @@ public:
       }
     }
     controls.update();
+    
+    if (fullRandom && millis() - lastAutoSpokeChange > 16000) {
+      lastAutoSpokeChange = millis();
+      logf("fullRandom spoke change");
+      spokeManager->stopAllSpokes();
+      int num = random8(3);
+      for (int i = 0; i < num; ++i) {
+        int s = random8(3);
+        logf("  fullRandom running spoke %i", s);
+        spokeManager->initSpoke(s);
+        spokeManager->randomizePalette(s);
+        int spokeMode = random(3) + (s == 0 ? random(3) : 0); // earth has extra modes
+        for (int sm = 0; sm < spokeMode; ++sm) {
+          spokeManager->nextPattern(s);
+        }
+      }
+    }
   }
 };
 
